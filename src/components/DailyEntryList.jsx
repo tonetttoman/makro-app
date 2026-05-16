@@ -1,5 +1,5 @@
 import { CalendarDays, Lock, Minus, Plus, Save, Trash2, Unlock } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { calculateEntry, findFoodById } from "../lib/calculations";
 
 function formatMacro(value, unit = "g") {
@@ -9,6 +9,13 @@ function formatMacro(value, unit = "g") {
 function formatAmount(value, unit) {
   const rounded = Math.round(value * 10) / 10;
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} ${unit}`;
+}
+
+function formatDisplayDate(date) {
+  if (!date) return "";
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return date;
+  return `${year}. ${month}. ${day}.`;
 }
 
 const listPanelStyle = {
@@ -24,6 +31,20 @@ const listHeaderStyle = {
   justifyContent: "space-between",
   gap: "10px",
   padding: "0 2px 7px"
+};
+
+const headerTitleStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "7px"
+};
+
+const dateBadgeStyle = {
+  minHeight: "24px",
+  padding: "4px 8px",
+  fontSize: "0.68rem",
+  lineHeight: 1
 };
 
 const entryCountBadgeStyle = {
@@ -163,6 +184,21 @@ export function DailyEntryList({
   onSave
 }) {
   const [isDateOpen, setIsDateOpen] = useState(false);
+  const dateInputRef = useRef(null);
+
+  function openDatePicker() {
+    setIsDateOpen(true);
+    window.requestAnimationFrame(() => {
+      const input = dateInputRef.current;
+      if (!input) return;
+      input.focus();
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+      } else {
+        input.click();
+      }
+    });
+  }
 
   if (!entries.length) {
     return (
@@ -176,7 +212,10 @@ export function DailyEntryList({
   return (
     <section className="panel" style={listPanelStyle} aria-label="Napi kalkulációs lista">
       <div style={listHeaderStyle}>
-        <p className="eyebrow">Mai tételek</p>
+        <div style={headerTitleStyle}>
+          <p className="eyebrow">Mai tételek</p>
+          <span className="badge" style={dateBadgeStyle}>{formatDisplayDate(workDate)}</span>
+        </div>
         <span className="badge" style={entryCountBadgeStyle}>{entries.length} tétel</span>
       </div>
 
@@ -277,14 +316,19 @@ export function DailyEntryList({
         {isDateOpen && (
           <label className="form-field" style={{ marginTop: 0 }}>
             <span>Mentés dátuma</span>
-            <input type="date" value={workDate} onChange={(event) => onWorkDateChange?.(event.target.value)} />
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={workDate}
+              onChange={(event) => onWorkDateChange?.(event.target.value)}
+            />
           </label>
         )}
         <div style={saveActionsStyle}>
           <button
             className="icon-button"
             type="button"
-            onClick={() => setIsDateOpen((current) => !current)}
+            onClick={openDatePicker}
             aria-expanded={isDateOpen}
             aria-label="Mentés dátumának kiválasztása"
           >
