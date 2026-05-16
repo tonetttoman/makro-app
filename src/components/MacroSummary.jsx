@@ -1,4 +1,4 @@
-import { Droplet, Flame, Plus, Wheat } from "lucide-react";
+import { Droplet, Flame, Wheat } from "lucide-react";
 import { calculateMacroRatio } from "../lib/calculations";
 import { ProgressBar } from "./ProgressBar";
 
@@ -12,25 +12,13 @@ function formatGram(value) {
   return `${Math.round(Number(value) || 0)} g`;
 }
 
-export function MacroSummary({ totals, targets, isQuickAddOpen, onToggleQuickAdd }) {
+export function MacroSummary({ totals, targets }) {
   const ratio = calculateMacroRatio(totals);
   const kcal = Math.round(totals.kcal);
 
   return (
     <section className="summary" aria-label="Napi összesítő">
       <div className="summary-hero">
-        <div className="summary-hero__top">
-          <button
-            className="summary-quick-add-button"
-            type="button"
-            onClick={onToggleQuickAdd}
-            aria-expanded={isQuickAddOpen}
-            aria-label="Gyors hozzáadás megnyitása"
-          >
-            <Plus size={26} aria-hidden="true" />
-          </button>
-        </div>
-
         <div className="summary-kcal" aria-label={`${kcal} kilokalória`}>
           <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
           <span>kcal</span>
