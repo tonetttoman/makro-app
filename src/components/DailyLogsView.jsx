@@ -81,7 +81,7 @@ const rowButtonStyle = {
 
 const rowTitleStyle = {
   display: "grid",
-  gap: "6px",
+  gap: "8px",
   minWidth: 0
 };
 
@@ -95,22 +95,54 @@ const openDetailStyle = {
   background: "rgba(10, 24, 21, 0.45)"
 };
 
+const summaryChipGroupStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "8px"
+};
+
+const kcalChipStyle = {
+  ...dailyEntryChipStyles.macroChipStyle,
+  minWidth: "92px",
+  minHeight: "32px",
+  padding: "7px 13px",
+  fontSize: "0.86rem",
+  background: "rgba(37, 99, 77, 0.42)",
+  border: "1px solid rgba(94, 234, 178, 0.22)",
+  boxShadow: "0 0 0 1px rgba(94, 234, 178, 0.05) inset"
+};
+
+const macroChipStyle = {
+  ...dailyEntryChipStyles.macroChipStyle,
+  minWidth: "74px",
+  minHeight: "30px",
+  padding: "6px 11px",
+  fontSize: "0.78rem"
+};
+
+const kcalLabelStyle = {
+  ...dailyEntryChipStyles.macroLabelStyle,
+  fontSize: "0.68rem",
+  fontWeight: 950
+};
+
 function MacroChips({ totals }) {
   return (
-    <div style={dailyEntryChipStyles.compactSummaryStyle} aria-label="Makró összesítés">
-      <span style={dailyEntryChipStyles.macroChipStyle}>
-        <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
+    <div style={summaryChipGroupStyle} aria-label="Makró összesítés">
+      <span style={kcalChipStyle}>
+        <small style={kcalLabelStyle}>k</small>
         <strong>{Math.round(totals.kcal)}</strong>
       </span>
-      <span style={dailyEntryChipStyles.macroChipStyle}>
+      <span style={macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
         <strong>{formatStat(totals.protein)} g</strong>
       </span>
-      <span style={dailyEntryChipStyles.macroChipStyle}>
+      <span style={macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
         <strong>{formatStat(totals.fat)} g</strong>
       </span>
-      <span style={dailyEntryChipStyles.macroChipStyle}>
+      <span style={macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
         <strong>{formatStat(totals.carbs)} g</strong>
       </span>
