@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 import { dailyEntryChipStyles } from "./DailyEntryList";
@@ -160,10 +160,15 @@ const listPanelStyle = {
   marginBottom: "12px"
 };
 
-const listRowStyle = {
-  borderTop: "1px solid rgba(135, 175, 157, 0.12)",
-  padding: "8px 2px"
-};
+function getListRowStyle(isActive = false) {
+  return {
+    borderTop: "1px solid rgba(135, 175, 157, 0.12)",
+    padding: "8px 2px",
+    borderLeft: isActive ? "3px solid rgba(134, 239, 172, 0.5)" : "3px solid transparent",
+    background: isActive ? "rgba(24, 70, 51, 0.18)" : "transparent",
+    borderRadius: isActive ? "12px" : 0
+  };
+}
 
 const rowButtonStyle = {
   width: "100%",
@@ -193,15 +198,17 @@ const titleAndChipsStyle = {
   minWidth: 0
 };
 
-const openDetailStyle = {
-  display: "grid",
-  gap: "10px",
-  marginTop: "10px",
-  padding: "10px",
-  border: "1px solid rgba(135, 175, 157, 0.15)",
-  borderRadius: "16px",
-  background: "rgba(10, 24, 21, 0.45)"
-};
+function getOpenDetailStyle(isActive = false) {
+  return {
+    display: "grid",
+    gap: "10px",
+    marginTop: "10px",
+    padding: "10px",
+    border: isActive ? "1px solid rgba(134, 239, 172, 0.22)" : "1px solid rgba(135, 175, 157, 0.15)",
+    borderRadius: "16px",
+    background: isActive ? "rgba(12, 45, 33, 0.58)" : "rgba(10, 24, 21, 0.45)"
+  };
+}
 
 const nestedListStyle = {
   display: "grid",
@@ -314,12 +321,12 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   const ratio = calculateMacroRatio(row);
 
   return (
-    <div style={listRowStyle}>
+    <div style={getListRowStyle(isOpen)}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
           <span style={titleAndChipsStyle}>
             <strong>{formatDateWithDay(row.dateKey)}</strong>
-            <MacroChips totals={row} />
+            <MacroChips totals={row} active={isOpen} />
           </span>
           <small className="muted">{row.status}</small>
         </span>
@@ -327,7 +334,7 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
       </button>
 
       {isOpen && (
-        <div style={openDetailStyle}>
+        <div style={getOpenDetailStyle(true)}>
           <p className="muted" style={{ margin: 0 }}>
             Makróarány: {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch
           </p>
@@ -351,12 +358,12 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
 
 function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
   return (
-    <div style={listRowStyle}>
+    <div style={getListRowStyle(isOpen)}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
           <span style={titleAndChipsStyle}>
             <strong>{group.label}</strong>
-            <MacroChips totals={group.total} />
+            <MacroChips totals={group.total} active={isOpen} />
           </span>
           <small className="muted">{group.loggedRows.length} mentett nap</small>
         </span>
@@ -364,7 +371,7 @@ function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoa
       </button>
 
       {isOpen && showDailyDetails && (
-        <div style={openDetailStyle}>
+        <div style={getOpenDetailStyle(false)}>
           <p className="muted" style={{ margin: 0 }}>
             Átlag: {formatMacroLine(group.average)}. Makróarány: {Math.round(group.ratio.protein)}% p ·{" "}
             {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch.
@@ -388,7 +395,7 @@ function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoa
 }
 
 export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoadToToday }) {
-  const [openGroups, setOpenGroups] = useState({});
+  const [openGroups, setOpenGroups] = useState(null);
   const [openDays, setOpenDays] = useState({});
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
@@ -397,9 +404,14 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const ratio = calculateMacroRatio(average);
   const weekGroups = buildWeekGroups(rows);
   const isMonthlyView = days > 7;
+  const defaultOpenGroups = useMemo(() => (weekGroups[0] ? { [weekGroups[0].id]: true } : {}), [weekGroups]);
+  const visibleOpenGroups = openGroups ?? defaultOpenGroups;
 
   function toggleGroup(groupId) {
-    setOpenGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
+    setOpenGroups((current) => {
+      const base = current ?? defaultOpenGroups;
+      return { ...base, [groupId]: !base[groupId] };
+    });
   }
 
   function toggleDay(dateKey) {
@@ -423,7 +435,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
           <WeekSummaryCard
             key={group.id}
             group={group}
-            isOpen={Boolean(openGroups[group.id])}
+            isOpen={Boolean(visibleOpenGroups[group.id])}
             openDays={openDays}
             onToggle={() => toggleGroup(group.id)}
             onToggleDay={toggleDay}
