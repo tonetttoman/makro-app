@@ -112,8 +112,8 @@ select:focus-visible {
 .nutrient-card,
 .daily-log-card {
   background:
-    linear-gradient(180deg, rgba(22, 31, 45, 0.96), rgba(12, 18, 29, 0.96));
-  border: 1px solid var(--line);
+    linear-gradient(180deg, rgba(24, 34, 50, 0.98), rgba(11, 17, 27, 0.98));
+  border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 24px;
   box-shadow: var(--shadow);
 }
@@ -121,8 +121,24 @@ select:focus-visible {
 .summary {
   position: relative;
   overflow: hidden;
-  padding: 20px;
+  padding: 22px 20px 20px;
   margin-bottom: 14px;
+  border-color: rgba(56, 189, 248, 0.18);
+}
+
+.summary::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto auto 50%;
+  width: min(220px, 58vw);
+  height: min(220px, 58vw);
+  border: 2px solid rgba(251, 191, 36, 0.72);
+  border-right-color: transparent;
+  border-bottom-color: rgba(251, 191, 36, 0.18);
+  border-radius: 999px;
+  opacity: 0.92;
+  transform: translateX(-50%) rotate(-18deg);
+  pointer-events: none;
 }
 
 .summary::after {
@@ -163,7 +179,7 @@ select:focus-visible {
   height: 66px;
   min-height: 66px;
   align-self: center;
-  border: 1px solid rgba(251, 191, 36, 0.38);
+  border: 1px solid rgba(251, 191, 36, 0.46);
   border-radius: 22px;
   background: linear-gradient(180deg, #fbbf24, #f59e0b);
   color: #111827;
@@ -197,9 +213,21 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: clamp(1.7rem, 6vw, 2.4rem);
-  line-height: 1.02;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.85rem, 7.2vw, 3.05rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.summary h1 {
+  margin-top: 14px;
+  font-size: clamp(3rem, 14vw, 5.25rem);
+  font-weight: 760;
+  text-align: center;
+  text-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+}
+
+.summary h1::first-letter {
+  letter-spacing: -0.08em;
 }
 
 h2 {
@@ -219,8 +247,8 @@ h2 {
 
 .summary-grid {
   display: grid;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 14px;
+  margin-top: 28px;
   position: relative;
   z-index: 1;
 }
@@ -238,9 +266,13 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   color: var(--muted-strong);
   font-size: 0.92rem;
+}
+
+.metric__row span {
+  letter-spacing: 0.01em;
 }
 
 .metric__row strong {
@@ -250,11 +282,11 @@ h2 {
 
 .progress {
   width: 100%;
-  height: 6px;
+  height: 5px;
   overflow: hidden;
-  background: rgba(148, 163, 184, 0.14);
+  background: rgba(148, 163, 184, 0.13);
   border-radius: 999px;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .progress__fill {
@@ -282,14 +314,14 @@ h2 {
 
 .quick-add-panel {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   margin-top: -18px;
-  padding: 14px;
+  padding: 16px;
   padding-top: 30px;
   border-top: 0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
-  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(9, 14, 24, 0.98));
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(7, 12, 20, 0.98));
 }
 
 .quick-add-panel .panel__header--compact {
@@ -321,7 +353,8 @@ h2 {
 .category-chip,
 .category-pill {
   flex: 0 0 auto;
-  padding: 9px 12px;
+  min-height: 36px;
+  padding: 9px 13px;
   border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(8, 13, 22, 0.9));
@@ -347,19 +380,20 @@ h2 {
 
 .food-button,
 .editor-food-button {
-  min-height: 78px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.84);
+  min-height: 86px;
+  padding: 13px;
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(8, 13, 22, 0.84));
   color: var(--text);
   text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .food-button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: center;
   gap: 10px;
 }
 
@@ -368,6 +402,11 @@ h2 {
   display: block;
   margin-bottom: 6px;
   font-size: 0.95rem;
+}
+
+.food-button svg {
+  color: var(--cyan);
+  opacity: 0.8;
 }
 
 .food-button span,
@@ -400,6 +439,15 @@ h2 {
 .category-pill:hover {
   border-color: rgba(56, 189, 248, 0.42);
   background-color: rgba(30, 41, 59, 0.82);
+}
+
+.food-button:active,
+.quick-button:active,
+.icon-button:active,
+.primary-button:active,
+.secondary-button:active,
+.category-pill:active {
+  transform: translateY(1px) scale(0.99);
 }
 
 .quick-button {
@@ -684,10 +732,10 @@ th {
   padding: 10px;
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 0;
-  background: rgba(5, 9, 16, 0.96);
+  background: linear-gradient(180deg, rgba(11, 17, 27, 0.88), rgba(5, 9, 16, 0.98));
   box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.42);
   transform: translateX(-50%);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px);
 }
 
 .bottom-nav button {
@@ -695,7 +743,7 @@ th {
   place-items: center;
   gap: 3px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 18px;
   background: transparent;
   color: var(--muted);
   font-size: 0.72rem;
@@ -705,6 +753,7 @@ th {
 .bottom-nav button.is-active {
   background: rgba(251, 191, 36, 0.14);
   color: var(--amber);
+  box-shadow: inset 0 -2px 0 rgba(251, 191, 36, 0.7);
 }
 
 @media (max-width: 520px) {
