@@ -48,6 +48,11 @@ function formatDateRange(startKey, endKey) {
   return `${formatShortDate(startKey)} – ${formatShortDate(endKey)}`;
 }
 
+function formatSavedDaysLabel(count) {
+  if (count === 1) return "1 mentett nap";
+  return `${count} mentett nap`;
+}
+
 function dateFromKey(dateKey) {
   return new Date(`${dateKey}T12:00:00`);
 }
@@ -330,7 +335,7 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
           </span>
           <small className="muted">{row.status}</small>
         </span>
-        <strong>{isOpen ? "▼" : "▶"}</strong>
+        <strong>{isOpen ? "▾" : "▸"}</strong>
       </button>
 
       {isOpen && (
@@ -370,7 +375,7 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onTogg
           </span>
           <small className="muted">{group.loggedRows.length} mentett nap</small>
         </span>
-        <strong>{isOpen ? "▼" : "▶"}</strong>
+        <strong>{isOpen ? "▾" : "▸"}</strong>
       </button>
 
       {isOpen && showDailyDetails && (
@@ -413,6 +418,45 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const visibleWeekGroups = focusedGroupIds.length
     ? weekGroups.filter((group) => visibleOpenGroups[group.id])
     : weekGroups;
+  const activeDayKey = Object.keys(openDays).find((dateKey) => openDays[dateKey]);
+  const activeDay = activeDayKey ? rows.find((row) => row.dateKey === activeDayKey) : null;
+  const explicitlyFocusedGroupId = openGroups ? Object.keys(openGroups).find((groupId) => openGroups[groupId]) : null;
+  const activeGroup = activeDay
+    ? weekGroups.find((group) => group.rows.some((row) => row.dateKey === activeDay.dateKey))
+    : explicitlyFocusedGroupId
+      ? weekGroups.find((group) => group.id === explicitlyFocusedGroupId)
+      : null;
+  const monthRangeLabel = keys.length ? formatDateRange(keys[0], keys[keys.length - 1]) : "";
+
+  let summaryTitle = title || "Havi összesítő";
+  let summaryRangeLabel = monthRangeLabel;
+  let summarySavedDays = loggedRows.length;
+  let summaryRatio = ratio;
+  let summaryDetail = loggedRows.length
+    ? `Átlag: ${formatMacroLine(average)}`
+    : "Ebben az időszakban még nincs mentett nap.";
+
+  if (activeGroup && openGroups !== null) {
+    summaryTitle = "Heti összesítő";
+    summaryRangeLabel = activeGroup.label;
+    summarySavedDays = activeGroup.loggedRows.length;
+    summaryRatio = activeGroup.ratio;
+    summaryDetail = activeGroup.loggedRows.length
+      ? `Átlag: ${formatMacroLine(activeGroup.average)}`
+      : "Ebben a hétben még nincs mentett nap.";
+  }
+
+  if (activeDay) {
+    const dayRatio = calculateMacroRatio(activeDay);
+    const isSavedDay = activeDay.sourceType !== "empty";
+    summaryTitle = "Napi összesítő";
+    summaryRangeLabel = formatDateWithDay(activeDay.dateKey);
+    summarySavedDays = isSavedDay ? 1 : 0;
+    summaryRatio = dayRatio;
+    summaryDetail = isSavedDay
+      ? `Összesen: ${formatMacroLine(activeDay)}`
+      : "Ehhez a naphoz még nincs mentett adat.";
+  }
 
   function toggleGroup(groupId) {
     setOpenGroups((current) => {
@@ -432,14 +476,22 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
 
   return (
     <main className="page">
-      <section className="panel">
-        <p className="eyebrow">{days} napos nézet</p>
-        <h1>{title}</h1>
+      <section className="panel stats-summary-panel">
+        <div className="stats-summary-header">
+          <div className="stats-summary-title-block">
+            <h1>{summaryTitle}</h1>
+            {summaryRangeLabel && <p className="stats-summary-range">{summaryRangeLabel}</p>}
+          </div>
+          <div className="stats-summary-meta">
+            <span className="stats-summary-pill">{formatSavedDaysLabel(summarySavedDays)}</span>
+            <p className="stats-summary-ratio">
+              Makróarány: {Math.round(summaryRatio.protein)}% p · {Math.round(summaryRatio.fat)}% f ·{" "}
+              {Math.round(summaryRatio.carbs)}% Ch
+            </p>
+          </div>
+        </div>
         {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
-        <p className="muted">
-          Átlag: {formatMacroLine(average)}. Mentett napok: {loggedRows.length}. Makróarány:{" "}
-          {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch.
-        </p>
+        <p className="muted stats-summary-detail">{summaryDetail}</p>
       </section>
 
       <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
