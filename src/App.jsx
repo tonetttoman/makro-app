@@ -216,7 +216,7 @@ export default function App() {
         <main className="page">
           <MacroSummary totals={totals} targets={targets} />
 
-          <section className="panel workday-panel">
+          {false && <section className="panel workday-panel">
             <label className="form-field">
               <span>Mentés dátuma</span>
               <input
@@ -228,7 +228,7 @@ export default function App() {
             <button className="primary-button full" type="button" onClick={handleConfirmDailyLog}>
               Napi napló mentése / nyugtázása
             </button>
-          </section>
+          </section>}
 
           <section className="panel">
             <div className="panel__header">
@@ -243,6 +243,20 @@ export default function App() {
           </section>
 
           <DailyEntryList foods={foods} entries={todayEntries} onAmountChange={handleAmountChange} onRemove={handleRemove} />
+
+          <section className="panel workday-panel">
+            <label className="form-field">
+              <span>MentĂ©s dĂˇtuma</span>
+              <input
+                type="date"
+                value={workDate}
+                onChange={(event) => setWorkspace((current) => ({ ...current, date: event.target.value || todayKey }))}
+              />
+            </label>
+            <button className="primary-button full" type="button" onClick={handleConfirmDailyLog}>
+              Napi naplĂł mentĂ©se / nyugtĂˇzĂˇsa
+            </button>
+          </section>
         </main>
       )}
 
