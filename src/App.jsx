@@ -24,14 +24,6 @@ import {
 } from "./lib/storage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
-function AppHeader({ title }) {
-  return (
-    <header className="app-header" aria-label="Aktuális nézet">
-      <h1>{title}</h1>
-    </header>
-  );
-}
-
 function getSavedEntriesForDate(diary, date) {
   return (diary[date]?.entries || []).map((entry) => ({ ...entry, locked: true }));
 }
@@ -275,7 +267,6 @@ export default function App() {
     <div className="app">
       {activeView === "today" && (
         <main className="page">
-          <AppHeader title="Mai" />
           <MacroSummary
             totals={totals}
             targets={targets}
