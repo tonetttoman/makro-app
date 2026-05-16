@@ -65,7 +65,7 @@ const rowStyle = {
   display: "grid",
   gap: "6px",
   padding: "7px 2px",
-  borderTop: "1px solid rgba(135, 175, 157, 0.11)"
+  borderTop: "1px solid rgba(148, 163, 184, 0.12)"
 };
 
 const rowTopStyle = {
@@ -130,14 +130,15 @@ const macroChipStyle = {
   minHeight: "28px",
   minWidth: 0,
   padding: "5px 7px",
-  border: "1px solid rgba(135, 175, 157, 0.16)",
+  border: "1px solid rgba(56, 189, 248, 0.18)",
   borderRadius: "999px",
-  background: "rgba(29, 45, 41, 0.56)",
+  background: "rgba(15, 23, 42, 0.72)",
   color: "var(--text)",
   fontSize: "clamp(0.64rem, 2.35vw, 0.76rem)",
   fontWeight: 850,
   lineHeight: 1.05,
-  whiteSpace: "nowrap"
+  whiteSpace: "nowrap",
+  boxShadow: "0 0 0 1px rgba(56, 189, 248, 0.04) inset"
 };
 
 const macroLabelStyle = {
