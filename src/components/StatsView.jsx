@@ -123,7 +123,8 @@ function MacroTrendChart({ rows, target }) {
 export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
-  const average = averageTotals(rows);
+  const loggedRows = rows.filter((row) => row.sourceType !== "empty");
+  const average = averageTotals(loggedRows);
   const ratio = calculateMacroRatio(average);
 
   return (
@@ -139,8 +140,8 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
           <span>Szénhidrát átlag <strong>{Math.round(average.carbs)} g</strong></span>
         </div>
         <p className="muted">
-          Makróarány átlagból: {Math.round(ratio.protein)}% fehérje, {Math.round(ratio.fat)}% zsír,{" "}
-          {Math.round(ratio.carbs)}% szénhidrát.
+          Az átlag csak a mentett napokat számolja. Mentett napok: {loggedRows.length}. Makróarány átlagból:{" "}
+          {Math.round(ratio.protein)}% fehérje, {Math.round(ratio.fat)}% zsír, {Math.round(ratio.carbs)}% szénhidrát.
         </p>
       </section>
 
