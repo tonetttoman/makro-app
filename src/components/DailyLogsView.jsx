@@ -62,7 +62,7 @@ const listPanelStyle = {
 
 const rowStyle = {
   borderTop: "1px solid rgba(135, 175, 157, 0.12)",
-  padding: "9px 2px"
+  padding: "8px 2px"
 };
 
 const rowButtonStyle = {
@@ -81,6 +81,14 @@ const rowButtonStyle = {
 
 const rowTitleStyle = {
   display: "grid",
+  gap: "6px",
+  minWidth: 0
+};
+
+const titleAndChipsStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
   gap: "8px",
   minWidth: 0
 };
@@ -127,7 +135,14 @@ const kcalLabelStyle = {
   fontWeight: 950
 };
 
-function MacroChips({ totals }) {
+export const summaryMacroChipStyles = {
+  summaryChipGroupStyle,
+  kcalChipStyle,
+  macroChipStyle,
+  kcalLabelStyle
+};
+
+export function MacroChips({ totals }) {
   return (
     <div style={summaryChipGroupStyle} aria-label="Makró összesítés">
       <span style={kcalChipStyle}>
@@ -229,8 +244,10 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
             <div style={rowStyle} key={row.date}>
               <button style={rowButtonStyle} type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
                 <span style={rowTitleStyle}>
-                  <strong>{formatDateWithDay(row.date)}</strong>
-                  <MacroChips totals={row} />
+                  <span style={titleAndChipsStyle}>
+                    <strong>{formatDateWithDay(row.date)}</strong>
+                    <MacroChips totals={row} />
+                  </span>
                   <small className="muted">{row.status}</small>
                 </span>
                 <strong>{isOpen ? "▼" : "▶"}</strong>
