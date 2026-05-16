@@ -112,10 +112,11 @@ function buildWeekGroups(rows) {
 
   return Array.from(byWeek.entries())
     .map(([weekStartKey, weekRows]) => {
-      const sortedRows = [...weekRows].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+      const sortedRows = [...weekRows].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
       const loggedRows = sortedRows.filter((row) => row.sourceType !== "empty");
-      const startKey = sortedRows[0]?.dateKey || weekStartKey;
-      const endKey = sortedRows[sortedRows.length - 1]?.dateKey || weekStartKey;
+      const ascendingRows = [...sortedRows].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+      const startKey = ascendingRows[0]?.dateKey || weekStartKey;
+      const endKey = ascendingRows[ascendingRows.length - 1]?.dateKey || weekStartKey;
       const total = sumRows(loggedRows);
       const average = averageTotals(loggedRows);
       const ratio = calculateMacroRatio(average);
@@ -131,7 +132,7 @@ function buildWeekGroups(rows) {
         ratio
       };
     })
-    .sort((a, b) => a.id.localeCompare(b.id));
+    .sort((a, b) => b.id.localeCompare(a.id));
 }
 
 function MacroTrendChart({ rows, target }) {
