@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { averageTotals, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
-import { formatShortDate, getRangeKeys } from "../lib/dates";
+import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 
 function toPoints(values, max, height = 58) {
   return values
@@ -27,6 +28,39 @@ function hasAnyMacroValue(totals) {
 function formatStat(value) {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatDateRange(startKey, endKey) {
+  return `${formatShortDate(startKey)} – ${formatShortDate(endKey)}`;
+}
+
+function dateFromKey(dateKey) {
+  return new Date(`${dateKey}T12:00:00`);
+}
+
+function addDaysLocal(date, days) {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function getWeekStartKey(dateKey) {
+  const date = dateFromKey(dateKey);
+  const day = date.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  return toDateKey(addDaysLocal(date, mondayOffset));
+}
+
+function sumRows(rows) {
+  return rows.reduce(
+    (totals, row) => ({
+      kcal: totals.kcal + row.kcal,
+      protein: totals.protein + row.protein,
+      fat: totals.fat + row.fat,
+      carbs: totals.carbs + row.carbs
+    }),
+    { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+  );
 }
 
 function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
@@ -66,6 +100,38 @@ function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
     fat: 0,
     carbs: 0
   };
+}
+
+function buildWeekGroups(rows) {
+  const byWeek = new Map();
+  rows.forEach((row) => {
+    const weekStartKey = getWeekStartKey(row.dateKey);
+    if (!byWeek.has(weekStartKey)) byWeek.set(weekStartKey, []);
+    byWeek.get(weekStartKey).push(row);
+  });
+
+  return Array.from(byWeek.entries())
+    .map(([weekStartKey, weekRows]) => {
+      const sortedRows = [...weekRows].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+      const loggedRows = sortedRows.filter((row) => row.sourceType !== "empty");
+      const startKey = sortedRows[0]?.dateKey || weekStartKey;
+      const endKey = sortedRows[sortedRows.length - 1]?.dateKey || weekStartKey;
+      const total = sumRows(loggedRows);
+      const average = averageTotals(loggedRows);
+      const ratio = calculateMacroRatio(average);
+
+      return {
+        id: weekStartKey,
+        label: formatDateRange(startKey, endKey),
+        rows: sortedRows,
+        loggedRows,
+        isFullWeek: sortedRows.length === 7,
+        total,
+        average,
+        ratio
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 function MacroTrendChart({ rows, target }) {
@@ -120,19 +186,94 @@ function MacroTrendChart({ rows, target }) {
   );
 }
 
+function DayRowsTable({ rows }) {
+  return (
+    <div className="table-panel" style={{ marginTop: "10px", boxShadow: "none" }}>
+      <table>
+        <thead>
+          <tr>
+            <th>Nap</th>
+            <th>kcal</th>
+            <th>F</th>
+            <th>Zs</th>
+            <th>Sz</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.dateKey} className={row.sourceType === "summary" ? "summary-row" : ""}>
+              <td>
+                {formatShortDate(row.dateKey)}
+                {row.sourceType === "summary" && <span className="summary-day-label">összesített importált nap</span>}
+                {row.sourceType === "empty" && <span className="summary-day-label">nincs mentett adat</span>}
+              </td>
+              <td>{formatStat(row.kcal)}</td>
+              <td>{formatStat(row.protein)}</td>
+              <td>{formatStat(row.fat)}</td>
+              <td>{formatStat(row.carbs)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
+  return (
+    <section className="panel" style={{ marginBottom: "12px", padding: "12px" }}>
+      <button
+        className="collapsible-header"
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        style={{ marginTop: 0 }}
+      >
+        <span>
+          {group.label} · {Math.round(group.total.kcal)} kcal · {group.loggedRows.length} mentett nap
+        </span>
+        <strong>{isOpen ? "▼" : "▶"}</strong>
+      </button>
+
+      <div className="average-grid" style={{ marginBottom: 0 }}>
+        <span>Átlag kcal <strong>{Math.round(group.average.kcal)}</strong></span>
+        <span>Fehérje átlag <strong>{Math.round(group.average.protein)} g</strong></span>
+        <span>Zsír átlag <strong>{Math.round(group.average.fat)} g</strong></span>
+        <span>Szénhidrát átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
+      </div>
+
+      <p className="muted" style={{ marginBottom: 0 }}>
+        Heti összesen: {Math.round(group.total.kcal)} kcal · F {formatStat(group.total.protein)} g · Zs{" "}
+        {formatStat(group.total.fat)} g · CH {formatStat(group.total.carbs)} g. Makróarány átlagból:{" "}
+        {Math.round(group.ratio.protein)}% fehérje, {Math.round(group.ratio.fat)}% zsír,{" "}
+        {Math.round(group.ratio.carbs)}% szénhidrát.
+      </p>
+
+      {isOpen && showDailyDetails && <DayRowsTable rows={group.rows} />}
+    </section>
+  );
+}
+
 export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
+  const [openGroups, setOpenGroups] = useState({});
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
   const loggedRows = rows.filter((row) => row.sourceType !== "empty");
   const average = averageTotals(loggedRows);
   const ratio = calculateMacroRatio(average);
+  const weekGroups = buildWeekGroups(rows);
+  const isMonthlyView = days > 7;
+
+  function toggleGroup(groupId) {
+    setOpenGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
+  }
 
   return (
     <main className="page">
       <section className="panel">
         <p className="eyebrow">{days} napos nézet</p>
         <h1>{title}</h1>
-        <MacroTrendChart rows={rows} target={targets.kcal} />
+        {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
         <div className="average-grid">
           <span>Átlag kcal <strong>{Math.round(average.kcal)}</strong></span>
           <span>Fehérje átlag <strong>{Math.round(average.protein)} g</strong></span>
@@ -145,32 +286,16 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
         </p>
       </section>
 
-      <section className="table-panel">
-        <table>
-          <thead>
-            <tr>
-              <th>Nap</th>
-              <th>kcal</th>
-              <th>F</th>
-              <th>Zs</th>
-              <th>Sz</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.dateKey} className={row.sourceType === "summary" ? "summary-row" : ""}>
-                <td>
-                  {formatShortDate(row.dateKey)}
-                  {row.sourceType === "summary" && <span className="summary-day-label">összesített importált nap</span>}
-                </td>
-                <td>{formatStat(row.kcal)}</td>
-                <td>{formatStat(row.protein)}</td>
-                <td>{formatStat(row.fat)}</td>
-                <td>{formatStat(row.carbs)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
+        {weekGroups.map((group) => (
+          <WeekSummaryCard
+            key={group.id}
+            group={group}
+            isOpen={Boolean(openGroups[group.id])}
+            onToggle={() => toggleGroup(group.id)}
+            showDailyDetails
+          />
+        ))}
       </section>
     </main>
   );
