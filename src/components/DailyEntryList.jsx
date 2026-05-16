@@ -194,15 +194,15 @@ export function DailyEntryList({
                 <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
                   <span className="entry-amount-badge" style={amountBadgeStyle}>{formatAmount(entry.amount, food.unit)}</span>
                   <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>kcal</small>
+                    <small style={macroLabelStyle}>k</small>
                     <strong>{Math.round(values.kcal)}</strong>
                   </span>
                   <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>F</small>
+                    <small style={macroLabelStyle}>p</small>
                     <strong>{formatMacro(values.protein)}</strong>
                   </span>
                   <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>Zs</small>
+                    <small style={macroLabelStyle}>f</small>
                     <strong>{formatMacro(values.fat)}</strong>
                   </span>
                   <span style={macroChipStyle}>
