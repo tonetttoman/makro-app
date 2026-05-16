@@ -382,6 +382,191 @@
   border-radius: 18px !important;
 }
 
+/* Larger mobile-card treatment for the daily entry list. */
+.daily-entry-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 0;
+}
+
+.daily-entry-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 4px 2px 0;
+}
+
+.daily-entry-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.38rem;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.daily-entry-header__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.daily-entry-date {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--muted-strong);
+  font-size: 0.78rem;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.daily-save-button {
+  min-width: 104px;
+}
+
+.daily-date-picker {
+  padding: 2px 0 4px;
+}
+
+.daily-entry-list-modern {
+  display: grid;
+  gap: 10px;
+}
+
+.daily-entry-item {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(8, 13, 22, 0.78));
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.daily-entry-item.is-locked {
+  border-color: rgba(148, 163, 184, 0.12);
+  opacity: 0.9;
+}
+
+.daily-entry-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.daily-entry-title-block {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.daily-entry-title-block h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.03rem;
+  font-weight: 780;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.daily-entry-title-block span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 720;
+}
+
+.daily-entry-kcal {
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 840;
+  white-space: nowrap;
+}
+
+.daily-entry-macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.daily-entry-macros span {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 7px 8px;
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.64);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
+.daily-entry-macros small {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.daily-entry-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+}
+
+.daily-entry-actions .icon-button {
+  width: 34px;
+  min-height: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.daily-entry-edit {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto 38px;
+  align-items: end;
+  gap: 8px;
+  padding: 12px;
+  padding-right: 88px;
+  border: 1px solid rgba(148, 163, 184, 0.11);
+  border-radius: 18px;
+  background: rgba(3, 7, 18, 0.36);
+}
+
+.daily-entry-edit label {
+  display: grid;
+  gap: 5px;
+}
+
+.daily-entry-edit label span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.daily-entry-edit .icon-button {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+.daily-entry-empty h2 {
+  font-size: 1.35rem;
+}
+
 @media (max-width: 520px) {
   .data-actions,
   .form-grid,
@@ -409,6 +594,19 @@
 
   .stats-summary-value {
     font-size: 0.9rem;
+  }
+
+  .daily-entry-header__actions {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .daily-entry-edit {
+    padding-right: 12px;
+  }
+
+  .daily-entry-actions {
+    position: static;
+    justify-content: flex-end;
   }
 }
 
