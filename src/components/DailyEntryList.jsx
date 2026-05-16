@@ -13,8 +13,8 @@ function formatAmount(value, unit) {
 const listPanelStyle = {
   display: "grid",
   gap: "0",
-  padding: "12px",
-  marginBottom: "14px"
+  padding: "10px",
+  marginBottom: "12px"
 };
 
 const listHeaderStyle = {
@@ -22,64 +22,97 @@ const listHeaderStyle = {
   alignItems: "center",
   justifyContent: "space-between",
   gap: "10px",
-  padding: "2px 4px 10px"
+  padding: "0 2px 8px"
 };
 
 const rowStyle = {
   display: "grid",
-  gap: "9px",
-  padding: "12px 4px",
-  borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+  gap: "7px",
+  padding: "9px 2px",
+  borderTop: "1px solid rgba(135, 175, 157, 0.11)"
 };
 
 const rowTopStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) auto",
   alignItems: "start",
-  gap: "10px"
+  gap: "8px"
 };
 
 const titleRowStyle = {
   minWidth: 0
 };
 
+const itemTitleStyle = {
+  margin: 0,
+  fontSize: "0.98rem",
+  lineHeight: 1.15
+};
+
 const compactSummaryStyle = {
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: "5px",
-  marginTop: "6px"
+  gap: "4px",
+  marginTop: "5px"
+};
+
+const amountBadgeStyle = {
+  minHeight: "22px",
+  marginTop: 0,
+  padding: "4px 7px",
+  fontSize: "0.72rem",
+  lineHeight: 1.05
 };
 
 const macroChipStyle = {
   display: "inline-flex",
   alignItems: "baseline",
-  gap: "4px",
-  minHeight: "24px",
-  padding: "4px 7px",
-  border: "1px solid rgba(135, 175, 157, 0.14)",
+  gap: "3px",
+  minHeight: "22px",
+  padding: "4px 6px",
+  border: "1px solid rgba(135, 175, 157, 0.13)",
   borderRadius: "999px",
-  background: "rgba(29, 45, 41, 0.58)",
+  background: "rgba(29, 45, 41, 0.5)",
   color: "var(--text)",
-  fontSize: "0.72rem",
+  fontSize: "0.68rem",
   fontWeight: 800,
-  lineHeight: 1.05
+  lineHeight: 1
 };
 
 const macroLabelStyle = {
   color: "var(--muted)",
-  fontSize: "0.58rem",
+  fontSize: "0.54rem",
   fontWeight: 900,
-  letterSpacing: "0.04em",
+  letterSpacing: "0.035em",
   textTransform: "uppercase"
 };
 
 const amountControlStyle = {
   display: "grid",
-  gridTemplateColumns: "40px minmax(0, 1fr) auto 40px",
+  gridTemplateColumns: "34px minmax(0, 1fr) auto 34px",
   alignItems: "end",
-  gap: "7px",
+  gap: "6px",
   marginTop: "0"
+};
+
+const smallButtonStyle = {
+  width: "34px",
+  height: "34px",
+  minHeight: "34px",
+  borderRadius: "12px"
+};
+
+const smallDeleteStyle = {
+  ...smallButtonStyle,
+  width: "36px",
+  height: "36px",
+  minHeight: "36px"
+};
+
+const compactUnitStyle = {
+  minHeight: "34px",
+  fontSize: "0.78rem"
 };
 
 export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
@@ -111,9 +144,9 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
           <div style={rowStyle} key={entry.entryId}>
             <div style={rowTopStyle}>
               <div style={titleRowStyle}>
-                <h2>{food.name}</h2>
+                <h2 style={itemTitleStyle}>{food.name}</h2>
                 <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
-                  <span className="entry-amount-badge">{formatAmount(entry.amount, food.unit)}</span>
+                  <span className="entry-amount-badge" style={amountBadgeStyle}>{formatAmount(entry.amount, food.unit)}</span>
                   <span style={macroChipStyle}>
                     <small style={macroLabelStyle}>kcal</small>
                     <strong>{Math.round(values.kcal)}</strong>
@@ -132,19 +165,26 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
                   </span>
                 </div>
               </div>
-              <button className="icon-button danger" type="button" onClick={() => onRemove(entry.entryId)} aria-label="Tétel törlése">
-                <Trash2 size={18} />
+              <button
+                className="icon-button danger"
+                style={smallDeleteStyle}
+                type="button"
+                onClick={() => onRemove(entry.entryId)}
+                aria-label="Tétel törlése"
+              >
+                <Trash2 size={16} />
               </button>
             </div>
 
             <div className="amount-control" style={amountControlStyle}>
               <button
                 className="icon-button"
+                style={smallButtonStyle}
                 type="button"
                 onClick={() => onAmountChange(entry.entryId, Math.max(0, entry.amount - food.step))}
                 aria-label="Mennyiség csökkentése"
               >
-                <Minus size={18} />
+                <Minus size={16} />
               </button>
               <label>
                 <span>Mennyiség</span>
@@ -157,14 +197,15 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
                   onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
                 />
               </label>
-              <span className="unit">{food.unit}</span>
+              <span className="unit" style={compactUnitStyle}>{food.unit}</span>
               <button
                 className="icon-button"
+                style={smallButtonStyle}
                 type="button"
                 onClick={() => onAmountChange(entry.entryId, entry.amount + food.step)}
                 aria-label="Mennyiség növelése"
               >
-                <Plus size={18} />
+                <Plus size={16} />
               </button>
             </div>
           </div>
