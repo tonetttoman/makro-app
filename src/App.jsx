@@ -54,6 +54,7 @@ function createEntry(food) {
     entryId: createUniqueId(food.id),
     foodId: food.id,
     amount: food.defaultAmount,
+    locked: false,
     createdAt: new Date().toISOString()
   };
 }
@@ -94,7 +95,7 @@ function upsertDailyLog(dailyLogs, date, totals) {
     carbs: totals.carbs,
     alcoholKcal: 0,
     macroRatio,
-    note: "nyugtázott napi napló",
+    note: "mentett napi tételek",
     source: "confirmed_daily_entries"
   };
   const exists = dailyLogs.some((log) => log.date === date);
@@ -163,8 +164,18 @@ export default function App() {
     );
   }
 
+  function handleToggleLock(entryId) {
+    updateTodayEntries(
+      todayEntries.map((entry) => (entry.entryId === entryId ? { ...entry, locked: !Boolean(entry.locked) } : entry))
+    );
+  }
+
   function handleRemove(entryId) {
     updateTodayEntries(todayEntries.filter((entry) => entry.entryId !== entryId));
+  }
+
+  function handleWorkDateChange(date) {
+    setWorkspace((current) => ({ ...current, date: date || todayKey }));
   }
 
   function handleAddSupplement(supplement) {
@@ -190,7 +201,7 @@ export default function App() {
     const hasExisting = (diary[workDate]?.entries || []).length > 0 || dailyLogs.some((log) => log.date === workDate);
     if (hasExisting && !window.confirm("Ehhez a dátumhoz már van mentett napló. Felülírod?")) return;
 
-    const entriesToSave = todayEntries.map((entry) => ({ ...entry }));
+    const entriesToSave = todayEntries.map((entry) => ({ ...entry, locked: true }));
     const savedTotals = calculateTotals(entriesToSave, foods);
     setDiary((current) => ({
       ...current,
@@ -200,13 +211,14 @@ export default function App() {
       }
     }));
     setDailyLogs((current) => upsertDailyLog(current, workDate, savedTotals));
-    alert("Napi napló mentve.");
+    setWorkspace((current) => ({ ...current, date: workDate, entries: entriesToSave }));
+    alert("Tételek mentve.");
   }
 
   function handleLoadToToday(date, entries) {
     setWorkspace({
       date,
-      entries: entries.map((entry) => ({ ...entry }))
+      entries: entries.map((entry) => ({ ...entry, locked: true }))
     });
     setActiveView("today");
   }
@@ -238,21 +250,16 @@ export default function App() {
             )}
           </section>
 
-          <DailyEntryList foods={foods} entries={todayEntries} onAmountChange={handleAmountChange} onRemove={handleRemove} />
-
-          <section className="panel workday-panel">
-            <label className="form-field">
-              <span>Mentés dátuma</span>
-              <input
-                type="date"
-                value={workDate}
-                onChange={(event) => setWorkspace((current) => ({ ...current, date: event.target.value || todayKey }))}
-              />
-            </label>
-            <button className="primary-button full" type="button" onClick={handleConfirmDailyLog}>
-              Tételek mentése
-            </button>
-          </section>
+          <DailyEntryList
+            foods={foods}
+            entries={todayEntries}
+            onAmountChange={handleAmountChange}
+            onRemove={handleRemove}
+            onToggleLock={handleToggleLock}
+            workDate={workDate}
+            onWorkDateChange={handleWorkDateChange}
+            onSave={handleConfirmDailyLog}
+          />
         </main>
       )}
 
