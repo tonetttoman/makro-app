@@ -142,6 +142,7 @@ export function DataView({
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isNutrientTargetsOpen, setIsNutrientTargetsOpen] = useState(false);
+  const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isFoodNutrientsOpen, setIsFoodNutrientsOpen] = useState(false);
   const [isSupplementEditorOpen, setIsSupplementEditorOpen] = useState(false);
 
@@ -161,6 +162,9 @@ export function DataView({
   );
 
   const foodNutrientCount = Object.values(foodDraft.targetNutrients || {}).filter((value) => Number(value) > 0).length;
+  const foodEditorTitle = foodDraft.name
+    ? `Új vagy szerkesztett élelmiszer – ${foodDraft.name}`
+    : "Új vagy szerkesztett élelmiszer";
   const macroTargetSummary = `${targets.kcal} kcal / ${targets.protein} F / ${targets.fat} Zs / ${targets.carbs} CH`;
   const nutrientTargetSummary = `${nutrientTargets.length} követett célanyag`;
   const supplementEditorTitle = supplementDraft.name
@@ -190,6 +194,7 @@ export function DataView({
 
   function startNewFood() {
     setFoodDraft({ ...createBlankFood(), category: activeFoodCategory });
+    setIsFoodEditorOpen(true);
   }
 
   function saveSupplement() {
@@ -385,94 +390,116 @@ export function DataView({
 
       <section className="panel">
         <p className="eyebrow">Élelmiszerek</p>
-        <h2>Új vagy szerkesztett élelmiszer</h2>
-        <div className="category-scroll data-category-scroll" aria-label="Élelmiszer kategóriák">
-          {FOOD_CATEGORIES.map((category) => (
-            <button
-              className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
-              key={category}
-              type="button"
-              onClick={() => setActiveFoodCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-        <div className="editor-food-grid" aria-label="Kategórián belüli élelmiszerek">
-          <button className={`editor-food-button ${!foodDraft.id ? "is-active" : ""}`} type="button" onClick={startNewFood}>
-            <strong>Új élelmiszer</strong>
-            <span>{activeFoodCategory}</span>
-          </button>
-          {sortFoodsByName(foods.filter((food) => food.category === activeFoodCategory)).map((food) => (
-            <button
-              className={`editor-food-button ${foodDraft.id === food.id ? "is-active" : ""}`}
-              key={food.id}
-              type="button"
-              onClick={() => setFoodDraft(food)}
-            >
-              <strong>{food.name}</strong>
-              {dailyFoodAmounts[food.id] > 0 && (
-                <em className="today-amount">
-                  ma: {Math.round(dailyFoodAmounts[food.id] * 10) / 10} {food.unit}
-                </em>
-              )}
-              <span>
-                {food.step} {food.unit} lépték · {Math.round(food.kcal)} kcal
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="form-grid">
-          <Field label="Név">
-            <input value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
-          </Field>
-          <Field label="Kategória">
-            <select
-              value={foodDraft.category}
-              onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}
-            >
-              {FOOD_CATEGORIES.map((category) => (
-                <option key={category}>{category}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Egység">
-            <select value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
-              {UNITS.map((unit) => (
-                <option key={unit}>{unit}</option>
-              ))}
-            </select>
-          </Field>
-          {["baseAmount", "defaultAmount", "step", "kcal", "protein", "fat", "carbs"].map((key) => (
-            <Field key={key} label={key}>
-              <input
-                inputMode="decimal"
-                type="number"
-                value={foodDraft[key]}
-                onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })}
-              />
-            </Field>
-          ))}
-        </div>
         <button
           className="collapsible-header"
           type="button"
-          onClick={() => setIsFoodNutrientsOpen((current) => !current)}
-          aria-expanded={isFoodNutrientsOpen}
+          onClick={() => setIsFoodEditorOpen((current) => !current)}
+          aria-expanded={isFoodEditorOpen}
         >
-          <span>Célanyagok / mikrotápanyagok ({foodNutrientCount} megadva)</span>
-          <strong>{isFoodNutrientsOpen ? "▼" : "▶"}</strong>
+          <span>{foodEditorTitle}</span>
+          <strong>{isFoodEditorOpen ? "▼" : "▶"}</strong>
         </button>
-        {isFoodNutrientsOpen && (
-          <NutrientInputs
-            values={foodDraft.targetNutrients || {}}
-            nutrientTargets={nutrientTargets}
-            onChange={(targetNutrients) => setFoodDraft({ ...foodDraft, targetNutrients })}
-          />
+        {isFoodEditorOpen && (
+          <>
+            <div className="category-scroll data-category-scroll" aria-label="Élelmiszer kategóriák">
+              {FOOD_CATEGORIES.map((category) => (
+                <button
+                  className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveFoodCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+            <div className="editor-food-grid" aria-label="Kategórián belüli élelmiszerek">
+              <button
+                className={`editor-food-button ${!foodDraft.id ? "is-active" : ""}`}
+                type="button"
+                onClick={startNewFood}
+              >
+                <strong>Új élelmiszer</strong>
+                <span>{activeFoodCategory}</span>
+              </button>
+              {sortFoodsByName(foods.filter((food) => food.category === activeFoodCategory)).map((food) => (
+                <button
+                  className={`editor-food-button ${foodDraft.id === food.id ? "is-active" : ""}`}
+                  key={food.id}
+                  type="button"
+                  onClick={() => setFoodDraft(food)}
+                >
+                  <strong>{food.name}</strong>
+                  {dailyFoodAmounts[food.id] > 0 && (
+                    <em className="today-amount">
+                      ma: {Math.round(dailyFoodAmounts[food.id] * 10) / 10} {food.unit}
+                    </em>
+                  )}
+                  <span>
+                    {food.step} {food.unit} lépték · {Math.round(food.kcal)} kcal
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="form-grid">
+              <Field label="Név">
+                <input
+                  value={foodDraft.name}
+                  onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })}
+                />
+              </Field>
+              <Field label="Kategória">
+                <select
+                  value={foodDraft.category}
+                  onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}
+                >
+                  {FOOD_CATEGORIES.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Egység">
+                <select
+                  value={foodDraft.unit}
+                  onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}
+                >
+                  {UNITS.map((unit) => (
+                    <option key={unit}>{unit}</option>
+                  ))}
+                </select>
+              </Field>
+              {["baseAmount", "defaultAmount", "step", "kcal", "protein", "fat", "carbs"].map((key) => (
+                <Field key={key} label={key}>
+                  <input
+                    inputMode="decimal"
+                    type="number"
+                    value={foodDraft[key]}
+                    onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })}
+                  />
+                </Field>
+              ))}
+            </div>
+            <button
+              className="collapsible-header"
+              type="button"
+              onClick={() => setIsFoodNutrientsOpen((current) => !current)}
+              aria-expanded={isFoodNutrientsOpen}
+            >
+              <span>Célanyagok / mikrotápanyagok ({foodNutrientCount} megadva)</span>
+              <strong>{isFoodNutrientsOpen ? "▼" : "▶"}</strong>
+            </button>
+            {isFoodNutrientsOpen && (
+              <NutrientInputs
+                values={foodDraft.targetNutrients || {}}
+                nutrientTargets={nutrientTargets}
+                onChange={(targetNutrients) => setFoodDraft({ ...foodDraft, targetNutrients })}
+              />
+            )}
+            <button className="primary-button full" type="button" onClick={saveFood}>
+              Élelmiszer mentése
+            </button>
+          </>
         )}
-        <button className="primary-button full" type="button" onClick={saveFood}>
-          Élelmiszer mentése
-        </button>
       </section>
 
       <section className="panel">
