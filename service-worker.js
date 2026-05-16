@@ -1,4 +1,4 @@
-const CACHE_NAME = "etrend-pwa-v1";
+const CACHE_NAME = "etrend-pwa-v2";
 const STATIC_ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
