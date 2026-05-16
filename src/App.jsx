@@ -3,7 +3,6 @@ import { BottomNav } from "./components/BottomNav";
 import { CategoryPicker } from "./components/CategoryPicker";
 import { DataView } from "./components/DataView";
 import { DailyEntryList } from "./components/DailyEntryList";
-import { DailyLogsView } from "./components/DailyLogsView";
 import { FoodGrid } from "./components/FoodGrid";
 import { MacroSummary } from "./components/MacroSummary";
 import { StatsView } from "./components/StatsView";
@@ -274,22 +273,27 @@ export default function App() {
         </main>
       )}
 
-      {activeView === "daily" && (
-        <DailyLogsView
+      {activeView === "weekly" && (
+        <StatsView
           diary={diary}
-          setDiary={setDiary}
           dailyLogs={dailyLogs}
-          setDailyLogs={setDailyLogs}
           foods={foods}
+          targets={targets}
+          days={7}
+          title="Heti összesítő"
           onLoadToToday={handleLoadToToday}
         />
       )}
-
-      {activeView === "weekly" && (
-        <StatsView diary={diary} dailyLogs={dailyLogs} foods={foods} targets={targets} days={7} title="Heti összesítő" />
-      )}
       {activeView === "monthly" && (
-        <StatsView diary={diary} dailyLogs={dailyLogs} foods={foods} targets={targets} days={30} title="Havi összesítő" />
+        <StatsView
+          diary={diary}
+          dailyLogs={dailyLogs}
+          foods={foods}
+          targets={targets}
+          days={30}
+          title="Havi összesítő"
+          onLoadToToday={handleLoadToToday}
+        />
       )}
       {activeView === "vitamins" && (
         <VitaminView
