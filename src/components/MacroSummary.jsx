@@ -1,3 +1,4 @@
+import { Utensils } from "lucide-react";
 import { calculateMacroRatio } from "../lib/calculations";
 import { ProgressBar } from "./ProgressBar";
 
@@ -15,16 +16,25 @@ const UNITS = {
   carbs: "g"
 };
 
-export function MacroSummary({ totals, targets }) {
+export function MacroSummary({ totals, targets, isQuickAddOpen, onToggleQuickAdd }) {
   const ratio = calculateMacroRatio(totals);
 
   return (
     <section className="summary" aria-label="Napi összesítő">
-      <div className="summary__header">
+      <div className="summary__header summary__header--with-action">
         <div>
           <p className="eyebrow">Mai összesítő</p>
           <h1>{Math.round(totals.kcal)} k</h1>
         </div>
+        <button
+          className="summary-quick-add-button"
+          type="button"
+          onClick={onToggleQuickAdd}
+          aria-expanded={isQuickAddOpen}
+          aria-label="Gyors hozzáadás megnyitása"
+        >
+          <Utensils size={24} aria-hidden="true" />
+        </button>
         <div className="macro-ratio" aria-label="Makróarány">
           <span>{Math.round(ratio.protein)}% p</span>
           <span>{Math.round(ratio.fat)}% f</span>
