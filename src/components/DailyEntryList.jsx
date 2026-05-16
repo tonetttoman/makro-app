@@ -126,42 +126,35 @@ export function DailyEntryList({
   if (!entries.length) {
     return (
       <section className="empty-state daily-entry-empty">
-        <h2>Nincs még tétel</h2>
-        <p>Nyisd meg a hozzáadást, válassz kategóriát, majd válassz élelmiszert.</p>
+        <h2>Mai tételek</h2>
+        <p>Nincs még tétel.</p>
       </section>
     );
   }
 
   return (
     <section className="daily-entry-panel" aria-label="Napi kalkulációs lista">
-      <div className="daily-entry-header">
-        <p className="eyebrow">Mai tételek</p>
-        <div className="daily-entry-header__actions">
-          <span className="daily-entry-date">{formatDisplayDate(workDate)}</span>
-          {isDateOpen ? (
-            <button className="icon-button danger" type="button" onClick={closeDatePicker} aria-label="Dátumválasztó bezárása">
-              <X size={18} />
-            </button>
-          ) : (
-            <button className="primary-button daily-save-button" type="button" onClick={handleSaveClick}>
-              <Save size={17} />
-              Mentés
-            </button>
-          )}
+      <div className="daily-entry-header reference-list-header">
+        <h2>Mai tételek</h2>
+        <div className="daily-entry-tools">
+          <span>{formatDisplayDate(workDate)}</span>
+          <button className="reference-tool-button" type="button" onClick={handleSaveClick} aria-label="Mentés">
+            <Save size={15} />
+          </button>
           <button
-            className="icon-button"
+            className="reference-tool-button"
             type="button"
             onClick={openDatePicker}
             aria-expanded={isDateOpen}
             aria-label="Mentés dátumának kiválasztása"
           >
-            <CalendarDays size={18} />
+            <CalendarDays size={15} />
           </button>
         </div>
       </div>
 
       {isDateOpen && (
-        <div className="daily-date-picker">
+        <div className="daily-date-picker reference-date-picker">
           <label className="form-field" style={{ marginTop: 0 }}>
             <span>Mentés dátuma</span>
             <input
@@ -172,6 +165,9 @@ export function DailyEntryList({
               onInput={handleDateInput}
             />
           </label>
+          <button className="icon-button danger" type="button" onClick={closeDatePicker} aria-label="Dátumválasztó bezárása">
+            <X size={18} />
+          </button>
         </div>
       )}
 
@@ -184,19 +180,26 @@ export function DailyEntryList({
 
           return (
             <article className={`daily-entry-item ${isLocked ? "is-locked" : ""}`} key={entry.entryId}>
-              <div className="daily-entry-main">
-                <div className="daily-entry-title-block">
-                  <h3>{food.name}</h3>
-                  <span>{formatAmount(entry.amount, food.unit)}</span>
+              <button
+                className="daily-entry-readonly-main"
+                type="button"
+                onClick={() => onToggleLock?.(entry.entryId)}
+                aria-label={isLocked ? "Tétel feloldása" : "Tétel zárolása"}
+              >
+                <div className="daily-entry-main">
+                  <div className="daily-entry-title-block">
+                    <h3>{food.name}</h3>
+                    <span>{formatAmount(entry.amount, food.unit)}</span>
+                  </div>
+                  <div className="daily-entry-kcal">{formatKcal(values.kcal)}</div>
                 </div>
-                <div className="daily-entry-kcal">{formatKcal(values.kcal)}</div>
-              </div>
 
-              <div className="daily-entry-macros" aria-label="Tápértékek">
-                <span><small>P</small>{formatMacro(values.protein)}</span>
-                <span><small>F</small>{formatMacro(values.fat)}</span>
-                <span><small>Ch</small>{formatMacro(values.carbs)}</span>
-              </div>
+                <div className="daily-entry-macros" aria-label="Tápértékek">
+                  <span><small>P</small>{formatMacro(values.protein)}</span>
+                  <span><small>F</small>{formatMacro(values.fat)}</span>
+                  <span><small>Ch</small>{formatMacro(values.carbs)}</span>
+                </div>
+              </button>
 
               <div className="daily-entry-actions">
                 <button
@@ -205,11 +208,11 @@ export function DailyEntryList({
                   onClick={() => onToggleLock?.(entry.entryId)}
                   aria-label={isLocked ? "Tétel feloldása" : "Tétel zárolása"}
                 >
-                  {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                  {isLocked ? <Lock size={15} /> : <Unlock size={15} />}
                 </button>
                 {!isLocked && (
                   <button className="icon-button danger" type="button" onClick={() => onRemove(entry.entryId)} aria-label="Tétel törlése">
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
