@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryPicker } from "./components/CategoryPicker";
@@ -267,12 +268,17 @@ export default function App() {
     <div className="app">
       {activeView === "today" && (
         <main className="page">
-          <MacroSummary
-            totals={totals}
-            targets={targets}
-            isQuickAddOpen={isQuickAddOpen}
-            onToggleQuickAdd={() => setIsQuickAddOpen((current) => !current)}
-          />
+          <MacroSummary totals={totals} targets={targets} />
+
+          <button
+            className="add-food-cta"
+            type="button"
+            onClick={() => setIsQuickAddOpen((current) => !current)}
+            aria-expanded={isQuickAddOpen}
+          >
+            <Plus size={22} aria-hidden="true" />
+            étel hozzáadása
+          </button>
 
           {isQuickAddOpen && (
             <section className="panel quick-add-panel">
