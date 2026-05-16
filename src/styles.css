@@ -11,6 +11,9 @@
   --amber: #c47c1c;
   --danger: #b73535;
   --shadow: 0 12px 30px rgba(23, 33, 27, 0.08);
+  --page-max-width: 720px;
+  --page-padding: 14px;
+  --bottom-nav-height: 82px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -55,13 +58,14 @@ button {
 
 .app {
   min-height: 100svh;
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--bottom-nav-height) + 28px + env(safe-area-inset-bottom));
 }
 
 .page {
-  width: min(720px, 100%);
+  width: 100%;
+  max-width: var(--page-max-width);
   margin: 0 auto;
-  padding: 16px;
+  padding: var(--page-padding);
 }
 
 .summary,
@@ -77,7 +81,7 @@ button {
 }
 
 .summary {
-  padding: 18px;
+  padding: 16px;
   margin-bottom: 14px;
 }
 
@@ -106,13 +110,13 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: 2rem;
-  line-height: 1.05;
+  font-size: 1.72rem;
+  line-height: 1.1;
 }
 
 h2 {
   margin-bottom: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .macro-ratio {
@@ -169,6 +173,7 @@ h2 {
 .panel {
   padding: 14px;
   margin-bottom: 14px;
+  overflow: hidden;
 }
 
 .badge {
@@ -182,19 +187,21 @@ h2 {
 }
 
 .category-scroll {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
   padding: 14px 0 12px;
+  scrollbar-width: thin;
 }
 
 .category-pill {
-  min-height: 42px;
+  flex: 1 1 132px;
+  min-height: 44px;
   min-width: 0;
-  width: 100%;
+  width: auto;
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -214,22 +221,27 @@ h2 {
 
 .food-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 
 .food-button {
-  min-height: 76px;
+  min-height: 84px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-soft);
   color: var(--text);
   text-align: left;
+}
+
+.food-button svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
 }
 
 .food-button strong,
@@ -295,7 +307,7 @@ h2 {
 
 .entry-macros {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 12px;
 }
@@ -328,10 +340,19 @@ h2 {
 
 .amount-control {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto 44px;
-  align-items: end;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
   gap: 8px;
   margin-top: 12px;
+}
+
+.amount-control label {
+  grid-column: 1 / -1;
+}
+
+.amount-control .unit {
+  grid-column: 2;
+  justify-self: center;
 }
 
 .amount-control label span {
@@ -387,30 +408,34 @@ h2 {
 
 .bottom-nav {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
   bottom: 0;
+  transform: translateX(-50%);
+  width: min(var(--page-max-width), 100%);
   z-index: 5;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 2px;
-  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 22px rgba(23, 33, 27, 0.08);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(14px);
 }
 
 .bottom-nav button {
-  min-height: 58px;
+  min-height: 60px;
   display: grid;
   place-items: center;
-  gap: 2px;
+  gap: 4px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 750;
+  padding: 4px;
+  text-align: center;
 }
 
 .bottom-nav button.is-active {
@@ -430,7 +455,7 @@ h2 {
 
 .average-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   margin: 14px 0;
 }
@@ -584,7 +609,8 @@ h2 {
 }
 
 .table-panel {
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nutrient-list {
@@ -621,7 +647,7 @@ h2 {
 
 .source-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 9px;
   color: var(--muted);
@@ -630,13 +656,13 @@ h2 {
 
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 12px;
 }
 
 .quick-button {
-  min-height: 72px;
+  min-height: 76px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -705,13 +731,13 @@ h2 {
 
 .data-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 14px;
 }
 
 .primary-button {
-  min-height: 46px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -738,7 +764,7 @@ h2 {
 .form-grid,
 .nutrient-input-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   margin-top: 12px;
 }
@@ -781,9 +807,9 @@ h2 {
 
 .collapsible-header {
   width: 100%;
-  min-height: 48px;
+  min-height: 52px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
   margin-top: 18px;
@@ -812,14 +838,14 @@ h2 {
 
 .editor-food-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
   margin: 2px 0 14px;
 }
 
 .editor-food-button {
-  min-height: 68px;
-  padding: 11px;
+  min-height: 78px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-soft);
@@ -973,7 +999,7 @@ th {
 
 .daily-log-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 0 12px 12px;
 }
@@ -1001,7 +1027,7 @@ th {
 
 .daily-log-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -1013,7 +1039,7 @@ th {
 
 .summary-edit-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -1026,27 +1052,93 @@ th {
   color: var(--danger);
 }
 
-@media (max-width: 390px) {
-  .food-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 430px) {
+  .summary__header,
+  .panel__header,
+  .entry-card__top,
+  .daily-log-card__summary,
+  .chart-card__header,
+  .vitamin-trend-card__header,
+  .nutrient-card__header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .entry-macros {
+  .badge,
+  .daily-log-card__kcal,
+  .macro-ratio {
+    text-align: left;
+  }
+
+  .bottom-nav button span {
+    line-height: 1.05;
+  }
+
+  .food-button strong,
+  .editor-food-button strong,
+  .collapsible-header span {
+    line-height: 1.2;
+  }
+}
+
+@media (min-width: 400px) {
+  :root {
+    --page-padding: 16px;
+  }
+
+  .food-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .quick-grid,
-  .editor-food-grid,
-  .source-row,
-  .data-actions,
-  .daily-log-actions,
-  .daily-log-metrics,
-  .summary-edit-grid,
-  .form-grid {
-    grid-template-columns: 1fr;
+@media (min-width: 700px) {
+  :root {
+    --page-padding: 18px;
+    --bottom-nav-height: 88px;
   }
 
   h1 {
-    font-size: 1.72rem;
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.05rem;
+  }
+
+  .summary {
+    padding: 18px;
+  }
+
+  .entry-macros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .amount-control {
+    grid-template-columns: 44px minmax(0, 1fr) auto 44px;
+    align-items: end;
+  }
+
+  .amount-control label {
+    grid-column: auto;
+  }
+
+  .amount-control .unit {
+    grid-column: auto;
+    justify-self: stretch;
+  }
+
+  .average-grid,
+  .source-row,
+  .quick-grid,
+  .data-actions,
+  .daily-log-actions,
+  .summary-edit-grid,
+  .form-grid,
+  .editor-food-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .daily-log-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
