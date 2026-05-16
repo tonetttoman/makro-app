@@ -265,28 +265,22 @@ export default function App() {
     <div className="app">
       {activeView === "today" && (
         <main className="page">
-          <MacroSummary totals={totals} targets={targets} />
+          <MacroSummary
+            totals={totals}
+            targets={targets}
+            isQuickAddOpen={isQuickAddOpen}
+            onToggleQuickAdd={() => setIsQuickAddOpen((current) => !current)}
+          />
 
-          <section className="panel">
-            <button
-              className="collapsible-header"
-              type="button"
-              onClick={() => setIsQuickAddOpen((current) => !current)}
-              aria-expanded={isQuickAddOpen}
-            >
-              <span>Gyors hozzáadás – Alap összetevők</span>
-              <strong>{isQuickAddOpen ? "▼" : "▶"}</strong>
-            </button>
-            {isQuickAddOpen && (
-              <>
-                <div className="panel__header panel__header--compact">
-                  <span className="badge">{Object.keys(targetNutrients).length} célanyag-előnézet</span>
-                </div>
-                <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
-                <FoodGrid foods={visibleFoods} dailyAmounts={todayFoodAmounts} onAdd={handleAddFood} />
-              </>
-            )}
-          </section>
+          {isQuickAddOpen && (
+            <section className="panel quick-add-panel">
+              <div className="panel__header panel__header--compact">
+                <span className="badge">{Object.keys(targetNutrients).length} célanyag-előnézet</span>
+              </div>
+              <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
+              <FoodGrid foods={visibleFoods} dailyAmounts={todayFoodAmounts} onAdd={handleAddFood} />
+            </section>
+          )}
 
           <DailyEntryList
             foods={foods}
