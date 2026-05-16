@@ -196,8 +196,8 @@ export function DailyEntryList({
               </div>
 
               <div className="daily-entry-macros" aria-label="Tápértékek">
-                <span><small>p</small>{formatMacro(values.protein)}</span>
-                <span><small>f</small>{formatMacro(values.fat)}</span>
+                <span><small>P</small>{formatMacro(values.protein)}</span>
+                <span><small>F</small>{formatMacro(values.fat)}</span>
                 <span><small>Ch</small>{formatMacro(values.carbs)}</span>
               </div>
 
