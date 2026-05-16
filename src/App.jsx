@@ -250,7 +250,7 @@ export default function App() {
               />
             </label>
             <button className="primary-button full" type="button" onClick={handleConfirmDailyLog}>
-              Napi napló mentése / nyugtázása
+              Napi napló mentése
             </button>
           </section>
         </main>
