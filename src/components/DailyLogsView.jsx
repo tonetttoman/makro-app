@@ -15,10 +15,6 @@ function formatDateWithDay(dateKey) {
   return `${dateKey} · ${dayName}`;
 }
 
-function formatMacroLine(row) {
-  return `${formatStat(row.kcal)} k · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
-}
-
 function getDailyLog(dailyLogs, date) {
   return dailyLogs.find((log) => log.date === date);
 }
@@ -85,15 +81,8 @@ const rowButtonStyle = {
 
 const rowTitleStyle = {
   display: "grid",
-  gap: "3px",
+  gap: "6px",
   minWidth: 0
-};
-
-const macroLineStyle = {
-  color: "var(--muted)",
-  fontSize: "0.78rem",
-  fontWeight: 750,
-  lineHeight: 1.25
 };
 
 const openDetailStyle = {
@@ -105,6 +94,29 @@ const openDetailStyle = {
   borderRadius: "16px",
   background: "rgba(10, 24, 21, 0.45)"
 };
+
+function MacroChips({ totals }) {
+  return (
+    <div style={dailyEntryChipStyles.compactSummaryStyle} aria-label="Makró összesítés">
+      <span style={dailyEntryChipStyles.macroChipStyle}>
+        <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
+        <strong>{Math.round(totals.kcal)}</strong>
+      </span>
+      <span style={dailyEntryChipStyles.macroChipStyle}>
+        <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
+        <strong>{formatStat(totals.protein)} g</strong>
+      </span>
+      <span style={dailyEntryChipStyles.macroChipStyle}>
+        <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
+        <strong>{formatStat(totals.fat)} g</strong>
+      </span>
+      <span style={dailyEntryChipStyles.macroChipStyle}>
+        <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
+        <strong>{formatStat(totals.carbs)} g</strong>
+      </span>
+    </div>
+  );
+}
 
 function EntryPreview({ entries, foods }) {
   if (!entries.length) return null;
@@ -186,7 +198,7 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
               <button style={rowButtonStyle} type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
                 <span style={rowTitleStyle}>
                   <strong>{formatDateWithDay(row.date)}</strong>
-                  <span style={macroLineStyle}>{formatMacroLine(row)}</span>
+                  <MacroChips totals={row} />
                   <small className="muted">{row.status}</small>
                 </span>
                 <strong>{isOpen ? "▼" : "▶"}</strong>
