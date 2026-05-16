@@ -236,7 +236,6 @@ export default function App() {
 
     const entriesToSave = todayEntries.map((entry) => ({ ...entry, locked: true }));
     const savedTotals = calculateTotals(entriesToSave, foods);
-    const defaultDate = toDateKey();
     const nextDiary = {
       ...diary,
       [workDate]: {
@@ -246,7 +245,10 @@ export default function App() {
     };
     setDiary(nextDiary);
     setDailyLogs((current) => upsertDailyLog(current, workDate, savedTotals));
-    setWorkspace(getWorkspaceForDate(nextDiary, defaultDate));
+    setWorkspace({
+      date: workDate,
+      entries: entriesToSave
+    });
     alert("Tételek mentve.");
   }
 

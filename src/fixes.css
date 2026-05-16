@@ -1,4 +1,6 @@
 .collapsible-header {
+  appearance: none !important;
+  -webkit-appearance: none !important;
   width: 100%;
   min-height: 42px;
   display: flex;

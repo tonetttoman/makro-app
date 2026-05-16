@@ -52,7 +52,9 @@ const headerSaveStyle = {
   minHeight: "38px",
   padding: "0 10px",
   marginTop: 0,
-  borderRadius: "13px"
+  borderRadius: "13px",
+  position: "relative",
+  zIndex: 1
 };
 
 const rowStyle = {
@@ -178,6 +180,12 @@ export function DailyEntryList({
   const [isDateOpen, setIsDateOpen] = useState(false);
   const dateInputRef = useRef(null);
 
+  function handleSaveClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onSave?.();
+  }
+
   function openDatePicker() {
     setIsDateOpen(true);
     window.requestAnimationFrame(() => {
@@ -197,9 +205,14 @@ export function DailyEntryList({
     setIsDateOpen(false);
   }
 
+  function handleDateInput(event) {
+    const { value } = event.target;
+    if (!value) return;
+    handleDateChange(value);
+  }
+
   function closeDatePicker() {
     setIsDateOpen(false);
-    onResetToDefaultDate?.();
   }
 
   if (!entries.length) {
@@ -229,7 +242,7 @@ export function DailyEntryList({
             <X size={18} />
           </button>
         ) : (
-          <button className="primary-button full" style={headerSaveStyle} type="button" onClick={onSave}>
+          <button className="primary-button full" style={headerSaveStyle} type="button" onClick={handleSaveClick}>
             <Save size={17} />
             Tételek mentése
           </button>
@@ -253,7 +266,8 @@ export function DailyEntryList({
               ref={dateInputRef}
               type="date"
               value={workDate}
-              onChange={(event) => handleDateChange(event.target.value)}
+              onChange={handleDateInput}
+              onInput={handleDateInput}
             />
           </label>
         </div>
