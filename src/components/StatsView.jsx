@@ -356,14 +356,16 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   );
 }
 
-function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
+function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
+  const isWeekActive = isOpen && !hasOpenDay;
+
   return (
-    <div style={getListRowStyle(isOpen)}>
+    <div style={getListRowStyle(isWeekActive)}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
           <span style={titleAndChipsStyle}>
             <strong>{group.label}</strong>
-            <MacroChips totals={group.total} active={isOpen} />
+            <MacroChips totals={group.total} active={isWeekActive} />
           </span>
           <small className="muted">{group.loggedRows.length} mentett nap</small>
         </span>
@@ -431,19 +433,23 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
       </section>
 
       <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
-        {weekGroups.map((group) => (
-          <WeekSummaryCard
-            key={group.id}
-            group={group}
-            isOpen={Boolean(visibleOpenGroups[group.id])}
-            openDays={openDays}
-            onToggle={() => toggleGroup(group.id)}
-            onToggleDay={toggleDay}
-            onLoadToToday={onLoadToToday}
-            foods={foods}
-            showDailyDetails
-          />
-        ))}
+        {weekGroups.map((group) => {
+          const hasOpenDay = group.rows.some((row) => openDays[row.dateKey]);
+          return (
+            <WeekSummaryCard
+              key={group.id}
+              group={group}
+              isOpen={Boolean(visibleOpenGroups[group.id])}
+              hasOpenDay={hasOpenDay}
+              openDays={openDays}
+              onToggle={() => toggleGroup(group.id)}
+              onToggleDay={toggleDay}
+              onLoadToToday={onLoadToToday}
+              foods={foods}
+              showDailyDetails
+            />
+          );
+        })}
       </section>
     </main>
   );
