@@ -322,7 +322,7 @@ function EntryPreview({ entries, foods }) {
   );
 }
 
-function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
+function DaySummaryRow({ row, isOpen, isEntryPreviewOpen, onToggle, onToggleEntryPreview, onLoadToToday, foods }) {
   const ratio = calculateMacroRatio(row);
 
   return (
@@ -349,7 +349,17 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
           </button>
 
           {row.entries.length > 0 ? (
-            <EntryPreview entries={row.entries} foods={foods} />
+            <>
+              <button
+                className="secondary-button full"
+                type="button"
+                onClick={() => onToggleEntryPreview(row.dateKey)}
+                aria-expanded={isEntryPreviewOpen}
+              >
+                {isEntryPreviewOpen ? "Tételes lista bezárása" : `Tételes lista megnyitása (${row.entries.length})`}
+              </button>
+              {isEntryPreviewOpen && <EntryPreview entries={row.entries} foods={foods} />}
+            </>
           ) : row.sourceType === "summary" ? (
             <p className="muted" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
           ) : (
@@ -361,7 +371,7 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   );
 }
 
-function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
+function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, openEntryPreviews, onToggle, onToggleDay, onToggleEntryPreview, onLoadToToday, foods, showDailyDetails = true }) {
   const isWeekActive = isOpen && !hasOpenDay;
   const visibleRows = hasOpenDay ? group.rows.filter((row) => openDays[row.dateKey]) : group.rows;
 
@@ -390,7 +400,9 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onTogg
                 key={row.dateKey}
                 row={row}
                 isOpen={Boolean(openDays[row.dateKey])}
+                isEntryPreviewOpen={Boolean(openEntryPreviews[row.dateKey])}
                 onToggle={() => onToggleDay(row.dateKey)}
+                onToggleEntryPreview={onToggleEntryPreview}
                 onLoadToToday={onLoadToToday}
                 foods={foods}
               />
@@ -405,6 +417,7 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onTogg
 export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoadToToday }) {
   const [openGroups, setOpenGroups] = useState(null);
   const [openDays, setOpenDays] = useState({});
+  const [openEntryPreviews, setOpenEntryPreviews] = useState({});
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
   const loggedRows = rows.filter((row) => row.sourceType !== "empty");
@@ -463,6 +476,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
       const base = current ?? defaultOpenGroups;
       const nextIsOpen = !base[groupId];
       setOpenDays({});
+      setOpenEntryPreviews({});
       return nextIsOpen ? { [groupId]: true } : {};
     });
   }
@@ -470,8 +484,13 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   function toggleDay(dateKey) {
     setOpenDays((current) => {
       const nextIsOpen = !current[dateKey];
+      setOpenEntryPreviews({});
       return nextIsOpen ? { [dateKey]: true } : {};
     });
+  }
+
+  function toggleEntryPreview(dateKey) {
+    setOpenEntryPreviews((current) => ({ [dateKey]: !current[dateKey] }));
   }
 
   return (
@@ -504,8 +523,10 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
               isOpen={Boolean(visibleOpenGroups[group.id])}
               hasOpenDay={hasOpenDay}
               openDays={openDays}
+              openEntryPreviews={openEntryPreviews}
               onToggle={() => toggleGroup(group.id)}
               onToggleDay={toggleDay}
+              onToggleEntryPreview={toggleEntryPreview}
               onLoadToToday={onLoadToToday}
               foods={foods}
               showDailyDetails
