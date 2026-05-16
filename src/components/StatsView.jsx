@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { averageTotals, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
+import { MacroChips } from "./DailyLogsView";
 
 function toPoints(values, max, height = 58) {
   return values
@@ -148,7 +149,7 @@ const listPanelStyle = {
 
 const listRowStyle = {
   borderTop: "1px solid rgba(135, 175, 157, 0.12)",
-  padding: "9px 2px"
+  padding: "8px 2px"
 };
 
 const rowButtonStyle = {
@@ -167,15 +168,16 @@ const rowButtonStyle = {
 
 const rowTitleStyle = {
   display: "grid",
-  gap: "3px",
+  gap: "6px",
   minWidth: 0
 };
 
-const macroLineStyle = {
-  color: "var(--muted)",
-  fontSize: "0.78rem",
-  fontWeight: 750,
-  lineHeight: 1.25
+const titleAndChipsStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "8px",
+  minWidth: 0
 };
 
 const openDetailStyle = {
@@ -278,8 +280,10 @@ function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
     <div style={listRowStyle}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
-          <strong>{group.label}</strong>
-          <span style={macroLineStyle}>{formatMacroLine(group.total)}</span>
+          <span style={titleAndChipsStyle}>
+            <strong>{group.label}</strong>
+            <MacroChips totals={group.total} />
+          </span>
           <small className="muted">{group.loggedRows.length} mentett nap</small>
         </span>
         <strong>{isOpen ? "▼" : "▶"}</strong>
