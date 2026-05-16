@@ -154,6 +154,17 @@ export default function App() {
   }
 
   function handleAddFood(food) {
+    const existingEntry = todayEntries.find((entry) => entry.foodId === food.id);
+    if (existingEntry) {
+      updateTodayEntries(
+        todayEntries.map((entry) =>
+          entry.entryId === existingEntry.entryId
+            ? { ...entry, amount: (Number(entry.amount) || 0) + food.defaultAmount, locked: false }
+            : entry
+        )
+      );
+      return;
+    }
     updateTodayEntries([...todayEntries, createEntry(food)]);
   }
 
