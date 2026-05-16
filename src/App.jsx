@@ -273,17 +273,6 @@ export default function App() {
         </main>
       )}
 
-      {activeView === "weekly" && (
-        <StatsView
-          diary={diary}
-          dailyLogs={dailyLogs}
-          foods={foods}
-          targets={targets}
-          days={7}
-          title="Heti összesítő"
-          onLoadToToday={handleLoadToToday}
-        />
-      )}
       {activeView === "monthly" && (
         <StatsView
           diary={diary}
