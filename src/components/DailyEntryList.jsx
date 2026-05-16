@@ -10,35 +10,76 @@ function formatAmount(value, unit) {
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} ${unit}`;
 }
 
+const listPanelStyle = {
+  display: "grid",
+  gap: "0",
+  padding: "12px",
+  marginBottom: "14px"
+};
+
+const listHeaderStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "10px",
+  padding: "2px 4px 10px"
+};
+
+const rowStyle = {
+  display: "grid",
+  gap: "9px",
+  padding: "12px 4px",
+  borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+};
+
+const rowTopStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  alignItems: "start",
+  gap: "10px"
+};
+
+const titleRowStyle = {
+  minWidth: 0
+};
+
 const compactSummaryStyle = {
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: "6px",
-  marginTop: "8px"
+  gap: "5px",
+  marginTop: "6px"
 };
 
 const macroChipStyle = {
   display: "inline-flex",
   alignItems: "baseline",
   gap: "4px",
-  minHeight: "28px",
-  padding: "5px 8px",
-  border: "1px solid rgba(135, 175, 157, 0.16)",
+  minHeight: "24px",
+  padding: "4px 7px",
+  border: "1px solid rgba(135, 175, 157, 0.14)",
   borderRadius: "999px",
-  background: "rgba(29, 45, 41, 0.72)",
+  background: "rgba(29, 45, 41, 0.58)",
   color: "var(--text)",
-  fontSize: "0.76rem",
+  fontSize: "0.72rem",
   fontWeight: 800,
-  lineHeight: 1.1
+  lineHeight: 1.05
 };
 
 const macroLabelStyle = {
   color: "var(--muted)",
-  fontSize: "0.62rem",
+  fontSize: "0.58rem",
   fontWeight: 900,
   letterSpacing: "0.04em",
   textTransform: "uppercase"
+};
+
+const amountControlStyle = {
+  display: "grid",
+  gridTemplateColumns: "40px minmax(0, 1fr) auto 40px",
+  alignItems: "end",
+  gap: "7px",
+  marginTop: "0"
 };
 
 export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
@@ -52,19 +93,27 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
   }
 
   return (
-    <section className="entry-list" aria-label="Napi kalkulációs lista">
+    <section className="panel" style={listPanelStyle} aria-label="Napi kalkulációs lista">
+      <div style={listHeaderStyle}>
+        <div>
+          <p className="eyebrow">Mai tételek</p>
+          <h2>Napi lista</h2>
+        </div>
+        <span className="badge">{entries.length} tétel</span>
+      </div>
+
       {entries.map((entry) => {
         const food = findFoodById(entry.foodId, foods);
         if (!food) return null;
         const values = calculateEntry(food, entry.amount);
 
         return (
-          <article className="entry-card" key={entry.entryId}>
-            <div className="entry-card__top">
-              <div className="entry-card__title">
+          <div style={rowStyle} key={entry.entryId}>
+            <div style={rowTopStyle}>
+              <div style={titleRowStyle}>
                 <h2>{food.name}</h2>
                 <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
-                  <span className="entry-amount-badge">Mennyiség: {formatAmount(entry.amount, food.unit)}</span>
+                  <span className="entry-amount-badge">{formatAmount(entry.amount, food.unit)}</span>
                   <span style={macroChipStyle}>
                     <small style={macroLabelStyle}>kcal</small>
                     <strong>{Math.round(values.kcal)}</strong>
@@ -88,7 +137,7 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
               </button>
             </div>
 
-            <div className="amount-control">
+            <div className="amount-control" style={amountControlStyle}>
               <button
                 className="icon-button"
                 type="button"
@@ -118,7 +167,7 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
                 <Plus size={18} />
               </button>
             </div>
-          </article>
+          </div>
         );
       })}
     </section>
