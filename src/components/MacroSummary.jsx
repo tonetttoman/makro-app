@@ -2,14 +2,14 @@ import { calculateMacroRatio } from "../lib/calculations";
 import { ProgressBar } from "./ProgressBar";
 
 const LABELS = {
-  kcal: "kcal",
-  protein: "Fehérje",
-  fat: "Zsír",
-  carbs: "Szénhidrát"
+  kcal: "k",
+  protein: "p",
+  fat: "f",
+  carbs: "CH"
 };
 
 const UNITS = {
-  kcal: "kcal",
+  kcal: "k",
   protein: "g",
   fat: "g",
   carbs: "g"
@@ -23,12 +23,12 @@ export function MacroSummary({ totals, targets }) {
       <div className="summary__header">
         <div>
           <p className="eyebrow">Mai összesítő</p>
-          <h1>{Math.round(totals.kcal)} kcal</h1>
+          <h1>{Math.round(totals.kcal)} k</h1>
         </div>
         <div className="macro-ratio" aria-label="Makróarány">
-          <span>{Math.round(ratio.protein)}% P</span>
-          <span>{Math.round(ratio.fat)}% Zs</span>
-          <span>{Math.round(ratio.carbs)}% Sz</span>
+          <span>{Math.round(ratio.protein)}% p</span>
+          <span>{Math.round(ratio.fat)}% f</span>
+          <span>{Math.round(ratio.carbs)}% CH</span>
         </div>
       </div>
 
