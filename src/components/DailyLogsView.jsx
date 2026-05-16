@@ -15,6 +15,10 @@ function formatDateWithDay(dateKey) {
   return `${dateKey} · ${dayName}`;
 }
 
+function formatMacroLine(row) {
+  return `${formatStat(row.kcal)} k · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
+}
+
 function getDailyLog(dailyLogs, date) {
   return dailyLogs.find((log) => log.date === date);
 }
@@ -53,11 +57,60 @@ function buildRows({ diary, dailyLogs, foods }) {
   });
 }
 
+const listPanelStyle = {
+  display: "grid",
+  gap: 0,
+  padding: "10px",
+  marginBottom: "12px"
+};
+
+const rowStyle = {
+  borderTop: "1px solid rgba(135, 175, 157, 0.12)",
+  padding: "9px 2px"
+};
+
+const rowButtonStyle = {
+  width: "100%",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: "10px",
+  padding: 0,
+  border: 0,
+  background: "transparent",
+  color: "inherit",
+  textAlign: "left",
+  cursor: "pointer"
+};
+
+const rowTitleStyle = {
+  display: "grid",
+  gap: "3px",
+  minWidth: 0
+};
+
+const macroLineStyle = {
+  color: "var(--muted)",
+  fontSize: "0.78rem",
+  fontWeight: 750,
+  lineHeight: 1.25
+};
+
+const openDetailStyle = {
+  display: "grid",
+  gap: "10px",
+  marginTop: "10px",
+  padding: "10px",
+  border: "1px solid rgba(135, 175, 157, 0.15)",
+  borderRadius: "16px",
+  background: "rgba(10, 24, 21, 0.45)"
+};
+
 function EntryPreview({ entries, foods }) {
   if (!entries.length) return null;
 
   return (
-    <div className="daily-log-detail-list" style={{ display: "grid", gap: "8px", marginTop: "10px" }}>
+    <div className="daily-log-detail-list" style={{ display: "grid", gap: "8px" }}>
       {entries.map((entry) => {
         const food = foods.find((item) => item.id === entry.foodId);
         if (!food) return null;
@@ -124,28 +177,27 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
         <h1>Napi naplók</h1>
       </section>
 
-      <section className="daily-log-list">
+      <section className="panel" style={listPanelStyle} aria-label="Napi naplók listája">
         {rows.map((row) => {
           const ratio = calculateMacroRatio(row);
           const isOpen = openDate === row.date;
           return (
-            <article className="daily-log-card" key={row.date}>
-              <button className="daily-log-card__summary" type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
-                <span>
+            <div style={rowStyle} key={row.date}>
+              <button style={rowButtonStyle} type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
+                <span style={rowTitleStyle}>
                   <strong>{formatDateWithDay(row.date)}</strong>
-                  <small>{row.status}</small>
+                  <span style={macroLineStyle}>{formatMacroLine(row)}</span>
+                  <small className="muted">{row.status}</small>
                 </span>
-                <span className="daily-log-card__kcal">{formatStat(row.kcal)} k</span>
+                <strong>{isOpen ? "▼" : "▶"}</strong>
               </button>
-              <div className="daily-log-metrics">
-                <span>p {formatStat(row.protein)} g</span>
-                <span>f {formatStat(row.fat)} g</span>
-                <span>Ch {formatStat(row.carbs)} g</span>
-                <span>{Math.round(ratio.protein)}% / {Math.round(ratio.fat)}% / {Math.round(ratio.carbs)}%</span>
-              </div>
 
               {isOpen && (
-                <div className="daily-log-detail">
+                <div style={openDetailStyle}>
+                  <p className="muted" style={{ margin: 0 }}>
+                    Makróarány: {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch
+                  </p>
+
                   {row.entries.length > 0 && (
                     <div className="daily-log-actions">
                       <button className="primary-button secondary" type="button" onClick={() => onLoadToToday(row.date, row.entries)}>
@@ -157,11 +209,11 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
                   {row.entries.length > 0 ? (
                     <EntryPreview entries={row.entries} foods={foods} />
                   ) : (
-                    <p className="muted">Ez csak összesített importált nap, részletes tétellista nélkül.</p>
+                    <p className="muted" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
                   )}
                 </div>
               )}
-            </article>
+            </div>
           );
         })}
       </section>
