@@ -61,36 +61,39 @@ const compactSummaryStyle = {
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: "4px",
-  marginTop: "5px"
+  gap: "6px",
+  marginTop: "6px"
 };
 
 const amountBadgeStyle = {
-  minHeight: "22px",
+  minHeight: "26px",
+  minWidth: "48px",
   marginTop: 0,
-  padding: "4px 7px",
-  fontSize: "0.72rem",
+  padding: "5px 10px",
+  fontSize: "0.78rem",
   lineHeight: 1.05
 };
 
 const macroChipStyle = {
   display: "inline-flex",
   alignItems: "baseline",
-  gap: "3px",
-  minHeight: "22px",
-  padding: "4px 6px",
-  border: "1px solid rgba(135, 175, 157, 0.13)",
+  justifyContent: "center",
+  gap: "4px",
+  minHeight: "26px",
+  minWidth: "58px",
+  padding: "5px 9px",
+  border: "1px solid rgba(135, 175, 157, 0.16)",
   borderRadius: "999px",
-  background: "rgba(29, 45, 41, 0.5)",
+  background: "rgba(29, 45, 41, 0.56)",
   color: "var(--text)",
-  fontSize: "0.68rem",
-  fontWeight: 800,
-  lineHeight: 1
+  fontSize: "0.74rem",
+  fontWeight: 850,
+  lineHeight: 1.05
 };
 
 const macroLabelStyle = {
   color: "var(--muted)",
-  fontSize: "0.54rem",
+  fontSize: "0.58rem",
   fontWeight: 900,
   letterSpacing: "0.035em",
   textTransform: "uppercase"
@@ -135,6 +138,13 @@ const saveActionsStyle = {
   gridTemplateColumns: "42px minmax(0, 1fr)",
   gap: "8px",
   alignItems: "center"
+};
+
+export const dailyEntryChipStyles = {
+  compactSummaryStyle,
+  amountBadgeStyle,
+  macroChipStyle,
+  macroLabelStyle
 };
 
 export function DailyEntryList({
