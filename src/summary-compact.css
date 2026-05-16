@@ -124,9 +124,85 @@
   min-width: 96px !important;
 }
 
+.daily-entry-list-modern {
+  gap: 9px !important;
+}
+
+.daily-entry-item {
+  gap: 7px !important;
+  padding: 11px 12px 12px !important;
+  border-color: rgba(56, 189, 248, 0.16) !important;
+  border-radius: 18px !important;
+  background: linear-gradient(180deg, rgba(13, 20, 33, 0.94), rgba(7, 11, 20, 0.9)) !important;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+}
+
+.daily-entry-item.is-locked {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+  opacity: 0.96 !important;
+}
+
+.daily-entry-main {
+  gap: 10px !important;
+}
+
+.daily-entry-title-block {
+  gap: 2px !important;
+}
+
+.daily-entry-title-block h3 {
+  font-size: 0.98rem !important;
+  font-weight: 790 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.daily-entry-title-block span {
+  font-size: 0.76rem !important;
+  font-weight: 760 !important;
+}
+
+.daily-entry-kcal {
+  font-size: 0.94rem !important;
+  font-weight: 860 !important;
+}
+
+.daily-entry-macros {
+  gap: 10px !important;
+  font-size: 0.76rem !important;
+  line-height: 1.1 !important;
+}
+
+.daily-entry-macros span {
+  gap: 4px !important;
+  font-size: 0.76rem !important;
+  font-weight: 840 !important;
+}
+
+.daily-entry-macros small {
+  font-size: 0.66rem !important;
+}
+
+.daily-entry-actions {
+  right: 9px !important;
+  bottom: 9px !important;
+}
+
+.daily-entry-actions .icon-button {
+  width: 32px !important;
+  min-height: 32px !important;
+  height: 32px !important;
+  border-radius: 11px !important;
+  color: var(--muted-strong) !important;
+}
+
 .bottom-nav {
-  min-height: 74px !important;
-  padding: 8px 10px !important;
+  min-height: 70px !important;
+  padding: 7px 10px !important;
+  background: linear-gradient(180deg, rgba(11, 17, 27, 0.82), rgba(5, 9, 16, 0.96)) !important;
+}
+
+.bottom-nav button {
+  border-radius: 14px !important;
 }
 
 .bottom-nav button.is-active {
@@ -152,5 +228,13 @@
 
   .summary-kcal strong {
     font-size: clamp(2.8rem, 13vw, 4.6rem) !important;
+  }
+
+  .daily-entry-item {
+    padding: 10px 11px 11px !important;
+  }
+
+  .daily-entry-title-block h3 {
+    font-size: 0.94rem !important;
   }
 }
