@@ -91,7 +91,7 @@ function EntryPreview({ entries, foods }) {
                 <strong>{formatStat(values.fat)} g</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>CH</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
                 <strong>{formatStat(values.carbs)} g</strong>
               </span>
             </div>
@@ -140,7 +140,7 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
               <div className="daily-log-metrics">
                 <span>p {formatStat(row.protein)} g</span>
                 <span>f {formatStat(row.fat)} g</span>
-                <span>CH {formatStat(row.carbs)} g</span>
+                <span>Ch {formatStat(row.carbs)} g</span>
                 <span>{Math.round(ratio.protein)}% / {Math.round(ratio.fat)}% / {Math.round(ratio.carbs)}%</span>
               </div>
 
