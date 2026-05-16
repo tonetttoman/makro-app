@@ -1,0 +1,89 @@
+.collapsible-header {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(16, 28, 25, 0.9);
+  color: var(--text);
+  font-weight: 850;
+  text-align: left;
+}
+
+.collapsible-header + .collapsible-header {
+  margin-top: 8px;
+}
+
+.collapsible-header span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collapsible-header strong {
+  color: var(--mint);
+}
+
+.collapsible-header:hover {
+  border-color: rgba(138, 230, 198, 0.42);
+  background-color: rgba(45, 74, 65, 0.72);
+}
+
+.primary-button.secondary,
+.secondary-button {
+  border-color: var(--line);
+  background: rgba(25, 39, 35, 0.9);
+  color: var(--text);
+}
+
+.data-actions,
+.form-grid,
+.nutrient-input-grid,
+.editor-food-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.data-actions {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.form-grid,
+.nutrient-input-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.editor-food-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.section-subtitle {
+  margin: 14px 0 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.panel > .eyebrow {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 520px) {
+  .data-actions,
+  .form-grid,
+  .nutrient-input-grid,
+  .editor-food-grid {
+    grid-template-columns: 1fr;
+  }
+}
