@@ -22,88 +22,6 @@ function formatDisplayDate(date) {
   return `${year}. ${month}. ${day}.`;
 }
 
-const listPanelStyle = {
-  display: "grid",
-  gap: "0",
-  padding: "10px",
-  marginBottom: "12px"
-};
-
-const listHeaderStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) minmax(120px, 1.1fr) 42px",
-  alignItems: "center",
-  gap: "8px",
-  padding: "0 2px 7px"
-};
-
-const headerTitleStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: "7px",
-  minWidth: 0
-};
-
-const dateBadgeStyle = {
-  minHeight: "24px",
-  padding: "4px 8px",
-  fontSize: "0.68rem",
-  lineHeight: 1
-};
-
-const headerSaveStyle = {
-  minHeight: "38px",
-  padding: "0 10px",
-  marginTop: 0,
-  borderRadius: "13px",
-  position: "relative",
-  zIndex: 1
-};
-
-const rowStyle = {
-  display: "grid",
-  gap: "6px",
-  padding: "7px 2px",
-  borderTop: "1px solid rgba(148, 163, 184, 0.12)"
-};
-
-const rowTopStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto",
-  alignItems: "center",
-  gap: "8px"
-};
-
-const titleRowStyle = {
-  display: "grid",
-  gap: "5px",
-  minWidth: 0
-};
-
-const titleLineStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "baseline",
-  gap: "7px",
-  minWidth: 0
-};
-
-const itemTitleStyle = {
-  margin: 0,
-  fontSize: "0.98rem",
-  lineHeight: 1.1,
-  whiteSpace: "nowrap"
-};
-
-const inlineAmountStyle = {
-  color: "var(--muted-strong)",
-  fontSize: "0.82rem",
-  fontWeight: 850,
-  lineHeight: 1.1,
-  whiteSpace: "nowrap"
-};
-
 const compactSummaryStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -147,37 +65,6 @@ const macroLabelStyle = {
   fontWeight: 900,
   letterSpacing: "0.02em",
   textTransform: "none"
-};
-
-const amountControlStyle = {
-  display: "grid",
-  gridTemplateColumns: "34px minmax(0, 1fr) auto 34px",
-  alignItems: "end",
-  gap: "6px",
-  marginTop: "0"
-};
-
-const smallButtonStyle = {
-  width: "34px",
-  height: "34px",
-  minHeight: "34px",
-  borderRadius: "12px"
-};
-
-const smallDeleteStyle = {
-  ...smallButtonStyle,
-  width: "36px",
-  height: "36px",
-  minHeight: "36px"
-};
-
-const compactUnitStyle = {
-  minHeight: "34px",
-  fontSize: "0.78rem"
-};
-
-const datePickerRowStyle = {
-  padding: "2px 2px 10px"
 };
 
 export const dailyEntryChipStyles = {
@@ -238,49 +125,46 @@ export function DailyEntryList({
 
   if (!entries.length) {
     return (
-      <section className="empty-state">
-        <h2>Nincs még tétel a mai listában</h2>
-        <p>Válassz kategóriát, majd nyomj rá egy élelmiszerre. A mennyiséget itt tudod pontosítani.</p>
+      <section className="empty-state daily-entry-empty">
+        <h2>Nincs még tétel</h2>
+        <p>Nyisd meg a hozzáadást, válassz kategóriát, aztán dobj be valami ehetőt. Forradalmi technológia.</p>
       </section>
     );
   }
 
   return (
-    <section className="panel" style={listPanelStyle} aria-label="Napi kalkulációs lista">
-      <div style={listHeaderStyle}>
-        <div style={headerTitleStyle}>
-          <p className="eyebrow" style={{ marginBottom: 0 }}>Mai tételek</p>
-          <span className="badge" style={dateBadgeStyle}>{formatDisplayDate(workDate)}</span>
+    <section className="daily-entry-panel" aria-label="Napi kalkulációs lista">
+      <div className="daily-entry-header">
+        <div>
+          <p className="eyebrow">Mai tételek</p>
+          <h2>{entries.length} tétel</h2>
         </div>
-        {isDateOpen ? (
+        <div className="daily-entry-header__actions">
+          <span className="daily-entry-date">{formatDisplayDate(workDate)}</span>
+          {isDateOpen ? (
+            <button className="icon-button danger" type="button" onClick={closeDatePicker} aria-label="Dátumválasztó bezárása">
+              <X size={18} />
+            </button>
+          ) : (
+            <button className="primary-button daily-save-button" type="button" onClick={handleSaveClick}>
+              <Save size={17} />
+              Mentés
+            </button>
+          )}
           <button
-            className="icon-button danger full"
-            style={headerSaveStyle}
+            className="icon-button"
             type="button"
-            onClick={closeDatePicker}
-            aria-label="Dátumválasztó bezárása és visszaállás az alap mai nézetre"
+            onClick={openDatePicker}
+            aria-expanded={isDateOpen}
+            aria-label="Mentés dátumának kiválasztása"
           >
-            <X size={18} />
+            <CalendarDays size={18} />
           </button>
-        ) : (
-          <button className="primary-button full" style={headerSaveStyle} type="button" onClick={handleSaveClick}>
-            <Save size={17} />
-            Tételek mentése
-          </button>
-        )}
-        <button
-          className="icon-button"
-          type="button"
-          onClick={openDatePicker}
-          aria-expanded={isDateOpen}
-          aria-label="Mentés dátumának kiválasztása"
-        >
-          <CalendarDays size={18} />
-        </button>
+        </div>
       </div>
 
       {isDateOpen && (
-        <div style={datePickerRowStyle}>
+        <div className="daily-date-picker">
           <label className="form-field" style={{ marginTop: 0 }}>
             <span>Mentés dátuma</span>
             <input
@@ -294,42 +178,32 @@ export function DailyEntryList({
         </div>
       )}
 
-      {entries.map((entry) => {
-        const food = findFoodById(entry.foodId, foods);
-        if (!food) return null;
-        const values = calculateEntry(food, entry.amount);
-        const isLocked = Boolean(entry.locked);
+      <div className="daily-entry-list-modern">
+        {entries.map((entry) => {
+          const food = findFoodById(entry.foodId, foods);
+          if (!food) return null;
+          const values = calculateEntry(food, entry.amount);
+          const isLocked = Boolean(entry.locked);
 
-        return (
-          <div style={rowStyle} key={entry.entryId}>
-            <div style={rowTopStyle}>
-              <div style={titleRowStyle}>
-                <div style={titleLineStyle}>
-                  <h2 style={itemTitleStyle}>{food.name}</h2>
-                  <span style={inlineAmountStyle}>{formatAmount(entry.amount, food.unit)}</span>
+          return (
+            <article className={`daily-entry-item ${isLocked ? "is-locked" : ""}`} key={entry.entryId}>
+              <div className="daily-entry-main">
+                <div className="daily-entry-title-block">
+                  <h3>{food.name}</h3>
+                  <span>{formatAmount(entry.amount, food.unit)}</span>
                 </div>
-                <div style={compactSummaryStyle} aria-label="Tápértékek">
-                  <span style={macroChipStyle}>
-                    <strong>{formatKcal(values.kcal)}</strong>
-                  </span>
-                  <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>p</small>
-                    <strong>{formatMacro(values.protein)}</strong>
-                  </span>
-                  <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>f</small>
-                    <strong>{formatMacro(values.fat)}</strong>
-                  </span>
-                  <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>Ch</small>
-                    <strong>{formatMacro(values.carbs)}</strong>
-                  </span>
-                </div>
+                <div className="daily-entry-kcal">{formatKcal(values.kcal)}</div>
               </div>
-              <div style={{ display: "flex", gap: "6px" }}>
+
+              <div className="daily-entry-macros" aria-label="Tápértékek">
+                <span><small>p</small>{formatMacro(values.protein)}</span>
+                <span><small>f</small>{formatMacro(values.fat)}</span>
+                <span><small>Ch</small>{formatMacro(values.carbs)}</span>
+              </div>
+
+              <div className="daily-entry-actions">
                 <button
                   className="icon-button"
-                  style={smallDeleteStyle}
                   type="button"
                   onClick={() => onToggleLock?.(entry.entryId)}
                   aria-label={isLocked ? "Tétel feloldása" : "Tétel zárolása"}
@@ -337,56 +211,48 @@ export function DailyEntryList({
                   {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
                 </button>
                 {!isLocked && (
-                  <button
-                    className="icon-button danger"
-                    style={smallDeleteStyle}
-                    type="button"
-                    onClick={() => onRemove(entry.entryId)}
-                    aria-label="Tétel törlése"
-                  >
+                  <button className="icon-button danger" type="button" onClick={() => onRemove(entry.entryId)} aria-label="Tétel törlése">
                     <Trash2 size={16} />
                   </button>
                 )}
               </div>
-            </div>
 
-            {!isLocked && (
-              <div className="amount-control" style={amountControlStyle}>
-                <button
-                  className="icon-button"
-                  style={smallButtonStyle}
-                  type="button"
-                  onClick={() => onAmountChange(entry.entryId, Math.max(0, entry.amount - food.step))}
-                  aria-label="Mennyiség csökkentése"
-                >
-                  <Minus size={16} />
-                </button>
-                <label>
-                  <span>Mennyiség</span>
-                  <input
-                    inputMode="decimal"
-                    min="0"
-                    step={food.step}
-                    type="number"
-                    value={entry.amount}
-                    onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
-                  />
-                </label>
-                <span className="unit" style={compactUnitStyle}>{food.unit}</span>
-                <button
-                  className="icon-button"
-                  style={smallButtonStyle}
-                  type="button"
-                  onClick={() => onAmountChange(entry.entryId, entry.amount + food.step)}
-                  aria-label="Mennyiség növelése"
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+              {!isLocked && (
+                <div className="daily-entry-edit">
+                  <button
+                    className="icon-button"
+                    type="button"
+                    onClick={() => onAmountChange(entry.entryId, Math.max(0, entry.amount - food.step))}
+                    aria-label="Mennyiség csökkentése"
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <label>
+                    <span>Mennyiség</span>
+                    <input
+                      inputMode="decimal"
+                      min="0"
+                      step={food.step}
+                      type="number"
+                      value={entry.amount}
+                      onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
+                    />
+                  </label>
+                  <span className="unit">{food.unit}</span>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    onClick={() => onAmountChange(entry.entryId, entry.amount + food.step)}
+                    aria-label="Mennyiség növelése"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 }
