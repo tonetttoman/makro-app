@@ -236,6 +236,130 @@
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.06) inset !important;
 }
 
+/* Structural daily summary polish. */
+.summary {
+  padding: 22px 20px 18px !important;
+}
+
+.summary-hero {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+  min-height: 230px;
+  align-content: start;
+}
+
+.summary-hero__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.summary-hero__top .eyebrow {
+  margin: 2px 0 0;
+}
+
+.summary-kcal {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+  color: var(--text);
+  text-align: center;
+}
+
+.summary-kcal strong {
+  font-size: clamp(3.75rem, 17vw, 6.6rem);
+  font-weight: 720;
+  line-height: 0.88;
+  letter-spacing: 0.05em;
+  text-shadow: 0 18px 46px rgba(0, 0, 0, 0.34);
+}
+
+.summary-kcal span {
+  color: var(--text);
+  font-size: clamp(1rem, 4.5vw, 1.55rem);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.summary-target {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: var(--muted-strong);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.summary-macro-ratio {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 14px 0 2px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  color: var(--text);
+}
+
+.summary-macro-ratio span {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 7px;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.summary-macro-ratio strong {
+  color: var(--cyan);
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.summary-macro-ratio span:nth-child(2) strong {
+  color: var(--amber);
+}
+
+.metric__row {
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.metric__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--cyan);
+}
+
+.metric__icon--amber {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--amber);
+}
+
+.metric__label {
+  color: var(--text);
+  font-weight: 730;
+}
+
+.summary-quick-add-button {
+  width: 58px !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  border-radius: 18px !important;
+}
+
 @media (max-width: 520px) {
   .data-actions,
   .form-grid,
