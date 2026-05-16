@@ -26,10 +26,10 @@ const listPanelStyle = {
 };
 
 const listHeaderStyle = {
-  display: "flex",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, auto) minmax(120px, 1fr) 42px",
   alignItems: "center",
-  justifyContent: "space-between",
-  gap: "10px",
+  gap: "8px",
   padding: "0 2px 7px"
 };
 
@@ -37,7 +37,8 @@ const headerTitleStyle = {
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
-  gap: "7px"
+  gap: "7px",
+  minWidth: 0
 };
 
 const dateBadgeStyle = {
@@ -47,11 +48,11 @@ const dateBadgeStyle = {
   lineHeight: 1
 };
 
-const entryCountBadgeStyle = {
-  minHeight: "26px",
-  padding: "4px 8px",
-  fontSize: "0.68rem",
-  lineHeight: 1
+const headerSaveStyle = {
+  minHeight: "38px",
+  padding: "0 10px",
+  marginTop: 0,
+  borderRadius: "13px"
 };
 
 const rowStyle = {
@@ -152,23 +153,8 @@ const compactUnitStyle = {
   fontSize: "0.78rem"
 };
 
-const saveRowStyle = {
-  display: "grid",
-  gap: "8px",
-  padding: "12px 2px 2px",
-  borderTop: "1px solid rgba(135, 175, 157, 0.14)"
-};
-
-const saveActionsStyle = {
-  display: "grid",
-  gridTemplateColumns: "42px minmax(0, 1fr)",
-  gap: "8px",
-  alignItems: "center"
-};
-
-const saveActionsWithCloseStyle = {
-  ...saveActionsStyle,
-  gridTemplateColumns: "42px minmax(0, 1fr) 42px"
+const datePickerRowStyle = {
+  padding: "2px 2px 10px"
 };
 
 export const dailyEntryChipStyles = {
@@ -224,11 +210,49 @@ export function DailyEntryList({
     <section className="panel" style={listPanelStyle} aria-label="Napi kalkulációs lista">
       <div style={listHeaderStyle}>
         <div style={headerTitleStyle}>
-          <p className="eyebrow">Mai tételek</p>
+          <p className="eyebrow" style={{ marginBottom: 0 }}>Mai tételek</p>
           <span className="badge" style={dateBadgeStyle}>{formatDisplayDate(workDate)}</span>
         </div>
-        <span className="badge" style={entryCountBadgeStyle}>{entries.length} tétel</span>
+        {isDateOpen ? (
+          <button
+            className="icon-button danger full"
+            style={headerSaveStyle}
+            type="button"
+            onClick={closeDatePicker}
+            aria-label="Dátumválasztó bezárása és visszaállás az alap mai nézetre"
+          >
+            <X size={18} />
+          </button>
+        ) : (
+          <button className="primary-button full" style={headerSaveStyle} type="button" onClick={onSave}>
+            <Save size={17} />
+            Tételek mentése
+          </button>
+        )}
+        <button
+          className="icon-button"
+          type="button"
+          onClick={openDatePicker}
+          aria-expanded={isDateOpen}
+          aria-label="Mentés dátumának kiválasztása"
+        >
+          <CalendarDays size={18} />
+        </button>
       </div>
+
+      {isDateOpen && (
+        <div style={datePickerRowStyle}>
+          <label className="form-field" style={{ marginTop: 0 }}>
+            <span>Mentés dátuma</span>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={workDate}
+              onChange={(event) => onWorkDateChange?.(event.target.value)}
+            />
+          </label>
+        </div>
+      )}
 
       {entries.map((entry) => {
         const food = findFoodById(entry.foodId, foods);
@@ -322,45 +346,6 @@ export function DailyEntryList({
           </div>
         );
       })}
-
-      <div style={saveRowStyle}>
-        {isDateOpen && (
-          <label className="form-field" style={{ marginTop: 0 }}>
-            <span>Mentés dátuma</span>
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={workDate}
-              onChange={(event) => onWorkDateChange?.(event.target.value)}
-            />
-          </label>
-        )}
-        <div style={isDateOpen ? saveActionsWithCloseStyle : saveActionsStyle}>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={openDatePicker}
-            aria-expanded={isDateOpen}
-            aria-label="Mentés dátumának kiválasztása"
-          >
-            <CalendarDays size={18} />
-          </button>
-          <button className="primary-button full" style={{ marginTop: 0 }} type="button" onClick={onSave}>
-            <Save size={18} />
-            Tételek mentése
-          </button>
-          {isDateOpen && (
-            <button
-              className="icon-button danger"
-              type="button"
-              onClick={closeDatePicker}
-              aria-label="Dátumválasztó bezárása és visszaállás az alap mai nézetre"
-            >
-              <X size={18} />
-            </button>
-          )}
-        </div>
-      </div>
     </section>
   );
 }
