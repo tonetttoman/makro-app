@@ -10,6 +10,37 @@ function formatAmount(value, unit) {
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} ${unit}`;
 }
 
+const compactSummaryStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "6px",
+  marginTop: "8px"
+};
+
+const macroChipStyle = {
+  display: "inline-flex",
+  alignItems: "baseline",
+  gap: "4px",
+  minHeight: "28px",
+  padding: "5px 8px",
+  border: "1px solid rgba(135, 175, 157, 0.16)",
+  borderRadius: "999px",
+  background: "rgba(29, 45, 41, 0.72)",
+  color: "var(--text)",
+  fontSize: "0.76rem",
+  fontWeight: 800,
+  lineHeight: 1.1
+};
+
+const macroLabelStyle = {
+  color: "var(--muted)",
+  fontSize: "0.62rem",
+  fontWeight: 900,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase"
+};
+
 export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
   if (!entries.length) {
     return (
@@ -32,30 +63,29 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
             <div className="entry-card__top">
               <div className="entry-card__title">
                 <h2>{food.name}</h2>
-                <span className="entry-amount-badge">Mennyiség: {formatAmount(entry.amount, food.unit)}</span>
+                <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
+                  <span className="entry-amount-badge">Mennyiség: {formatAmount(entry.amount, food.unit)}</span>
+                  <span style={macroChipStyle}>
+                    <small style={macroLabelStyle}>kcal</small>
+                    <strong>{Math.round(values.kcal)}</strong>
+                  </span>
+                  <span style={macroChipStyle}>
+                    <small style={macroLabelStyle}>F</small>
+                    <strong>{formatMacro(values.protein)}</strong>
+                  </span>
+                  <span style={macroChipStyle}>
+                    <small style={macroLabelStyle}>Zs</small>
+                    <strong>{formatMacro(values.fat)}</strong>
+                  </span>
+                  <span style={macroChipStyle}>
+                    <small style={macroLabelStyle}>CH</small>
+                    <strong>{formatMacro(values.carbs)}</strong>
+                  </span>
+                </div>
               </div>
               <button className="icon-button danger" type="button" onClick={() => onRemove(entry.entryId)} aria-label="Tétel törlése">
                 <Trash2 size={18} />
               </button>
-            </div>
-
-            <div className="entry-macros" aria-label="Tápértékek">
-              <span>
-                <small>kcal</small>
-                <strong>{Math.round(values.kcal)}</strong>
-              </span>
-              <span>
-                <small>fehérje</small>
-                <strong>{formatMacro(values.protein)}</strong>
-              </span>
-              <span>
-                <small>zsír</small>
-                <strong>{formatMacro(values.fat)}</strong>
-              </span>
-              <span>
-                <small>CH</small>
-                <strong>{formatMacro(values.carbs)}</strong>
-              </span>
             </div>
 
             <div className="amount-control">
