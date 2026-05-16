@@ -79,15 +79,15 @@ function EntryPreview({ entries, foods }) {
                 {formatStat(entry.amount)} {food.unit}
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>kcal</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
                 <strong>{Math.round(values.kcal)}</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>F</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
                 <strong>{formatStat(values.protein)} g</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>Zs</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
                 <strong>{formatStat(values.fat)} g</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
@@ -135,11 +135,11 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
                   <strong>{formatDateWithDay(row.date)}</strong>
                   <small>{row.status}</small>
                 </span>
-                <span className="daily-log-card__kcal">{formatStat(row.kcal)} kcal</span>
+                <span className="daily-log-card__kcal">{formatStat(row.kcal)} k</span>
               </button>
               <div className="daily-log-metrics">
-                <span>F {formatStat(row.protein)} g</span>
-                <span>Zs {formatStat(row.fat)} g</span>
+                <span>p {formatStat(row.protein)} g</span>
+                <span>f {formatStat(row.fat)} g</span>
                 <span>CH {formatStat(row.carbs)} g</span>
                 <span>{Math.round(ratio.protein)}% / {Math.round(ratio.fat)}% / {Math.round(ratio.carbs)}%</span>
               </div>
