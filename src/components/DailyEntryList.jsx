@@ -101,7 +101,7 @@ const macroLabelStyle = {
   fontSize: "0.58rem",
   fontWeight: 900,
   letterSpacing: "0.035em",
-  textTransform: "uppercase"
+  textTransform: "none"
 };
 
 const amountControlStyle = {
@@ -206,7 +206,7 @@ export function DailyEntryList({
                     <strong>{formatMacro(values.fat)}</strong>
                   </span>
                   <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>CH</small>
+                    <small style={macroLabelStyle}>Ch</small>
                     <strong>{formatMacro(values.carbs)}</strong>
                   </span>
                 </div>
