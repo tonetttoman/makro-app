@@ -111,7 +111,7 @@
 }
 
 .reference-list-header {
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   align-items: center !important;
   padding: 0 0 4px !important;
 }
@@ -125,30 +125,11 @@
 }
 
 .daily-entry-tools {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  color: var(--muted) !important;
-  font-size: 0.72rem !important;
-  font-weight: 750 !important;
-}
-
-.reference-tool-button {
-  width: 30px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border: 1px solid rgba(56, 189, 248, 0.16) !important;
-  border-radius: 10px !important;
-  background: rgba(15, 23, 42, 0.78) !important;
-  color: var(--muted-strong) !important;
+  display: none !important;
 }
 
 .reference-date-picker {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: 8px !important;
+  display: none !important;
 }
 
 .daily-entry-list-modern {
@@ -162,9 +143,9 @@
 }
 
 .daily-entry-item {
-  min-height: 74px !important;
+  min-height: 68px !important;
   gap: 4px !important;
-  padding: 10px 48px 10px 12px !important;
+  padding: 9px 42px 9px 12px !important;
   border: 0 !important;
   border-radius: 0 !important;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
@@ -238,6 +219,14 @@
   transform: translateY(-50%) !important;
 }
 
+.daily-entry-item.is-locked .daily-entry-actions {
+  display: none !important;
+}
+
+.daily-entry-actions .icon-button:first-child {
+  display: none !important;
+}
+
 .daily-entry-actions .icon-button {
   width: 31px !important;
   min-height: 31px !important;
@@ -287,7 +276,7 @@
   }
 
   .daily-entry-item {
-    min-height: 70px !important;
-    padding: 9px 46px 9px 12px !important;
+    min-height: 66px !important;
+    padding: 8px 40px 8px 12px !important;
   }
 }
