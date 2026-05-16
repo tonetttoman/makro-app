@@ -1,12 +1,8 @@
-import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
-import { CategoryPicker } from "./components/CategoryPicker";
 import { DataView } from "./components/DataView";
-import { DailyEntryList } from "./components/DailyEntryList";
-import { FoodGrid } from "./components/FoodGrid";
-import { MacroSummary } from "./components/MacroSummary";
 import { StatsView } from "./components/StatsView";
+import { TodayView } from "./components/TodayView";
 import { VitaminView } from "./components/VitaminView";
 import { FOOD_CATEGORIES, FOODS } from "./data/foods";
 import { TARGET_NUTRIENTS } from "./data/nutrients";
@@ -168,11 +164,6 @@ export default function App() {
     }));
   }
 
-  function handleResetToDefaultDate() {
-    setWorkspace(getWorkspaceForDate(diary, toDateKey()));
-    setActiveView("today");
-  }
-
   function handleAddFood(food) {
     const existingEntry = todayEntries.find((entry) => entry.foodId === food.id);
     if (existingEntry) {
@@ -267,45 +258,29 @@ export default function App() {
   return (
     <div className="app">
       {activeView === "today" && (
-        <main className="page">
-          <header className="app-header today-title" aria-label="Aktuális nézet">
-            <h1>Mai</h1>
-          </header>
-
-          <MacroSummary totals={totals} targets={targets} />
-
-          <button
-            className="add-food-cta"
-            type="button"
-            onClick={() => setIsQuickAddOpen((current) => !current)}
-            aria-expanded={isQuickAddOpen}
-          >
-            <Plus size={22} aria-hidden="true" />
-            étel hozzáadása
-          </button>
-
-          {isQuickAddOpen && (
-            <section className="panel quick-add-panel">
-              <div className="panel__header panel__header--compact">
-                <span className="badge">{Object.keys(targetNutrients).length} célanyag-előnézet</span>
-              </div>
-              <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
-              <FoodGrid foods={visibleFoods} dailyAmounts={todayFoodAmounts} onAdd={handleAddFood} />
-            </section>
-          )}
-
-          <DailyEntryList
-            foods={foods}
-            entries={todayEntries}
-            onAmountChange={handleAmountChange}
-            onRemove={handleRemove}
-            onToggleLock={handleToggleLock}
-            workDate={workDate}
-            onWorkDateChange={handleWorkDateChange}
-            onResetToDefaultDate={handleResetToDefaultDate}
-            onSave={handleConfirmDailyLog}
-          />
-        </main>
+        <TodayView
+          totals={totals}
+          targets={targets}
+          workDate={workDate}
+          entries={todayEntries}
+          foods={foods}
+          dailyAmounts={todayFoodAmounts}
+          targetNutrients={targetNutrients}
+          activeCategory={activeCategory}
+          categories={FOOD_CATEGORIES}
+          isQuickAddOpen={isQuickAddOpen}
+          onToggleQuickAdd={(nextState) =>
+            setIsQuickAddOpen((current) => (typeof nextState === "boolean" ? nextState : !current))
+          }
+          onSelectCategory={setActiveCategory}
+          onAddFood={handleAddFood}
+          onSave={handleConfirmDailyLog}
+          onWorkDateChange={handleWorkDateChange}
+          onAmountChange={handleAmountChange}
+          onToggleLock={handleToggleLock}
+          onRemove={handleRemove}
+          quickAddFoods={visibleFoods}
+        />
       )}
 
       {activeView === "monthly" && (
