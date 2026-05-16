@@ -339,16 +339,16 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
             Makróarány: {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch
           </p>
 
-          {row.entries.length > 0 && (
-            <button className="primary-button secondary" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
-              Betöltés szerkesztésre a Mai fülre
-            </button>
-          )}
+          <button className="primary-button secondary" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
+            Betöltés szerkesztésre a Mai fülre
+          </button>
 
           {row.entries.length > 0 ? (
             <EntryPreview entries={row.entries} foods={foods} />
-          ) : (
+          ) : row.sourceType === "summary" ? (
             <p className="muted" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>Ehhez a naphoz még nincs bevitel. Betöltéssel üres szerkesztési napként nyílik meg.</p>
           )}
         </div>
       )}
@@ -358,6 +358,7 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
 
 function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
   const isWeekActive = isOpen && !hasOpenDay;
+  const visibleRows = hasOpenDay ? group.rows.filter((row) => openDays[row.dateKey]) : group.rows;
 
   return (
     <div style={getListRowStyle(isWeekActive)}>
@@ -379,7 +380,7 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, onToggle, onTogg
             {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch.
           </p>
           <div style={nestedListStyle}>
-            {group.rows.map((row) => (
+            {visibleRows.map((row) => (
               <DaySummaryRow
                 key={row.dateKey}
                 row={row}
@@ -408,16 +409,25 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const isMonthlyView = days > 7;
   const defaultOpenGroups = useMemo(() => (weekGroups[0] ? { [weekGroups[0].id]: true } : {}), [weekGroups]);
   const visibleOpenGroups = openGroups ?? defaultOpenGroups;
+  const focusedGroupIds = Object.keys(visibleOpenGroups).filter((groupId) => visibleOpenGroups[groupId]);
+  const visibleWeekGroups = focusedGroupIds.length
+    ? weekGroups.filter((group) => visibleOpenGroups[group.id])
+    : weekGroups;
 
   function toggleGroup(groupId) {
     setOpenGroups((current) => {
       const base = current ?? defaultOpenGroups;
-      return { ...base, [groupId]: !base[groupId] };
+      const nextIsOpen = !base[groupId];
+      setOpenDays({});
+      return nextIsOpen ? { [groupId]: true } : {};
     });
   }
 
   function toggleDay(dateKey) {
-    setOpenDays((current) => ({ ...current, [dateKey]: !current[dateKey] }));
+    setOpenDays((current) => {
+      const nextIsOpen = !current[dateKey];
+      return nextIsOpen ? { [dateKey]: true } : {};
+    });
   }
 
   return (
@@ -433,7 +443,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
       </section>
 
       <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
-        {weekGroups.map((group) => {
+        {visibleWeekGroups.map((group) => {
           const hasOpenDay = group.rows.some((row) => openDays[row.dateKey]);
           return (
             <WeekSummaryCard
