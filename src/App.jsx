@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryPicker } from "./components/CategoryPicker";
 import { DataView } from "./components/DataView";
@@ -24,7 +24,9 @@ import {
 } from "./lib/storage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
-const todayKey = toDateKey();
+function getSavedEntriesForDate(diary, date) {
+  return (diary[date]?.entries || []).map((entry) => ({ ...entry, locked: true }));
+}
 
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
@@ -104,6 +106,7 @@ function upsertDailyLog(dailyLogs, date, totals) {
 }
 
 export default function App() {
+  const todayKey = toDateKey();
   const [activeView, setActiveView] = useState("today");
   const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
@@ -115,6 +118,14 @@ export default function App() {
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
+
+  useEffect(() => {
+    const defaultDate = toDateKey();
+    setWorkspace((current) => {
+      if ((current?.date || defaultDate) === defaultDate) return current || { date: defaultDate, entries: [] };
+      return { date: defaultDate, entries: getSavedEntriesForDate(diary, defaultDate) };
+    });
+  }, []);
 
   const workDate = workspace.date || todayKey;
   const todayEntries = workspace.entries || [];
@@ -213,6 +224,8 @@ export default function App() {
 
     const entriesToSave = todayEntries.map((entry) => ({ ...entry, locked: true }));
     const savedTotals = calculateTotals(entriesToSave, foods);
+    const defaultDate = toDateKey();
+    const defaultEntries = workDate === defaultDate ? entriesToSave : getSavedEntriesForDate(diary, defaultDate);
     setDiary((current) => ({
       ...current,
       [workDate]: {
@@ -221,7 +234,7 @@ export default function App() {
       }
     }));
     setDailyLogs((current) => upsertDailyLog(current, workDate, savedTotals));
-    setWorkspace((current) => ({ ...current, date: workDate, entries: entriesToSave }));
+    setWorkspace({ date: defaultDate, entries: defaultEntries });
     alert("Tételek mentve.");
   }
 
