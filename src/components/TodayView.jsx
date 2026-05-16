@@ -13,7 +13,7 @@ import {
   X
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { calculateEntry, calculateMacroRatio, findFoodById } from "../lib/calculations";
+import { calculateEntry, findFoodById } from "../lib/calculations";
 import { CategoryPicker } from "./CategoryPicker";
 import { FoodGrid } from "./FoodGrid";
 import { ProgressBar } from "./ProgressBar";
@@ -45,7 +45,6 @@ function formatDisplayDate(date) {
 }
 
 function TodaySummaryCard({ totals, targets }) {
-  const ratio = calculateMacroRatio(totals);
   const kcal = Math.round(totals.kcal);
 
   return (
@@ -77,12 +76,6 @@ function TodaySummaryCard({ totals, targets }) {
             </div>
           );
         })}
-      </div>
-
-      <div className="today-summary-ratio" aria-label="Makróarány">
-        <span><small>P</small>{Math.round(ratio.protein)}%</span>
-        <span><small>F</small>{Math.round(ratio.fat)}%</span>
-        <span><small>Ch</small>{Math.round(ratio.carbs)}%</span>
       </div>
     </section>
   );
