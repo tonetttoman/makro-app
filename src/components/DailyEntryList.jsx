@@ -22,7 +22,14 @@ const listHeaderStyle = {
   alignItems: "center",
   justifyContent: "space-between",
   gap: "10px",
-  padding: "0 2px 8px"
+  padding: "0 2px 7px"
+};
+
+const entryCountBadgeStyle = {
+  minHeight: "26px",
+  padding: "4px 8px",
+  fontSize: "0.68rem",
+  lineHeight: 1
 };
 
 const rowStyle = {
@@ -128,11 +135,8 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
   return (
     <section className="panel" style={listPanelStyle} aria-label="Napi kalkulációs lista">
       <div style={listHeaderStyle}>
-        <div>
-          <p className="eyebrow">Mai tételek</p>
-          <h2>Napi lista</h2>
-        </div>
-        <span className="badge">{entries.length} tétel</span>
+        <p className="eyebrow">Mai tételek</p>
+        <span className="badge" style={entryCountBadgeStyle}>{entries.length} tétel</span>
       </div>
 
       {entries.map((entry) => {
