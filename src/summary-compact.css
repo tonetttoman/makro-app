@@ -1,0 +1,156 @@
+/* Summary compact pass. */
+.summary {
+  padding: 14px 20px 14px !important;
+  margin-bottom: 10px !important;
+}
+
+.summary::before {
+  width: min(176px, 47vw) !important;
+  height: min(176px, 47vw) !important;
+  inset: 20px auto auto 50% !important;
+  border-width: 2px !important;
+  border-color: rgba(251, 191, 36, 0.78) !important;
+  border-right-color: transparent !important;
+  border-bottom-color: rgba(251, 191, 36, 0.18) !important;
+  opacity: 0.9 !important;
+}
+
+.summary::after {
+  width: 136px !important;
+  height: 136px !important;
+  inset: -20% auto auto 50% !important;
+  opacity: 0.78 !important;
+}
+
+.summary-hero {
+  min-height: 166px !important;
+  gap: 5px !important;
+  align-content: start !important;
+}
+
+.summary-kcal {
+  gap: 7px !important;
+  margin-top: 18px !important;
+}
+
+.summary-kcal strong {
+  font-size: clamp(3rem, 13.2vw, 5rem) !important;
+  line-height: 0.9 !important;
+  letter-spacing: 0.03em !important;
+}
+
+.summary-kcal span {
+  font-size: clamp(0.92rem, 3.5vw, 1.22rem) !important;
+  font-weight: 680 !important;
+}
+
+.summary-target {
+  font-size: 0.88rem !important;
+  line-height: 1.15 !important;
+}
+
+.summary-macro-ratio {
+  margin-top: 9px !important;
+  padding-top: 10px !important;
+  gap: 8px !important;
+}
+
+.summary-macro-ratio span {
+  gap: 6px !important;
+  font-size: 1.1rem !important;
+}
+
+.summary-macro-ratio strong {
+  font-size: 0.78rem !important;
+}
+
+.summary-grid {
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.metric__row {
+  grid-template-columns: 28px minmax(0, 1fr) auto !important;
+  gap: 9px !important;
+  margin-bottom: 6px !important;
+  font-size: 0.88rem !important;
+}
+
+.metric__icon {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 9px !important;
+}
+
+.metric__icon svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.progress {
+  height: 4px !important;
+}
+
+.add-food-cta {
+  min-height: 50px !important;
+  margin-bottom: 10px !important;
+  border-radius: 15px !important;
+}
+
+.daily-entry-header {
+  gap: 8px !important;
+}
+
+.daily-entry-header h2 {
+  color: var(--muted-strong) !important;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+}
+
+.daily-entry-header__actions {
+  gap: 7px !important;
+}
+
+.daily-entry-date,
+.daily-entry-header__actions .icon-button,
+.daily-save-button {
+  min-height: 40px !important;
+  border-radius: 13px !important;
+}
+
+.daily-save-button {
+  min-width: 96px !important;
+}
+
+.bottom-nav {
+  min-height: 74px !important;
+  padding: 8px 10px !important;
+}
+
+.bottom-nav button.is-active {
+  background: transparent !important;
+  color: var(--amber) !important;
+  box-shadow: inset 0 -2px 0 rgba(251, 191, 36, 0.82) !important;
+}
+
+@media (max-width: 380px) {
+  .summary {
+    padding: 13px 16px 13px !important;
+  }
+
+  .summary::before {
+    width: min(162px, 48vw) !important;
+    height: min(162px, 48vw) !important;
+    inset: 19px auto auto 50% !important;
+  }
+
+  .summary-hero {
+    min-height: 154px !important;
+  }
+
+  .summary-kcal strong {
+    font-size: clamp(2.8rem, 13vw, 4.6rem) !important;
+  }
+}
