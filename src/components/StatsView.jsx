@@ -167,11 +167,12 @@ const listPanelStyle = {
 
 function getListRowStyle(isActive = false) {
   return {
-    borderTop: "1px solid rgba(135, 175, 157, 0.12)",
+    borderTop: "1px solid rgba(148, 163, 184, 0.12)",
     padding: "8px 2px",
-    borderLeft: isActive ? "3px solid rgba(134, 239, 172, 0.5)" : "3px solid transparent",
-    background: isActive ? "rgba(24, 70, 51, 0.18)" : "transparent",
-    borderRadius: isActive ? "12px" : 0
+    borderLeft: isActive ? "3px solid rgba(56, 189, 248, 0.56)" : "3px solid transparent",
+    background: isActive ? "linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(8, 13, 22, 0.72))" : "transparent",
+    borderRadius: isActive ? "16px" : 0,
+    boxShadow: isActive ? "inset 0 1px 0 rgba(255, 255, 255, 0.03)" : "none"
   };
 }
 
@@ -195,12 +196,6 @@ const rowTitleStyle = {
   minWidth: 0
 };
 
-const titleAndChipsStyle = {
-  display: "grid",
-  gap: "7px",
-  minWidth: 0
-};
-
 const rowTitleTopStyle = {
   display: "flex",
   alignItems: "center",
@@ -221,9 +216,12 @@ function getOpenDetailStyle(isActive = false) {
     gap: "10px",
     marginTop: "10px",
     padding: "10px",
-    border: isActive ? "1px solid rgba(134, 239, 172, 0.22)" : "1px solid rgba(135, 175, 157, 0.15)",
+    border: isActive ? "1px solid rgba(56, 189, 248, 0.24)" : "1px solid rgba(56, 189, 248, 0.16)",
     borderRadius: "16px",
-    background: isActive ? "rgba(12, 45, 33, 0.58)" : "rgba(10, 24, 21, 0.45)"
+    background: isActive
+      ? "linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(8, 13, 22, 0.76))"
+      : "linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(8, 13, 22, 0.68))",
+    boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)"
   };
 }
 
@@ -231,7 +229,7 @@ const nestedListStyle = {
   display: "grid",
   gap: 0,
   padding: "2px 0",
-  borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+  borderTop: "1px solid rgba(148, 163, 184, 0.12)"
 };
 
 function SummaryMetricLine({ label, children }) {
@@ -335,7 +333,7 @@ function EntryPreview({ entries, foods }) {
               display: "grid",
               gap: "5px",
               padding: "8px 0",
-              borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+              borderTop: "1px solid rgba(148, 163, 184, 0.12)"
             }}
           >
             <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
