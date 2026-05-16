@@ -38,10 +38,6 @@ function formatKcal(value) {
   return `${Math.round(Number(value) || 0)} kcal`;
 }
 
-function formatMacroLine(row) {
-  return `${formatKcal(row.kcal)} · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
-}
-
 function formatDateWithDay(dateKey) {
   const date = new Date(`${dateKey}T12:00:00`);
   const dayName = WEEKDAYS[date.getDay()] || "";
@@ -238,6 +234,39 @@ const nestedListStyle = {
   borderTop: "1px solid rgba(135, 175, 157, 0.12)"
 };
 
+function SummaryMetricLine({ label, children }) {
+  return (
+    <div className="stats-summary-line">
+      <span className="stats-summary-line-label">{label}</span>
+      <div className="stats-summary-line-values">{children}</div>
+    </div>
+  );
+}
+
+function SummaryValue({ children }) {
+  return <strong className="stats-summary-value">{children}</strong>;
+}
+
+function SummaryLines({ ratio, totals, totalsLabel, emptyText }) {
+  if (!totals) return <p className="muted stats-summary-detail">{emptyText}</p>;
+
+  return (
+    <div className="stats-summary-lines">
+      <SummaryMetricLine label="Makróarány">
+        <SummaryValue>{Math.round(ratio.protein)}% p</SummaryValue>
+        <SummaryValue>{Math.round(ratio.fat)}% f</SummaryValue>
+        <SummaryValue>{Math.round(ratio.carbs)}% Ch</SummaryValue>
+      </SummaryMetricLine>
+      <SummaryMetricLine label={totalsLabel}>
+        <SummaryValue>{formatKcal(totals.kcal)}</SummaryValue>
+        <SummaryValue>p {formatStat(totals.protein)} g</SummaryValue>
+        <SummaryValue>f {formatStat(totals.fat)} g</SummaryValue>
+        <SummaryValue>Ch {formatStat(totals.carbs)} g</SummaryValue>
+      </SummaryMetricLine>
+    </div>
+  );
+}
+
 function MacroTrendChart({ rows, target }) {
   const values = rows.map((row) => row.kcal);
   const averageValues = movingAverage(values, 7);
@@ -406,8 +435,10 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, openEntryPreview
       {isOpen && showDailyDetails && (
         <div style={getOpenDetailStyle(false)}>
           <p className="muted" style={{ margin: 0 }}>
-            Átlag: {formatMacroLine(group.average)}. Makróarány: {Math.round(group.ratio.protein)}% p ·{" "}
-            {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch.
+            Átlag: {formatKcal(group.average.kcal)} | p {formatStat(group.average.protein)} g | f {formatStat(group.average.fat)} g | Ch {formatStat(group.average.carbs)} g
+          </p>
+          <p className="muted" style={{ margin: 0 }}>
+            Makróarány: {Math.round(group.ratio.protein)}% p | {Math.round(group.ratio.fat)}% f | {Math.round(group.ratio.carbs)}% Ch
           </p>
           <div style={nestedListStyle}>
             {visibleRows.map((row) => (
@@ -460,18 +491,18 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   let summaryRangeLabel = monthRangeLabel;
   let summarySavedDays = loggedRows.length;
   let summaryRatio = ratio;
-  let summaryDetail = loggedRows.length
-    ? `Átlag: ${formatMacroLine(average)}`
-    : "Ebben az időszakban még nincs mentett nap.";
+  let summaryTotals = loggedRows.length ? average : null;
+  let summaryTotalsLabel = "Átlag";
+  let summaryEmptyText = "Ebben az időszakban még nincs mentett nap.";
 
   if (activeGroup && openGroups !== null) {
     summaryTitle = "Heti összesítő";
     summaryRangeLabel = activeGroup.label;
     summarySavedDays = activeGroup.loggedRows.length;
     summaryRatio = activeGroup.ratio;
-    summaryDetail = activeGroup.loggedRows.length
-      ? `Átlag: ${formatMacroLine(activeGroup.average)}`
-      : "Ebben a hétben még nincs mentett nap.";
+    summaryTotals = activeGroup.loggedRows.length ? activeGroup.average : null;
+    summaryTotalsLabel = "Átlag";
+    summaryEmptyText = "Ebben a hétben még nincs mentett nap.";
   }
 
   if (activeDay) {
@@ -481,9 +512,9 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
     summaryRangeLabel = formatDateWithDay(activeDay.dateKey);
     summarySavedDays = isSavedDay ? 1 : 0;
     summaryRatio = dayRatio;
-    summaryDetail = isSavedDay
-      ? `Összesen: ${formatMacroLine(activeDay)}`
-      : "Ehhez a naphoz még nincs mentett adat.";
+    summaryTotals = isSavedDay ? activeDay : null;
+    summaryTotalsLabel = "Összesen";
+    summaryEmptyText = "Ehhez a naphoz még nincs mentett adat.";
   }
 
   function toggleGroup(groupId) {
@@ -518,14 +549,15 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
           </div>
           <div className="stats-summary-meta">
             <span className="stats-summary-pill">{formatSavedDaysLabel(summarySavedDays)}</span>
-            <p className="stats-summary-ratio">
-              Makróarány: {Math.round(summaryRatio.protein)}% p · {Math.round(summaryRatio.fat)}% f ·{" "}
-              {Math.round(summaryRatio.carbs)}% Ch
-            </p>
           </div>
         </div>
         {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
-        <p className="muted stats-summary-detail">{summaryDetail}</p>
+        <SummaryLines
+          ratio={summaryRatio}
+          totals={summaryTotals}
+          totalsLabel={summaryTotalsLabel}
+          emptyText={summaryEmptyText}
+        />
       </section>
 
       <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
