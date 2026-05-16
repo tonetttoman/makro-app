@@ -1,46 +1,9 @@
 import { useMemo, useState } from "react";
-import { CategoryPicker } from "./CategoryPicker";
-import { DailyEntryList } from "./DailyEntryList";
-import { FoodGrid } from "./FoodGrid";
-import { FOOD_CATEGORIES } from "../data/foods";
 import { calculateMacroRatio, calculateTotals } from "../lib/calculations";
 
 function formatStat(value) {
   const rounded = Math.round((Number(value) || 0) * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
-
-function sortFoodsByName(items) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
-}
-
-function createEntry(food) {
-  const uniqueId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  return {
-    entryId: `${food.id}-${uniqueId}`,
-    foodId: food.id,
-    amount: food.defaultAmount,
-    createdAt: new Date().toISOString()
-  };
-}
-
-function upsertDailyLog(dailyLogs, date, totals, patch = {}) {
-  const ratio = calculateMacroRatio(totals);
-  const nextLog = {
-    date,
-    kcal: Number(totals.kcal) || 0,
-    protein: Number(totals.protein) || 0,
-    fat: Number(totals.fat) || 0,
-    carbs: Number(totals.carbs) || 0,
-    alcoholKcal: Number(patch.alcoholKcal) || 0,
-    macroRatio: ratio,
-    note: patch.note || "nyugtázott napi napló",
-    source: patch.source || "confirmed_daily_entries"
-  };
-  const exists = dailyLogs.some((log) => log.date === date);
-  return exists
-    ? dailyLogs.map((log) => (log.date === date ? { ...log, ...nextLog } : log))
-    : [...dailyLogs, nextLog].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function getDailyLog(dailyLogs, date) {
@@ -62,7 +25,7 @@ function buildRows({ diary, dailyLogs, foods }) {
         entries,
         log,
         sourceType: "confirmed",
-        status: "nyugtázott nap",
+        status: "mentett tételek",
         ...totals
       };
     }
@@ -81,55 +44,36 @@ function buildRows({ diary, dailyLogs, foods }) {
   });
 }
 
-export function DailyLogsView({ diary, setDiary, dailyLogs, setDailyLogs, foods, onLoadToToday }) {
+function EntryPreview({ entries, foods }) {
+  if (!entries.length) return null;
+
+  return (
+    <div className="daily-log-detail-list">
+      {entries.map((entry) => {
+        const food = foods.find((item) => item.id === entry.foodId);
+        if (!food) return null;
+        const amount = Math.round((Number(entry.amount) || 0) * 10) / 10;
+        return (
+          <div className="daily-log-detail-row" key={entry.entryId}>
+            <strong>{food.name}</strong>
+            <span>{Number.isInteger(amount) ? amount : amount.toFixed(1)} {food.unit}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
   const [openDate, setOpenDate] = useState(null);
-  const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
   const rows = useMemo(() => buildRows({ diary, dailyLogs, foods }), [dailyLogs, diary, foods]);
-  const visibleFoods = sortFoodsByName(foods.filter((food) => food.category === activeCategory && food.id && food.name));
-
-  function updateEntries(date, nextEntries) {
-    setDiary((current) => ({
-      ...current,
-      [date]: {
-        date,
-        entries: nextEntries
-      }
-    }));
-    const totals = calculateTotals(nextEntries, foods);
-    setDailyLogs((current) => upsertDailyLog(current, date, totals));
-  }
-
-  function updateSummary(date, key, value) {
-    const parsed = Number(String(value).replace(",", "."));
-    setDailyLogs((current) =>
-      current.map((log) =>
-        log.date === date
-          ? {
-              ...log,
-              [key]: Number.isFinite(parsed) ? parsed : 0,
-              source: log.source || "manual_summary_import"
-            }
-          : log
-      )
-    );
-  }
-
-  function deleteDay(date) {
-    if (!window.confirm("Biztosan törlöd ezt a napi naplót?")) return;
-    setDiary((current) => {
-      const next = { ...current };
-      delete next[date];
-      return next;
-    });
-    setDailyLogs((current) => current.filter((log) => log.date !== date));
-  }
 
   if (!rows.length) {
     return (
       <main className="page">
         <section className="empty-state">
           <h1>Napi naplók</h1>
-          <p>Még nincs nyugtázott vagy importált napi napló.</p>
+          <p>Még nincs mentett vagy importált napi napló.</p>
         </section>
       </main>
     );
@@ -164,57 +108,18 @@ export function DailyLogsView({ diary, setDiary, dailyLogs, setDailyLogs, foods,
 
               {isOpen && (
                 <div className="daily-log-detail">
-                  <p className="eyebrow">Szerkesztés</p>
-                  <div className="daily-log-actions">
-                    {row.entries.length > 0 && (
+                  {row.entries.length > 0 && (
+                    <div className="daily-log-actions">
                       <button className="primary-button secondary" type="button" onClick={() => onLoadToToday(row.date, row.entries)}>
                         Betöltés szerkesztésre a Mai fülre
                       </button>
-                    )}
-                    <button className="primary-button secondary danger-text" type="button" onClick={() => deleteDay(row.date)}>
-                      Napi napló törlése
-                    </button>
-                  </div>
+                    </div>
+                  )}
 
                   {row.entries.length > 0 ? (
-                    <>
-                      <DailyEntryList
-                        foods={foods}
-                        entries={row.entries}
-                        onAmountChange={(entryId, amount) =>
-                          updateEntries(
-                            row.date,
-                            row.entries.map((entry) =>
-                              entry.entryId === entryId ? { ...entry, amount: Math.max(0, Number(amount) || 0) } : entry
-                            )
-                          )
-                        }
-                        onRemove={(entryId) => updateEntries(row.date, row.entries.filter((entry) => entry.entryId !== entryId))}
-                      />
-                      <div className="daily-add-panel">
-                        <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
-                        <FoodGrid
-                          foods={visibleFoods}
-                          dailyAmounts={{}}
-                          onAdd={(food) => updateEntries(row.date, [...row.entries, createEntry(food)])}
-                        />
-                      </div>
-                    </>
+                    <EntryPreview entries={row.entries} foods={foods} />
                   ) : (
-                    <div className="summary-edit-grid">
-                      {["kcal", "protein", "fat", "carbs", "alcoholKcal"].map((key) => (
-                        <label className="form-field" key={key}>
-                          <span>{key}</span>
-                          <input
-                            inputMode="decimal"
-                            type="number"
-                            value={row[key] || ""}
-                            onChange={(event) => updateSummary(row.date, key, event.target.value)}
-                          />
-                        </label>
-                      ))}
-                      <p className="muted">összesített importált nap</p>
-                    </div>
+                    <p className="muted">Ez csak összesített importált nap, részletes tétellista nélkül.</p>
                   )}
                 </div>
               )}
