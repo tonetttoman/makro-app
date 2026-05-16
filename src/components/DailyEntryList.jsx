@@ -6,6 +6,10 @@ function formatMacro(value, unit = "g") {
   return `${Math.round(value * 10) / 10} ${unit}`;
 }
 
+function formatKcal(value) {
+  return `${Math.round(Number(value) || 0)} kcal`;
+}
+
 function formatAmount(value, unit) {
   const rounded = Math.round(value * 10) / 10;
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} ${unit}`;
@@ -287,8 +291,7 @@ export function DailyEntryList({
                 <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
                   <span className="entry-amount-badge" style={amountBadgeStyle}>{formatAmount(entry.amount, food.unit)}</span>
                   <span style={macroChipStyle}>
-                    <small style={macroLabelStyle}>k</small>
-                    <strong>{Math.round(values.kcal)}</strong>
+                    <strong>{formatKcal(values.kcal)}</strong>
                   </span>
                   <span style={macroChipStyle}>
                     <small style={macroLabelStyle}>p</small>
