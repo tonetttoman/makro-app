@@ -27,7 +27,7 @@ const listPanelStyle = {
 
 const listHeaderStyle = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, auto) minmax(120px, 1fr) 42px",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(120px, 1.1fr) 42px",
   alignItems: "center",
   gap: "8px",
   padding: "0 2px 7px"
@@ -192,6 +192,11 @@ export function DailyEntryList({
     });
   }
 
+  function handleDateChange(date) {
+    onWorkDateChange?.(date);
+    setIsDateOpen(false);
+  }
+
   function closeDatePicker() {
     setIsDateOpen(false);
     onResetToDefaultDate?.();
@@ -248,7 +253,7 @@ export function DailyEntryList({
               ref={dateInputRef}
               type="date"
               value={workDate}
-              onChange={(event) => onWorkDateChange?.(event.target.value)}
+              onChange={(event) => handleDateChange(event.target.value)}
             />
           </label>
         </div>
