@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { calculateMacroRatio, calculateTotals } from "../lib/calculations";
+import { calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
 
 function formatStat(value) {
   const rounded = Math.round((Number(value) || 0) * 10) / 10;
@@ -48,15 +48,29 @@ function EntryPreview({ entries, foods }) {
   if (!entries.length) return null;
 
   return (
-    <div className="daily-log-detail-list">
+    <div className="daily-log-detail-list" style={{ display: "grid", gap: "8px", marginTop: "10px" }}>
       {entries.map((entry) => {
         const food = foods.find((item) => item.id === entry.foodId);
         if (!food) return null;
         const amount = Math.round((Number(entry.amount) || 0) * 10) / 10;
+        const values = calculateEntry(food, Number(entry.amount) || 0);
+        const amountText = `${Number.isInteger(amount) ? amount : amount.toFixed(1)} ${food.unit}`;
         return (
-          <div className="daily-log-detail-row" key={entry.entryId}>
-            <strong>{food.name}</strong>
-            <span>{Number.isInteger(amount) ? amount : amount.toFixed(1)} {food.unit}</span>
+          <div
+            className="daily-log-detail-row"
+            key={entry.entryId}
+            style={{
+              display: "grid",
+              gap: "3px",
+              padding: "8px 0",
+              borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+            }}
+          >
+            <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.35 }}>
+              {amountText} · {Math.round(values.kcal)} kcal · F {formatStat(values.protein)} g · Zs {formatStat(values.fat)} g · CH{" "}
+              {formatStat(values.carbs)} g
+            </span>
           </div>
         );
       })}
