@@ -148,11 +148,11 @@ function MacroTrendChart({ rows, target }) {
       <div className="chart-card__header">
         <div>
           <p className="eyebrow">Kalória trend</p>
-          <h2>{Math.round(current)} kcal ma</h2>
+          <h2>{Math.round(current)} k ma</h2>
         </div>
-        <span>Cél: {target} kcal</span>
+        <span>Cél: {target} k</span>
       </div>
-      <svg className="trend-chart" viewBox="0 0 100 64" preserveAspectRatio="none" aria-label="Napi kcal grafikon">
+      <svg className="trend-chart" viewBox="0 0 100 64" preserveAspectRatio="none" aria-label="Napi kalória grafikon">
         <line x1="2" x2="98" y1={targetY} y2={targetY} className="trend-chart__target" />
         {values.map((value, index) => {
           const x = 4 + (index / Math.max(values.length - 1, 1)) * 88;
@@ -194,10 +194,10 @@ function DayRowsTable({ rows }) {
         <thead>
           <tr>
             <th>Nap</th>
-            <th>kcal</th>
-            <th>F</th>
-            <th>Zs</th>
-            <th>Sz</th>
+            <th>k</th>
+            <th>p</th>
+            <th>f</th>
+            <th>CH</th>
           </tr>
         </thead>
         <tbody>
@@ -231,23 +231,23 @@ function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
         style={{ marginTop: 0 }}
       >
         <span>
-          {group.label} · {Math.round(group.total.kcal)} kcal · {group.loggedRows.length} mentett nap
+          {group.label} · {Math.round(group.total.kcal)} k · {group.loggedRows.length} mentett nap
         </span>
         <strong>{isOpen ? "▼" : "▶"}</strong>
       </button>
 
       <div className="average-grid" style={{ marginBottom: 0 }}>
-        <span>Átlag kcal <strong>{Math.round(group.average.kcal)}</strong></span>
-        <span>Fehérje átlag <strong>{Math.round(group.average.protein)} g</strong></span>
-        <span>Zsír átlag <strong>{Math.round(group.average.fat)} g</strong></span>
-        <span>Szénhidrát átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
+        <span>Átlag k <strong>{Math.round(group.average.kcal)}</strong></span>
+        <span>p átlag <strong>{Math.round(group.average.protein)} g</strong></span>
+        <span>f átlag <strong>{Math.round(group.average.fat)} g</strong></span>
+        <span>CH átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
       </div>
 
       <p className="muted" style={{ marginBottom: 0 }}>
-        Heti összesen: {Math.round(group.total.kcal)} kcal · F {formatStat(group.total.protein)} g · Zs{" "}
+        Heti összesen: {Math.round(group.total.kcal)} k · p {formatStat(group.total.protein)} g · f{" "}
         {formatStat(group.total.fat)} g · CH {formatStat(group.total.carbs)} g. Makróarány átlagból:{" "}
-        {Math.round(group.ratio.protein)}% fehérje, {Math.round(group.ratio.fat)}% zsír,{" "}
-        {Math.round(group.ratio.carbs)}% szénhidrát.
+        {Math.round(group.ratio.protein)}% p, {Math.round(group.ratio.fat)}% f,{" "}
+        {Math.round(group.ratio.carbs)}% CH.
       </p>
 
       {isOpen && showDailyDetails && <DayRowsTable rows={group.rows} />}
@@ -276,14 +276,14 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
         <h1>{title}</h1>
         {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
         <div className="average-grid">
-          <span>Átlag kcal <strong>{Math.round(average.kcal)}</strong></span>
-          <span>Fehérje átlag <strong>{Math.round(average.protein)} g</strong></span>
-          <span>Zsír átlag <strong>{Math.round(average.fat)} g</strong></span>
-          <span>Szénhidrát átlag <strong>{Math.round(average.carbs)} g</strong></span>
+          <span>Átlag k <strong>{Math.round(average.kcal)}</strong></span>
+          <span>p átlag <strong>{Math.round(average.protein)} g</strong></span>
+          <span>f átlag <strong>{Math.round(average.fat)} g</strong></span>
+          <span>CH átlag <strong>{Math.round(average.carbs)} g</strong></span>
         </div>
         <p className="muted">
           Az átlag csak a mentett napokat számolja. Mentett napok: {loggedRows.length}. Makróarány átlagból:{" "}
-          {Math.round(ratio.protein)}% fehérje, {Math.round(ratio.fat)}% zsír, {Math.round(ratio.carbs)}% szénhidrát.
+          {Math.round(ratio.protein)}% p, {Math.round(ratio.fat)}% f, {Math.round(ratio.carbs)}% CH.
         </p>
       </section>
 
