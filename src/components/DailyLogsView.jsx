@@ -65,7 +65,7 @@ const listPanelStyle = {
 };
 
 const rowStyle = {
-  borderTop: "1px solid rgba(135, 175, 157, 0.12)",
+  borderTop: "1px solid rgba(148, 163, 184, 0.12)",
   padding: "8px 2px"
 };
 
@@ -89,12 +89,6 @@ const rowTitleStyle = {
   minWidth: 0
 };
 
-const titleAndChipsStyle = {
-  display: "grid",
-  gap: "7px",
-  minWidth: 0
-};
-
 const rowTitleTopStyle = {
   display: "flex",
   alignItems: "center",
@@ -114,9 +108,10 @@ const openDetailStyle = {
   gap: "10px",
   marginTop: "10px",
   padding: "10px",
-  border: "1px solid rgba(135, 175, 157, 0.15)",
+  border: "1px solid rgba(56, 189, 248, 0.18)",
   borderRadius: "16px",
-  background: "rgba(10, 24, 21, 0.45)"
+  background: "linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(8, 13, 22, 0.74))",
+  boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)"
 };
 
 const summaryChipGroupStyle = {
@@ -137,16 +132,15 @@ const kcalChipStyle = {
   minHeight: "32px",
   padding: "7px 13px",
   fontSize: "0.86rem",
-  background: "rgba(37, 99, 77, 0.42)",
-  border: "1px solid rgba(94, 234, 178, 0.22)",
-  boxShadow: "0 0 0 1px rgba(94, 234, 178, 0.05) inset"
+  background: "rgba(15, 23, 42, 0.78)",
+  border: "1px solid rgba(56, 189, 248, 0.22)",
+  boxShadow: "0 0 0 1px rgba(56, 189, 248, 0.05) inset"
 };
 
 const activeKcalChipStyle = {
   ...kcalChipStyle,
-  background: "rgba(46, 139, 96, 0.62)",
-  border: "1px solid rgba(134, 239, 172, 0.38)",
-  boxShadow: "0 0 0 1px rgba(134, 239, 172, 0.12) inset"
+  border: "1px solid rgba(56, 189, 248, 0.32)",
+  background: "rgba(15, 23, 42, 0.88)"
 };
 
 const macroChipStyle = {
@@ -154,13 +148,15 @@ const macroChipStyle = {
   minWidth: "74px",
   minHeight: "30px",
   padding: "6px 11px",
-  fontSize: "0.78rem"
+  fontSize: "0.78rem",
+  background: "rgba(15, 23, 42, 0.72)",
+  border: "1px solid rgba(56, 189, 248, 0.18)"
 };
 
 const activeMacroChipStyle = {
   ...macroChipStyle,
-  background: "rgba(38, 78, 63, 0.68)",
-  border: "1px solid rgba(134, 239, 172, 0.24)"
+  border: "1px solid rgba(56, 189, 248, 0.28)",
+  background: "rgba(15, 23, 42, 0.84)"
 };
 
 export const summaryMacroChipStyles = {
@@ -215,7 +211,7 @@ function EntryPreview({ entries, foods }) {
               display: "grid",
               gap: "5px",
               padding: "8px 0",
-              borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+              borderTop: "1px solid rgba(148, 163, 184, 0.12)"
             }}
           >
             <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
