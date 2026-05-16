@@ -1,4 +1,5 @@
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Lock, Minus, Plus, Save, Trash2, Unlock } from "lucide-react";
+import { useState } from "react";
 import { calculateEntry, findFoodById } from "../lib/calculations";
 
 function formatMacro(value, unit = "g") {
@@ -122,7 +123,32 @@ const compactUnitStyle = {
   fontSize: "0.78rem"
 };
 
-export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
+const saveRowStyle = {
+  display: "grid",
+  gap: "8px",
+  padding: "12px 2px 2px",
+  borderTop: "1px solid rgba(135, 175, 157, 0.14)"
+};
+
+const saveActionsStyle = {
+  display: "grid",
+  gridTemplateColumns: "42px minmax(0, 1fr)",
+  gap: "8px",
+  alignItems: "center"
+};
+
+export function DailyEntryList({
+  entries,
+  foods,
+  onAmountChange,
+  onRemove,
+  onToggleLock,
+  workDate,
+  onWorkDateChange,
+  onSave
+}) {
+  const [isDateOpen, setIsDateOpen] = useState(false);
+
   if (!entries.length) {
     return (
       <section className="empty-state">
@@ -143,6 +169,7 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
         const food = findFoodById(entry.foodId, foods);
         if (!food) return null;
         const values = calculateEntry(food, entry.amount);
+        const isLocked = Boolean(entry.locked);
 
         return (
           <div style={rowStyle} key={entry.entryId}>
@@ -169,52 +196,91 @@ export function DailyEntryList({ entries, foods, onAmountChange, onRemove }) {
                   </span>
                 </div>
               </div>
-              <button
-                className="icon-button danger"
-                style={smallDeleteStyle}
-                type="button"
-                onClick={() => onRemove(entry.entryId)}
-                aria-label="Tétel törlése"
-              >
-                <Trash2 size={16} />
-              </button>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button
+                  className="icon-button"
+                  style={smallDeleteStyle}
+                  type="button"
+                  onClick={() => onToggleLock?.(entry.entryId)}
+                  aria-label={isLocked ? "Tétel feloldása" : "Tétel zárolása"}
+                >
+                  {isLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                </button>
+                {!isLocked && (
+                  <button
+                    className="icon-button danger"
+                    style={smallDeleteStyle}
+                    type="button"
+                    onClick={() => onRemove(entry.entryId)}
+                    aria-label="Tétel törlése"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="amount-control" style={amountControlStyle}>
-              <button
-                className="icon-button"
-                style={smallButtonStyle}
-                type="button"
-                onClick={() => onAmountChange(entry.entryId, Math.max(0, entry.amount - food.step))}
-                aria-label="Mennyiség csökkentése"
-              >
-                <Minus size={16} />
-              </button>
-              <label>
-                <span>Mennyiség</span>
-                <input
-                  inputMode="decimal"
-                  min="0"
-                  step={food.step}
-                  type="number"
-                  value={entry.amount}
-                  onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
-                />
-              </label>
-              <span className="unit" style={compactUnitStyle}>{food.unit}</span>
-              <button
-                className="icon-button"
-                style={smallButtonStyle}
-                type="button"
-                onClick={() => onAmountChange(entry.entryId, entry.amount + food.step)}
-                aria-label="Mennyiség növelése"
-              >
-                <Plus size={16} />
-              </button>
-            </div>
+            {!isLocked && (
+              <div className="amount-control" style={amountControlStyle}>
+                <button
+                  className="icon-button"
+                  style={smallButtonStyle}
+                  type="button"
+                  onClick={() => onAmountChange(entry.entryId, Math.max(0, entry.amount - food.step))}
+                  aria-label="Mennyiség csökkentése"
+                >
+                  <Minus size={16} />
+                </button>
+                <label>
+                  <span>Mennyiség</span>
+                  <input
+                    inputMode="decimal"
+                    min="0"
+                    step={food.step}
+                    type="number"
+                    value={entry.amount}
+                    onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
+                  />
+                </label>
+                <span className="unit" style={compactUnitStyle}>{food.unit}</span>
+                <button
+                  className="icon-button"
+                  style={smallButtonStyle}
+                  type="button"
+                  onClick={() => onAmountChange(entry.entryId, entry.amount + food.step)}
+                  aria-label="Mennyiség növelése"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
+
+      <div style={saveRowStyle}>
+        {isDateOpen && (
+          <label className="form-field" style={{ marginTop: 0 }}>
+            <span>Mentés dátuma</span>
+            <input type="date" value={workDate} onChange={(event) => onWorkDateChange?.(event.target.value)} />
+          </label>
+        )}
+        <div style={saveActionsStyle}>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setIsDateOpen((current) => !current)}
+            aria-expanded={isDateOpen}
+            aria-label="Mentés dátumának kiválasztása"
+          >
+            <CalendarDays size={18} />
+          </button>
+          <button className="primary-button full" style={{ marginTop: 0 }} type="button" onClick={onSave}>
+            <Save size={18} />
+            Tételek mentése
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
