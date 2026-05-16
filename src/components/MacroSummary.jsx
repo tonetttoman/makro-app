@@ -5,7 +5,7 @@ const LABELS = {
   kcal: "k",
   protein: "p",
   fat: "f",
-  carbs: "CH"
+  carbs: "Ch"
 };
 
 const UNITS = {
@@ -28,7 +28,7 @@ export function MacroSummary({ totals, targets }) {
         <div className="macro-ratio" aria-label="Makróarány">
           <span>{Math.round(ratio.protein)}% p</span>
           <span>{Math.round(ratio.fat)}% f</span>
-          <span>{Math.round(ratio.carbs)}% CH</span>
+          <span>{Math.round(ratio.carbs)}% Ch</span>
         </div>
       </div>
 
