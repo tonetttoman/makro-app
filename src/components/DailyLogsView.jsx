@@ -9,6 +9,10 @@ function formatStat(value) {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+function formatKcal(value) {
+  return `${Math.round(Number(value) || 0)} kcal`;
+}
+
 function formatDateWithDay(dateKey) {
   const date = new Date(`${dateKey}T12:00:00`);
   const dayName = WEEKDAYS[date.getDay()] || "";
@@ -86,11 +90,23 @@ const rowTitleStyle = {
 };
 
 const titleAndChipsStyle = {
+  display: "grid",
+  gap: "7px",
+  minWidth: 0
+};
+
+const rowTitleTopStyle = {
   display: "flex",
-  flexWrap: "wrap",
   alignItems: "center",
+  justifyContent: "space-between",
   gap: "8px",
   minWidth: 0
+};
+
+const statusInlineStyle = {
+  color: "var(--muted)",
+  fontSize: "0.76rem",
+  whiteSpace: "nowrap"
 };
 
 const openDetailStyle = {
@@ -104,6 +120,11 @@ const openDetailStyle = {
 };
 
 const summaryChipGroupStyle = {
+  display: "grid",
+  gap: "6px"
+};
+
+const macroChipRowStyle = {
   display: "flex",
   flexWrap: "wrap",
   alignItems: "center",
@@ -142,40 +163,37 @@ const activeMacroChipStyle = {
   border: "1px solid rgba(134, 239, 172, 0.24)"
 };
 
-const kcalLabelStyle = {
-  ...dailyEntryChipStyles.macroLabelStyle,
-  fontSize: "0.68rem",
-  fontWeight: 950
-};
-
 export const summaryMacroChipStyles = {
   summaryChipGroupStyle,
+  macroChipRowStyle,
   kcalChipStyle,
   activeKcalChipStyle,
   macroChipStyle,
-  activeMacroChipStyle,
-  kcalLabelStyle
+  activeMacroChipStyle
 };
 
 export function MacroChips({ totals, active = false }) {
   return (
     <div style={summaryChipGroupStyle} aria-label="Makró összesítés">
-      <span style={active ? activeKcalChipStyle : kcalChipStyle}>
-        <small style={kcalLabelStyle}>k</small>
-        <strong>{Math.round(totals.kcal)}</strong>
-      </span>
-      <span style={active ? activeMacroChipStyle : macroChipStyle}>
-        <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
-        <strong>{formatStat(totals.protein)} g</strong>
-      </span>
-      <span style={active ? activeMacroChipStyle : macroChipStyle}>
-        <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
-        <strong>{formatStat(totals.fat)} g</strong>
-      </span>
-      <span style={active ? activeMacroChipStyle : macroChipStyle}>
-        <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
-        <strong>{formatStat(totals.carbs)} g</strong>
-      </span>
+      <div>
+        <span style={active ? activeKcalChipStyle : kcalChipStyle}>
+          <strong>{formatKcal(totals.kcal)}</strong>
+        </span>
+      </div>
+      <div style={macroChipRowStyle}>
+        <span style={active ? activeMacroChipStyle : macroChipStyle}>
+          <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
+          <strong>{formatStat(totals.protein)} g</strong>
+        </span>
+        <span style={active ? activeMacroChipStyle : macroChipStyle}>
+          <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
+          <strong>{formatStat(totals.fat)} g</strong>
+        </span>
+        <span style={active ? activeMacroChipStyle : macroChipStyle}>
+          <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
+          <strong>{formatStat(totals.carbs)} g</strong>
+        </span>
+      </div>
     </div>
   );
 }
@@ -206,8 +224,7 @@ function EntryPreview({ entries, foods }) {
                 {formatStat(entry.amount)} {food.unit}
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
-                <strong>{Math.round(values.kcal)}</strong>
+                <strong>{formatKcal(values.kcal)}</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
                 <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
@@ -259,11 +276,11 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
             <div style={rowStyle} key={row.date}>
               <button style={rowButtonStyle} type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
                 <span style={rowTitleStyle}>
-                  <span style={titleAndChipsStyle}>
+                  <span style={rowTitleTopStyle}>
                     <strong>{formatDateWithDay(row.date)}</strong>
-                    <MacroChips totals={row} active={isOpen} />
+                    <small style={statusInlineStyle}>{row.status}</small>
                   </span>
-                  <small className="muted">{row.status}</small>
+                  <MacroChips totals={row} active={isOpen} />
                 </span>
                 <strong>{isOpen ? "▼" : "▶"}</strong>
               </button>
