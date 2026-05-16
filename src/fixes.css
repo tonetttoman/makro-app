@@ -237,6 +237,28 @@
 }
 
 /* Structural daily summary polish. */
+.page {
+  padding-top: 10px !important;
+}
+
+.app-header {
+  display: grid;
+  place-items: center;
+  min-height: 68px;
+  margin: 0 0 8px;
+  padding: 10px 0 4px;
+}
+
+.app-header h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.3rem, 5vw, 1.8rem);
+  font-weight: 760;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-align: center;
+}
+
 .summary {
   padding: 22px 20px 18px !important;
 }
