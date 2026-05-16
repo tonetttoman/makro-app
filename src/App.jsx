@@ -268,6 +268,10 @@ export default function App() {
     <div className="app">
       {activeView === "today" && (
         <main className="page">
+          <header className="app-header today-title" aria-label="Aktuális nézet">
+            <h1>Mai</h1>
+          </header>
+
           <MacroSummary totals={totals} targets={targets} />
 
           <button
