@@ -167,6 +167,11 @@ export default function App() {
     }));
   }
 
+  function handleResetToDefaultDate() {
+    setWorkspace(getWorkspaceForDate(diary, toDateKey()));
+    setActiveView("today");
+  }
+
   function handleAddFood(food) {
     const existingEntry = todayEntries.find((entry) => entry.foodId === food.id);
     if (existingEntry) {
@@ -291,6 +296,7 @@ export default function App() {
             onToggleLock={handleToggleLock}
             workDate={workDate}
             onWorkDateChange={handleWorkDateChange}
+            onResetToDefaultDate={handleResetToDefaultDate}
             onSave={handleConfirmDailyLog}
           />
         </main>
