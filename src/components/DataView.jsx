@@ -1,6 +1,7 @@
 import { Download, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
-import { FOOD_CATEGORIES } from "../data/foods";
+import { FOOD_CATEGORIES, FOODS } from "../data/foods";
+import { extractCustomFoods } from "../lib/foodCatalog";
 
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp"];
 
@@ -135,6 +136,7 @@ export function DataView({
   setSupplementDiary
 }) {
   const fileInputRef = useRef(null);
+  const targetsFileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
   const [activeFoodCategory, setActiveFoodCategory] = useState(FOOD_CATEGORIES[0]);
   const [foodDraft, setFoodDraft] = useState(createBlankFood);
@@ -145,11 +147,26 @@ export function DataView({
   const [isFoodNutrientsOpen, setIsFoodNutrientsOpen] = useState(false);
   const [isSupplementEditorOpen, setIsSupplementEditorOpen] = useState(false);
 
-  const exportData = useMemo(
+  const customFoods = useMemo(() => extractCustomFoods(FOODS, foods), [foods]);
+
+  const targetExportData = useMemo(
     () => ({
       version: 1,
+      exportType: "user-targets",
       exportedAt: new Date().toISOString(),
-      foods,
+      foods: customFoods,
+      macroTargets: targets,
+      nutrientTargets
+    }),
+    [customFoods, nutrientTargets, targets]
+  );
+
+  const fullBackupExportData = useMemo(
+    () => ({
+      version: 1,
+      exportType: "full-backup",
+      exportedAt: new Date().toISOString(),
+      foods: customFoods,
       supplements,
       macroTargets: targets,
       nutrientTargets,
@@ -157,7 +174,7 @@ export function DataView({
       dailyLogs,
       supplementDiary
     }),
-    [dailyLogs, diary, foods, nutrientTargets, supplementDiary, supplements, targets]
+    [customFoods, dailyLogs, diary, nutrientTargets, supplementDiary, supplements, targets]
   );
 
   const foodNutrientCount = Object.values(foodDraft.targetNutrients || {}).filter((value) => Number(value) > 0).length;
@@ -212,17 +229,42 @@ export function DataView({
     setIsSupplementEditorOpen(false);
   }
 
-  function exportJson() {
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+  function downloadJson(filenamePrefix, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `etrend-naplo-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  function importJson(file) {
+  function exportTargetJson() {
+    downloadJson("celok-es-sajat-etelek", targetExportData);
+  }
+
+  function exportFullBackupJson() {
+    downloadJson("teljes-backup", fullBackupExportData);
+  }
+
+  function importTargetJson(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (Array.isArray(data.foods)) setFoods(data.foods);
+        if (Array.isArray(data.nutrientTargets)) setNutrientTargets(data.nutrientTargets);
+        if (data.macroTargets) setTargets(data.macroTargets);
+        if (targetsFileInputRef.current) targetsFileInputRef.current.value = "";
+      } catch {
+        alert("Nem sikerült beolvasni a JSON fájlt.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function importFullBackupJson(file) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
@@ -236,8 +278,9 @@ export function DataView({
         const importedDailyLogs = extractDailyLogs(data);
         if (importedDailyLogs.length) setDailyLogs((current) => mergeDailyLogs(current, importedDailyLogs));
         if (data.supplementDiary) setSupplementDiary(data.supplementDiary);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       } catch {
-        alert("Nem sikerült beolvasni a JSON fájlt.");
+        alert("Nem sikerult beolvasni a JSON fajlt.");
       }
     };
     reader.readAsText(file);
@@ -286,19 +329,27 @@ export function DataView({
         {isBackupOpen && (
           <>
             <h2 className="section-subtitle">Élelmiszer-adatbázis</h2>
+            <p className="muted">
+              A cel export/import a makro celokat, a mikrotapanyag celokat es a sajat eteleket kezeli. A teljes backup
+              ezek mellett a napi naplot es a kiegeszito adatokat is tartalmazza.
+            </p>
             <div className="data-actions">
-              <button className="primary-button" type="button" onClick={exportJson}>
-                <Download size={18} /> JSON export
+              <button className="primary-button" type="button" onClick={exportTargetJson}>
+                <Download size={18} /> Celok export
               </button>
-              <button className="primary-button secondary" type="button" onClick={() => fileInputRef.current?.click()}>
-                <Upload size={18} /> JSON import
+              <button
+                className="primary-button secondary"
+                type="button"
+                onClick={() => targetsFileInputRef.current?.click()}
+              >
+                <Upload size={18} /> Celok import
               </button>
               <input
-                ref={fileInputRef}
+                ref={targetsFileInputRef}
                 hidden
                 accept="application/json"
                 type="file"
-                onChange={(event) => importJson(event.target.files?.[0])}
+                onChange={(event) => importTargetJson(event.target.files?.[0])}
               />
             </div>
 
@@ -307,6 +358,21 @@ export function DataView({
               A napi napló import summary-only napokat ment a `dailyLogs` adatszerkezetbe. Meglévő dátumnál frissít, új
               dátumnál hozzáad.
             </p>
+            <div className="data-actions">
+              <button className="primary-button" type="button" onClick={exportFullBackupJson}>
+                <Download size={18} /> Teljes backup export
+              </button>
+              <button className="primary-button secondary" type="button" onClick={() => fileInputRef.current?.click()}>
+                <Upload size={18} /> Teljes backup import
+              </button>
+              <input
+                ref={fileInputRef}
+                hidden
+                accept="application/json"
+                type="file"
+                onChange={(event) => importFullBackupJson(event.target.files?.[0])}
+              />
+            </div>
             <div className="data-actions">
               <button className="primary-button" type="button" onClick={exportDailyLogs}>
                 <Download size={18} /> Napi napló export

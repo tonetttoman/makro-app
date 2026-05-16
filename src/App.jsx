@@ -18,6 +18,7 @@ import {
   DIARY_KEY,
   DAILY_LOGS_KEY,
   FOODS_KEY,
+  LEGACY_TARGETS_KEY,
   NUTRIENT_TARGETS_KEY,
   SUPPLEMENT_DIARY_KEY,
   SUPPLEMENTS_KEY,
@@ -27,6 +28,7 @@ import {
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
 const todayKey = toDateKey();
+const legacyTargetKeys = [LEGACY_TARGETS_KEY];
 
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
@@ -114,10 +116,10 @@ export default function App() {
   const [diary, setDiary] = useLocalStorage(DIARY_KEY, {});
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
-  const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
+  const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS, { legacyKeys: legacyTargetKeys });
 
   useEffect(() => {
-    writeFoodCatalog(foods);
+    writeFoodCatalog(foods, FOODS);
   }, [foods]);
 
   function setFoods(nextValue) {
