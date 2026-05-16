@@ -20,7 +20,6 @@ export function MacroSummary({ totals, targets, isQuickAddOpen, onToggleQuickAdd
     <section className="summary" aria-label="Napi összesítő">
       <div className="summary-hero">
         <div className="summary-hero__top">
-          <p className="eyebrow">Mai összesítő</p>
           <button
             className="summary-quick-add-button"
             type="button"
