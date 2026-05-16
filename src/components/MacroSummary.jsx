@@ -1,59 +1,64 @@
-import { Utensils } from "lucide-react";
+import { Droplet, Flame, Plus, Wheat } from "lucide-react";
 import { calculateMacroRatio } from "../lib/calculations";
 import { ProgressBar } from "./ProgressBar";
 
-const LABELS = {
-  kcal: "kcal",
-  protein: "p",
-  fat: "f",
-  carbs: "Ch"
-};
+const ITEMS = [
+  { key: "protein", label: "Fehérje", short: "P", icon: Droplet, tone: "green" },
+  { key: "fat", label: "Zsír", short: "F", icon: Flame, tone: "amber" },
+  { key: "carbs", label: "Ch", short: "Ch", icon: Wheat, tone: "green" }
+];
 
-const UNITS = {
-  kcal: "kcal",
-  protein: "g",
-  fat: "g",
-  carbs: "g"
-};
+function formatGram(value) {
+  return `${Math.round(Number(value) || 0)} g`;
+}
 
 export function MacroSummary({ totals, targets, isQuickAddOpen, onToggleQuickAdd }) {
   const ratio = calculateMacroRatio(totals);
+  const kcal = Math.round(totals.kcal);
 
   return (
     <section className="summary" aria-label="Napi összesítő">
-      <div className="summary__header summary__header--with-action">
-        <div>
+      <div className="summary-hero">
+        <div className="summary-hero__top">
           <p className="eyebrow">Mai összesítő</p>
-          <h1>{Math.round(totals.kcal)} kcal</h1>
+          <button
+            className="summary-quick-add-button"
+            type="button"
+            onClick={onToggleQuickAdd}
+            aria-expanded={isQuickAddOpen}
+            aria-label="Gyors hozzáadás megnyitása"
+          >
+            <Plus size={26} aria-hidden="true" />
+          </button>
         </div>
-        <button
-          className="summary-quick-add-button"
-          type="button"
-          onClick={onToggleQuickAdd}
-          aria-expanded={isQuickAddOpen}
-          aria-label="Gyors hozzáadás megnyitása"
-        >
-          <Utensils size={24} aria-hidden="true" />
-        </button>
-        <div className="macro-ratio" aria-label="Makróarány">
-          <span>{Math.round(ratio.protein)}% p</span>
-          <span>{Math.round(ratio.fat)}% f</span>
-          <span>{Math.round(ratio.carbs)}% Ch</span>
+
+        <div className="summary-kcal" aria-label={`${kcal} kilokalória`}>
+          <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
+          <span>kcal</span>
         </div>
+        <p className="summary-target">cél: {targets.kcal.toLocaleString("hu-HU")} kcal</p>
+      </div>
+
+      <div className="summary-macro-ratio" aria-label="Makróarány">
+        <span><strong>P</strong> {Math.round(ratio.protein)}%</span>
+        <span><strong>F</strong> {Math.round(ratio.fat)}%</span>
+        <span><strong>Ch</strong> {Math.round(ratio.carbs)}%</span>
       </div>
 
       <div className="summary-grid">
-        {Object.keys(LABELS).map((key) => (
-          <div className="metric" key={key}>
-            <div className="metric__row">
-              <span>{LABELS[key]}</span>
-              <strong>
-                {Math.round(totals[key])}/{targets[key]} {UNITS[key]}
-              </strong>
+        {ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div className="metric" key={item.key}>
+              <div className="metric__row">
+                <span className={`metric__icon metric__icon--${item.tone}`}><Icon size={17} aria-hidden="true" /></span>
+                <span className="metric__label">{item.label}</span>
+                <strong>{formatGram(totals[item.key])} / {formatGram(targets[item.key])}</strong>
+              </div>
+              <ProgressBar value={totals[item.key]} max={targets[item.key]} tone={item.tone} />
             </div>
-            <ProgressBar value={totals[key]} max={targets[key]} tone={key === "kcal" ? "amber" : "green"} />
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
