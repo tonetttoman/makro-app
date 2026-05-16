@@ -3,14 +3,14 @@ import { calculateMacroRatio } from "../lib/calculations";
 import { ProgressBar } from "./ProgressBar";
 
 const LABELS = {
-  kcal: "k",
+  kcal: "kcal",
   protein: "p",
   fat: "f",
   carbs: "Ch"
 };
 
 const UNITS = {
-  kcal: "k",
+  kcal: "kcal",
   protein: "g",
   fat: "g",
   carbs: "g"
@@ -24,7 +24,7 @@ export function MacroSummary({ totals, targets, isQuickAddOpen, onToggleQuickAdd
       <div className="summary__header summary__header--with-action">
         <div>
           <p className="eyebrow">Mai összesítő</p>
-          <h1>{Math.round(totals.kcal)} k</h1>
+          <h1>{Math.round(totals.kcal)} kcal</h1>
         </div>
         <button
           className="summary-quick-add-button"
