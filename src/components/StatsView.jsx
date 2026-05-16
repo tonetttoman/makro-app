@@ -30,6 +30,10 @@ function formatStat(value) {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+function formatMacroLine(row) {
+  return `${formatStat(row.kcal)} k · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
+}
+
 function formatDateRange(startKey, endKey) {
   return `${formatShortDate(startKey)} – ${formatShortDate(endKey)}`;
 }
@@ -135,6 +139,55 @@ function buildWeekGroups(rows) {
     .sort((a, b) => b.id.localeCompare(a.id));
 }
 
+const listPanelStyle = {
+  display: "grid",
+  gap: 0,
+  padding: "10px",
+  marginBottom: "12px"
+};
+
+const listRowStyle = {
+  borderTop: "1px solid rgba(135, 175, 157, 0.12)",
+  padding: "9px 2px"
+};
+
+const rowButtonStyle = {
+  width: "100%",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: "10px",
+  padding: 0,
+  border: 0,
+  background: "transparent",
+  color: "inherit",
+  textAlign: "left",
+  cursor: "pointer"
+};
+
+const rowTitleStyle = {
+  display: "grid",
+  gap: "3px",
+  minWidth: 0
+};
+
+const macroLineStyle = {
+  color: "var(--muted)",
+  fontSize: "0.78rem",
+  fontWeight: 750,
+  lineHeight: 1.25
+};
+
+const openDetailStyle = {
+  display: "grid",
+  gap: "10px",
+  marginTop: "10px",
+  padding: "10px",
+  border: "1px solid rgba(135, 175, 157, 0.15)",
+  borderRadius: "16px",
+  background: "rgba(10, 24, 21, 0.45)"
+};
+
 function MacroTrendChart({ rows, target }) {
   const values = rows.map((row) => row.kcal);
   const averageValues = movingAverage(values, 7);
@@ -189,7 +242,7 @@ function MacroTrendChart({ rows, target }) {
 
 function DayRowsTable({ rows }) {
   return (
-    <div className="table-panel" style={{ marginTop: "10px", boxShadow: "none" }}>
+    <div className="table-panel" style={{ marginTop: "0", boxShadow: "none" }}>
       <table>
         <thead>
           <tr>
@@ -222,36 +275,31 @@ function DayRowsTable({ rows }) {
 
 function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
   return (
-    <section className="panel" style={{ marginBottom: "12px", padding: "12px" }}>
-      <button
-        className="collapsible-header"
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        style={{ marginTop: 0 }}
-      >
-        <span>
-          {group.label} · {Math.round(group.total.kcal)} k · {group.loggedRows.length} mentett nap
+    <div style={listRowStyle}>
+      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span style={rowTitleStyle}>
+          <strong>{group.label}</strong>
+          <span style={macroLineStyle}>{formatMacroLine(group.total)}</span>
+          <small className="muted">{group.loggedRows.length} mentett nap</small>
         </span>
         <strong>{isOpen ? "▼" : "▶"}</strong>
       </button>
 
-      <div className="average-grid" style={{ marginBottom: 0 }}>
-        <span>Átlag k <strong>{Math.round(group.average.kcal)}</strong></span>
-        <span>p átlag <strong>{Math.round(group.average.protein)} g</strong></span>
-        <span>f átlag <strong>{Math.round(group.average.fat)} g</strong></span>
-        <span>Ch átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
-      </div>
-
-      <p className="muted" style={{ marginBottom: 0 }}>
-        Heti összesen: {Math.round(group.total.kcal)} k · p {formatStat(group.total.protein)} g · f{" "}
-        {formatStat(group.total.fat)} g · Ch {formatStat(group.total.carbs)} g. Makróarány átlagból:{" "}
-        {Math.round(group.ratio.protein)}% p, {Math.round(group.ratio.fat)}% f,{" "}
-        {Math.round(group.ratio.carbs)}% Ch.
-      </p>
-
-      {isOpen && showDailyDetails && <DayRowsTable rows={group.rows} />}
-    </section>
+      {isOpen && showDailyDetails && (
+        <div style={openDetailStyle}>
+          <div className="average-grid" style={{ marginBottom: 0 }}>
+            <span>Átlag k <strong>{Math.round(group.average.kcal)}</strong></span>
+            <span>p átlag <strong>{Math.round(group.average.protein)} g</strong></span>
+            <span>f átlag <strong>{Math.round(group.average.fat)} g</strong></span>
+            <span>Ch átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
+          </div>
+          <p className="muted" style={{ margin: 0 }}>
+            Makróarány: {Math.round(group.ratio.protein)}% p · {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch
+          </p>
+          <DayRowsTable rows={group.rows} />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -275,19 +323,13 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
         <p className="eyebrow">{days} napos nézet</p>
         <h1>{title}</h1>
         {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
-        <div className="average-grid">
-          <span>Átlag k <strong>{Math.round(average.kcal)}</strong></span>
-          <span>p átlag <strong>{Math.round(average.protein)} g</strong></span>
-          <span>f átlag <strong>{Math.round(average.fat)} g</strong></span>
-          <span>Ch átlag <strong>{Math.round(average.carbs)} g</strong></span>
-        </div>
         <p className="muted">
-          Az átlag csak a mentett napokat számolja. Mentett napok: {loggedRows.length}. Makróarány átlagból:{" "}
-          {Math.round(ratio.protein)}% p, {Math.round(ratio.fat)}% f, {Math.round(ratio.carbs)}% Ch.
+          Átlag: {formatMacroLine(average)}. Mentett napok: {loggedRows.length}. Makróarány:{" "}
+          {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch.
         </p>
       </section>
 
-      <section aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
+      <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
         {weekGroups.map((group) => (
           <WeekSummaryCard
             key={group.id}
