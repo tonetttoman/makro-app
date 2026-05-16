@@ -121,12 +121,25 @@ const kcalChipStyle = {
   boxShadow: "0 0 0 1px rgba(94, 234, 178, 0.05) inset"
 };
 
+const activeKcalChipStyle = {
+  ...kcalChipStyle,
+  background: "rgba(46, 139, 96, 0.62)",
+  border: "1px solid rgba(134, 239, 172, 0.38)",
+  boxShadow: "0 0 0 1px rgba(134, 239, 172, 0.12) inset"
+};
+
 const macroChipStyle = {
   ...dailyEntryChipStyles.macroChipStyle,
   minWidth: "74px",
   minHeight: "30px",
   padding: "6px 11px",
   fontSize: "0.78rem"
+};
+
+const activeMacroChipStyle = {
+  ...macroChipStyle,
+  background: "rgba(38, 78, 63, 0.68)",
+  border: "1px solid rgba(134, 239, 172, 0.24)"
 };
 
 const kcalLabelStyle = {
@@ -138,26 +151,28 @@ const kcalLabelStyle = {
 export const summaryMacroChipStyles = {
   summaryChipGroupStyle,
   kcalChipStyle,
+  activeKcalChipStyle,
   macroChipStyle,
+  activeMacroChipStyle,
   kcalLabelStyle
 };
 
-export function MacroChips({ totals }) {
+export function MacroChips({ totals, active = false }) {
   return (
     <div style={summaryChipGroupStyle} aria-label="Makró összesítés">
-      <span style={kcalChipStyle}>
+      <span style={active ? activeKcalChipStyle : kcalChipStyle}>
         <small style={kcalLabelStyle}>k</small>
         <strong>{Math.round(totals.kcal)}</strong>
       </span>
-      <span style={macroChipStyle}>
+      <span style={active ? activeMacroChipStyle : macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
         <strong>{formatStat(totals.protein)} g</strong>
       </span>
-      <span style={macroChipStyle}>
+      <span style={active ? activeMacroChipStyle : macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
         <strong>{formatStat(totals.fat)} g</strong>
       </span>
-      <span style={macroChipStyle}>
+      <span style={active ? activeMacroChipStyle : macroChipStyle}>
         <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
         <strong>{formatStat(totals.carbs)} g</strong>
       </span>
@@ -246,7 +261,7 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
                 <span style={rowTitleStyle}>
                   <span style={titleAndChipsStyle}>
                     <strong>{formatDateWithDay(row.date)}</strong>
-                    <MacroChips totals={row} />
+                    <MacroChips totals={row} active={isOpen} />
                   </span>
                   <small className="muted">{row.status}</small>
                 </span>
