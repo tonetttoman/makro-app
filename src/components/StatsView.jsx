@@ -34,8 +34,12 @@ function formatStat(value) {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+function formatKcal(value) {
+  return `${Math.round(Number(value) || 0)} kcal`;
+}
+
 function formatMacroLine(row) {
-  return `${formatStat(row.kcal)} k · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
+  return `${formatKcal(row.kcal)} · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
 }
 
 function formatDateWithDay(dateKey) {
@@ -196,11 +200,23 @@ const rowTitleStyle = {
 };
 
 const titleAndChipsStyle = {
+  display: "grid",
+  gap: "7px",
+  minWidth: 0
+};
+
+const rowTitleTopStyle = {
   display: "flex",
-  flexWrap: "wrap",
   alignItems: "center",
+  justifyContent: "space-between",
   gap: "8px",
   minWidth: 0
+};
+
+const statusInlineStyle = {
+  color: "var(--muted)",
+  fontSize: "0.76rem",
+  whiteSpace: "nowrap"
 };
 
 function getOpenDetailStyle(isActive = false) {
@@ -235,9 +251,9 @@ function MacroTrendChart({ rows, target }) {
       <div className="chart-card__header">
         <div>
           <p className="eyebrow">Kalória trend</p>
-          <h2>{Math.round(current)} k ma</h2>
+          <h2>{formatKcal(current)} ma</h2>
         </div>
-        <span>Cél: {target} k</span>
+        <span>Cél: {target} kcal</span>
       </div>
       <svg className="trend-chart" viewBox="0 0 100 64" preserveAspectRatio="none" aria-label="Napi kalória grafikon">
         <line x1="2" x2="98" y1={targetY} y2={targetY} className="trend-chart__target" />
@@ -299,8 +315,7 @@ function EntryPreview({ entries, foods }) {
                 {formatStat(entry.amount)} {food.unit}
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
-                <strong>{Math.round(values.kcal)}</strong>
+                <strong>{formatKcal(values.kcal)}</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
                 <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
@@ -329,11 +344,11 @@ function DaySummaryRow({ row, isOpen, isEntryPreviewOpen, onToggle, onToggleEntr
     <div style={getListRowStyle(isOpen)}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
-          <span style={titleAndChipsStyle}>
+          <span style={rowTitleTopStyle}>
             <strong>{formatDateWithDay(row.dateKey)}</strong>
-            <MacroChips totals={row} active={isOpen} />
+            <small style={statusInlineStyle}>{row.status}</small>
           </span>
-          <small className="muted">{row.status}</small>
+          <MacroChips totals={row} active={isOpen} />
         </span>
         <strong>{isOpen ? "▾" : "▸"}</strong>
       </button>
@@ -379,11 +394,11 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, openEntryPreview
     <div style={getListRowStyle(isWeekActive)}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
         <span style={rowTitleStyle}>
-          <span style={titleAndChipsStyle}>
+          <span style={rowTitleTopStyle}>
             <strong>{group.label}</strong>
-            <MacroChips totals={group.total} active={isWeekActive} />
+            <small style={statusInlineStyle}>{group.loggedRows.length} mentett nap</small>
           </span>
-          <small className="muted">{group.loggedRows.length} mentett nap</small>
+          <MacroChips totals={group.total} active={isWeekActive} />
         </span>
         <strong>{isOpen ? "▾" : "▸"}</strong>
       </button>
