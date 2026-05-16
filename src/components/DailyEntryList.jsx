@@ -76,9 +76,15 @@ const rowTopStyle = {
 };
 
 const titleRowStyle = {
+  display: "grid",
+  gap: "5px",
+  minWidth: 0
+};
+
+const titleLineStyle = {
   display: "flex",
   flexWrap: "wrap",
-  alignItems: "center",
+  alignItems: "baseline",
   gap: "7px",
   minWidth: 0
 };
@@ -90,20 +96,29 @@ const itemTitleStyle = {
   whiteSpace: "nowrap"
 };
 
+const inlineAmountStyle = {
+  color: "var(--muted-strong)",
+  fontSize: "0.82rem",
+  fontWeight: 850,
+  lineHeight: 1.1,
+  whiteSpace: "nowrap"
+};
+
 const compactSummaryStyle = {
-  display: "flex",
-  flexWrap: "wrap",
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
   alignItems: "center",
-  gap: "6px",
-  marginTop: 0
+  gap: "5px",
+  marginTop: 0,
+  width: "100%"
 };
 
 const amountBadgeStyle = {
-  minHeight: "28px",
-  minWidth: "58px",
+  minHeight: "26px",
+  minWidth: 0,
   marginTop: 0,
-  padding: "6px 11px",
-  fontSize: "0.8rem",
+  padding: "5px 8px",
+  fontSize: "0.72rem",
   lineHeight: 1.05
 };
 
@@ -111,24 +126,25 @@ const macroChipStyle = {
   display: "inline-flex",
   alignItems: "baseline",
   justifyContent: "center",
-  gap: "4px",
+  gap: "3px",
   minHeight: "28px",
-  minWidth: "68px",
-  padding: "6px 10px",
+  minWidth: 0,
+  padding: "5px 7px",
   border: "1px solid rgba(135, 175, 157, 0.16)",
   borderRadius: "999px",
   background: "rgba(29, 45, 41, 0.56)",
   color: "var(--text)",
-  fontSize: "0.76rem",
+  fontSize: "clamp(0.64rem, 2.35vw, 0.76rem)",
   fontWeight: 850,
-  lineHeight: 1.05
+  lineHeight: 1.05,
+  whiteSpace: "nowrap"
 };
 
 const macroLabelStyle = {
   color: "var(--muted)",
-  fontSize: "0.58rem",
+  fontSize: "0.56rem",
   fontWeight: 900,
-  letterSpacing: "0.035em",
+  letterSpacing: "0.02em",
   textTransform: "none"
 };
 
@@ -287,9 +303,11 @@ export function DailyEntryList({
           <div style={rowStyle} key={entry.entryId}>
             <div style={rowTopStyle}>
               <div style={titleRowStyle}>
-                <h2 style={itemTitleStyle}>{food.name}</h2>
-                <div style={compactSummaryStyle} aria-label="Mennyiség és tápértékek">
-                  <span className="entry-amount-badge" style={amountBadgeStyle}>{formatAmount(entry.amount, food.unit)}</span>
+                <div style={titleLineStyle}>
+                  <h2 style={itemTitleStyle}>{food.name}</h2>
+                  <span style={inlineAmountStyle}>{formatAmount(entry.amount, food.unit)}</span>
+                </div>
+                <div style={compactSummaryStyle} aria-label="Tápértékek">
                   <span style={macroChipStyle}>
                     <strong>{formatKcal(values.kcal)}</strong>
                   </span>
