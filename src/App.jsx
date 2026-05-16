@@ -106,6 +106,7 @@ function upsertDailyLog(dailyLogs, date, totals) {
 export default function App() {
   const [activeView, setActiveView] = useState("today");
   const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
   const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
   const [supplements, setSupplements] = useLocalStorage(SUPPLEMENTS_KEY, SUPPLEMENTS);
@@ -217,15 +218,24 @@ export default function App() {
           <MacroSummary totals={totals} targets={targets} />
 
           <section className="panel">
-            <div className="panel__header">
-              <div>
-                <p className="eyebrow">Gyors hozzáadás</p>
-                <h2>Alap összetevők</h2>
-              </div>
-              <span className="badge">{Object.keys(targetNutrients).length} célanyag-előnézet</span>
-            </div>
-            <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
-            <FoodGrid foods={visibleFoods} dailyAmounts={todayFoodAmounts} onAdd={handleAddFood} />
+            <button
+              className="collapsible-header"
+              type="button"
+              onClick={() => setIsQuickAddOpen((current) => !current)}
+              aria-expanded={isQuickAddOpen}
+            >
+              <span>Gyors hozzáadás – Alap összetevők</span>
+              <strong>{isQuickAddOpen ? "▼" : "▶"}</strong>
+            </button>
+            {isQuickAddOpen && (
+              <>
+                <div className="panel__header panel__header--compact">
+                  <span className="badge">{Object.keys(targetNutrients).length} célanyag-előnézet</span>
+                </div>
+                <CategoryPicker categories={FOOD_CATEGORIES} activeCategory={activeCategory} onSelect={setActiveCategory} />
+                <FoodGrid foods={visibleFoods} dailyAmounts={todayFoodAmounts} onAdd={handleAddFood} />
+              </>
+            )}
           </section>
 
           <DailyEntryList foods={foods} entries={todayEntries} onAmountChange={handleAmountChange} onRemove={handleRemove} />
