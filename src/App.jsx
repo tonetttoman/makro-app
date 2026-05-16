@@ -28,6 +28,14 @@ function getSavedEntriesForDate(diary, date) {
   return (diary[date]?.entries || []).map((entry) => ({ ...entry, locked: true }));
 }
 
+function getWorkspaceForDate(diary, date) {
+  return { date, entries: getSavedEntriesForDate(diary, date) };
+}
+
+function hasUnsavedEntries(entries) {
+  return entries.some((entry) => !entry.locked);
+}
+
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
 }
@@ -120,11 +128,7 @@ export default function App() {
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
 
   useEffect(() => {
-    const defaultDate = toDateKey();
-    setWorkspace((current) => {
-      if ((current?.date || defaultDate) === defaultDate) return current || { date: defaultDate, entries: [] };
-      return { date: defaultDate, entries: getSavedEntriesForDate(diary, defaultDate) };
-    });
+    setWorkspace(getWorkspaceForDate(diary, toDateKey()));
   }, []);
 
   const workDate = workspace.date || todayKey;
@@ -181,7 +185,7 @@ export default function App() {
   function handleAmountChange(entryId, amount) {
     const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
     updateTodayEntries(
-      todayEntries.map((entry) => (entry.entryId === entryId ? { ...entry, amount: safeAmount } : entry))
+      todayEntries.map((entry) => (entry.entryId === entryId ? { ...entry, amount: safeAmount, locked: false } : entry))
     );
   }
 
@@ -196,7 +200,10 @@ export default function App() {
   }
 
   function handleWorkDateChange(date) {
-    setWorkspace((current) => ({ ...current, date: date || todayKey }));
+    const nextDate = date || todayKey;
+    if (nextDate === workDate) return;
+    if (hasUnsavedEntries(todayEntries) && !window.confirm("Nem mentett módosítás van a listában. Dátumváltással eldobod?")) return;
+    setWorkspace(getWorkspaceForDate(diary, nextDate));
   }
 
   function handleAddSupplement(supplement) {
@@ -225,20 +232,23 @@ export default function App() {
     const entriesToSave = todayEntries.map((entry) => ({ ...entry, locked: true }));
     const savedTotals = calculateTotals(entriesToSave, foods);
     const defaultDate = toDateKey();
-    const defaultEntries = workDate === defaultDate ? entriesToSave : getSavedEntriesForDate(diary, defaultDate);
-    setDiary((current) => ({
-      ...current,
+    const nextDiary = {
+      ...diary,
       [workDate]: {
         date: workDate,
         entries: entriesToSave
       }
-    }));
+    };
+    setDiary(nextDiary);
     setDailyLogs((current) => upsertDailyLog(current, workDate, savedTotals));
-    setWorkspace({ date: defaultDate, entries: defaultEntries });
+    setWorkspace(getWorkspaceForDate(nextDiary, defaultDate));
     alert("Tételek mentve.");
   }
 
   function handleLoadToToday(date, entries) {
+    if (date !== workDate && hasUnsavedEntries(todayEntries)) {
+      if (!window.confirm("Nem mentett módosítás van a listában. A betöltéssel eldobod?")) return;
+    }
     setWorkspace({
       date,
       entries: entries.map((entry) => ({ ...entry, locked: true }))
