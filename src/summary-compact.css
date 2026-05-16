@@ -1,52 +1,69 @@
-/* Summary compact pass. */
+/* Direct reference alignment pass. */
+.page {
+  padding: 8px 14px 14px !important;
+}
+
+.today-title {
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 10px 0 8px !important;
+}
+
+.today-title h1 {
+  font-size: 1.28rem !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.02em !important;
+}
+
 .summary {
-  padding: 14px 20px 14px !important;
-  margin-bottom: 10px !important;
+  padding: 16px 20px 16px !important;
+  margin-bottom: 12px !important;
+  border-radius: 19px !important;
 }
 
 .summary::before {
-  width: min(176px, 47vw) !important;
-  height: min(176px, 47vw) !important;
-  inset: 20px auto auto 50% !important;
+  width: min(162px, 43vw) !important;
+  height: min(162px, 43vw) !important;
+  inset: 18px auto auto 50% !important;
   border-width: 2px !important;
-  border-color: rgba(251, 191, 36, 0.78) !important;
+  border-color: rgba(251, 191, 36, 0.76) !important;
   border-right-color: transparent !important;
-  border-bottom-color: rgba(251, 191, 36, 0.18) !important;
+  border-bottom-color: rgba(251, 191, 36, 0.16) !important;
   opacity: 0.9 !important;
 }
 
 .summary::after {
-  width: 136px !important;
-  height: 136px !important;
-  inset: -20% auto auto 50% !important;
-  opacity: 0.78 !important;
+  width: 126px !important;
+  height: 126px !important;
+  inset: -18% auto auto 50% !important;
+  opacity: 0.72 !important;
 }
 
 .summary-hero {
-  min-height: 166px !important;
-  gap: 5px !important;
+  min-height: 150px !important;
+  gap: 4px !important;
   align-content: start !important;
 }
 
 .summary-kcal {
   gap: 7px !important;
-  margin-top: 18px !important;
+  margin-top: 16px !important;
 }
 
 .summary-kcal strong {
-  font-size: clamp(3rem, 13.2vw, 5rem) !important;
+  font-size: clamp(3.05rem, 13.5vw, 4.85rem) !important;
   line-height: 0.9 !important;
-  letter-spacing: 0.03em !important;
+  letter-spacing: 0.045em !important;
 }
 
 .summary-kcal span {
-  font-size: clamp(0.92rem, 3.5vw, 1.22rem) !important;
-  font-weight: 680 !important;
+  font-size: clamp(0.92rem, 3.4vw, 1.18rem) !important;
+  font-weight: 690 !important;
 }
 
 .summary-target {
-  font-size: 0.88rem !important;
-  line-height: 1.15 !important;
+  font-size: 0.86rem !important;
+  line-height: 1.1 !important;
 }
 
 .summary-macro-ratio {
@@ -83,64 +100,71 @@
 }
 
 .add-food-cta {
-  min-height: 50px !important;
-  margin-bottom: 10px !important;
-  border-radius: 15px !important;
+  min-height: 52px !important;
+  margin-bottom: 14px !important;
+  border-radius: 14px !important;
 }
 
 .daily-entry-panel {
   gap: 8px !important;
-  padding: 0 2px 8px !important;
+  padding: 0 0 8px !important;
 }
 
-.daily-entry-header {
-  gap: 7px !important;
-  padding-top: 2px !important;
+.reference-list-header {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  padding: 0 0 4px !important;
 }
 
-.daily-entry-header .eyebrow {
+.reference-list-header h2 {
   margin: 0 !important;
+  color: var(--text) !important;
+  font-size: 1.02rem !important;
+  font-weight: 760 !important;
+  letter-spacing: -0.015em !important;
+}
+
+.daily-entry-tools {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 750 !important;
+}
+
+.reference-tool-button {
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(56, 189, 248, 0.16) !important;
+  border-radius: 10px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
   color: var(--muted-strong) !important;
-  font-size: 0.82rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.11em !important;
-  text-transform: uppercase !important;
 }
 
-.daily-entry-header__actions {
-  gap: 7px !important;
-}
-
-.daily-entry-date,
-.daily-entry-header__actions .icon-button,
-.daily-save-button {
-  min-height: 40px !important;
-  border-radius: 13px !important;
-}
-
-.daily-entry-date {
-  background: rgba(15, 23, 42, 0.88) !important;
-  border-color: rgba(56, 189, 248, 0.16) !important;
-}
-
-.daily-save-button {
-  min-width: 96px !important;
+.reference-date-picker {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 8px !important;
 }
 
 .daily-entry-list-modern {
   display: grid !important;
   gap: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgba(56, 189, 248, 0.14) !important;
-  border-radius: 18px !important;
-  background: linear-gradient(180deg, rgba(13, 20, 33, 0.94), rgba(7, 11, 20, 0.9)) !important;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
+  border: 1px solid rgba(148, 163, 184, 0.14) !important;
+  border-radius: 16px !important;
+  background: rgba(12, 18, 30, 0.72) !important;
+  box-shadow: none !important;
 }
 
 .daily-entry-item {
-  min-height: 76px !important;
+  min-height: 74px !important;
   gap: 4px !important;
-  padding: 10px 50px 10px 13px !important;
+  padding: 10px 48px 10px 12px !important;
   border: 0 !important;
   border-radius: 0 !important;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
@@ -152,8 +176,15 @@
   border-bottom: 0 !important;
 }
 
-.daily-entry-item.is-locked {
-  opacity: 1 !important;
+.daily-entry-readonly-main {
+  display: grid !important;
+  gap: 5px !important;
+  width: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  text-align: left !important;
 }
 
 .daily-entry-main {
@@ -165,36 +196,39 @@
 }
 
 .daily-entry-title-block h3 {
-  font-size: 0.98rem !important;
-  font-weight: 790 !important;
+  font-size: 0.94rem !important;
+  font-weight: 760 !important;
+  line-height: 1.1 !important;
   letter-spacing: -0.02em !important;
 }
 
 .daily-entry-title-block span {
-  font-size: 0.76rem !important;
-  font-weight: 760 !important;
+  color: var(--muted) !important;
+  font-size: 0.72rem !important;
+  font-weight: 730 !important;
 }
 
 .daily-entry-kcal {
-  font-size: 0.94rem !important;
-  font-weight: 860 !important;
+  font-size: 0.9rem !important;
+  font-weight: 790 !important;
 }
 
 .daily-entry-macros {
   gap: 10px !important;
   padding-right: 0 !important;
-  font-size: 0.76rem !important;
+  font-size: 0.72rem !important;
   line-height: 1.1 !important;
 }
 
 .daily-entry-macros span {
   gap: 4px !important;
-  font-size: 0.76rem !important;
-  font-weight: 840 !important;
+  font-size: 0.72rem !important;
+  font-weight: 760 !important;
 }
 
 .daily-entry-macros small {
-  font-size: 0.66rem !important;
+  font-size: 0.64rem !important;
+  font-weight: 850 !important;
 }
 
 .daily-entry-actions {
@@ -205,12 +239,16 @@
 }
 
 .daily-entry-actions .icon-button {
-  width: 32px !important;
-  min-height: 32px !important;
-  height: 32px !important;
-  border-radius: 11px !important;
+  width: 31px !important;
+  min-height: 31px !important;
+  height: 31px !important;
+  border-radius: 10px !important;
   color: var(--muted-strong) !important;
-  background: rgba(15, 23, 42, 0.72) !important;
+  background: rgba(15, 23, 42, 0.68) !important;
+}
+
+.daily-entry-edit {
+  margin-top: 8px !important;
 }
 
 .bottom-nav {
@@ -231,29 +269,25 @@
 
 @media (max-width: 380px) {
   .summary {
-    padding: 13px 16px 13px !important;
+    padding: 14px 16px 15px !important;
   }
 
   .summary::before {
-    width: min(162px, 48vw) !important;
-    height: min(162px, 48vw) !important;
-    inset: 19px auto auto 50% !important;
+    width: min(152px, 45vw) !important;
+    height: min(152px, 45vw) !important;
+    inset: 18px auto auto 50% !important;
   }
 
   .summary-hero {
-    min-height: 154px !important;
+    min-height: 144px !important;
   }
 
   .summary-kcal strong {
-    font-size: clamp(2.8rem, 13vw, 4.6rem) !important;
+    font-size: clamp(2.85rem, 13vw, 4.4rem) !important;
   }
 
   .daily-entry-item {
-    min-height: 72px !important;
-    padding: 9px 47px 9px 12px !important;
-  }
-
-  .daily-entry-title-block h3 {
-    font-size: 0.94rem !important;
+    min-height: 70px !important;
+    padding: 9px 46px 9px 12px !important;
   }
 }
