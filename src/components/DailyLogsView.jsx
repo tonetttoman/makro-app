@@ -1,9 +1,18 @@
 import { useMemo, useState } from "react";
 import { calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
+import { dailyEntryChipStyles } from "./DailyEntryList";
+
+const WEEKDAYS = ["vas", "hét", "ked", "sze", "csü", "pén", "szo"];
 
 function formatStat(value) {
   const rounded = Math.round((Number(value) || 0) * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatDateWithDay(dateKey) {
+  const date = new Date(`${dateKey}T12:00:00`);
+  const dayName = WEEKDAYS[date.getDay()] || "";
+  return `${dateKey} · ${dayName}`;
 }
 
 function getDailyLog(dailyLogs, date) {
@@ -52,25 +61,40 @@ function EntryPreview({ entries, foods }) {
       {entries.map((entry) => {
         const food = foods.find((item) => item.id === entry.foodId);
         if (!food) return null;
-        const amount = Math.round((Number(entry.amount) || 0) * 10) / 10;
         const values = calculateEntry(food, Number(entry.amount) || 0);
-        const amountText = `${Number.isInteger(amount) ? amount : amount.toFixed(1)} ${food.unit}`;
         return (
           <div
             className="daily-log-detail-row"
             key={entry.entryId}
             style={{
               display: "grid",
-              gap: "3px",
+              gap: "5px",
               padding: "8px 0",
               borderTop: "1px solid rgba(135, 175, 157, 0.12)"
             }}
           >
             <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem", lineHeight: 1.35 }}>
-              {amountText} · {Math.round(values.kcal)} kcal · F {formatStat(values.protein)} g · Zs {formatStat(values.fat)} g · CH{" "}
-              {formatStat(values.carbs)} g
-            </span>
+            <div style={dailyEntryChipStyles.compactSummaryStyle} aria-label="Mennyiség és tápértékek">
+              <span className="entry-amount-badge" style={dailyEntryChipStyles.amountBadgeStyle}>
+                {formatStat(entry.amount)} {food.unit}
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>kcal</small>
+                <strong>{Math.round(values.kcal)}</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>F</small>
+                <strong>{formatStat(values.protein)} g</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>Zs</small>
+                <strong>{formatStat(values.fat)} g</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>CH</small>
+                <strong>{formatStat(values.carbs)} g</strong>
+              </span>
+            </div>
           </div>
         );
       })}
@@ -108,7 +132,7 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
             <article className="daily-log-card" key={row.date}>
               <button className="daily-log-card__summary" type="button" onClick={() => setOpenDate(isOpen ? null : row.date)}>
                 <span>
-                  <strong>{row.date}</strong>
+                  <strong>{formatDateWithDay(row.date)}</strong>
                   <small>{row.status}</small>
                 </span>
                 <span className="daily-log-card__kcal">{formatStat(row.kcal)} kcal</span>
