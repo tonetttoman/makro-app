@@ -1,4 +1,4 @@
-import { CalendarDays, Lock, Minus, Plus, Save, Trash2, Unlock } from "lucide-react";
+import { CalendarDays, Lock, Minus, Plus, Save, Trash2, Unlock, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { calculateEntry, findFoodById } from "../lib/calculations";
 
@@ -166,6 +166,11 @@ const saveActionsStyle = {
   alignItems: "center"
 };
 
+const saveActionsWithCloseStyle = {
+  ...saveActionsStyle,
+  gridTemplateColumns: "42px minmax(0, 1fr) 42px"
+};
+
 export const dailyEntryChipStyles = {
   compactSummaryStyle,
   amountBadgeStyle,
@@ -181,6 +186,7 @@ export function DailyEntryList({
   onToggleLock,
   workDate,
   onWorkDateChange,
+  onResetToDefaultDate,
   onSave
 }) {
   const [isDateOpen, setIsDateOpen] = useState(false);
@@ -198,6 +204,11 @@ export function DailyEntryList({
         input.click();
       }
     });
+  }
+
+  function closeDatePicker() {
+    setIsDateOpen(false);
+    onResetToDefaultDate?.();
   }
 
   if (!entries.length) {
@@ -324,7 +335,7 @@ export function DailyEntryList({
             />
           </label>
         )}
-        <div style={saveActionsStyle}>
+        <div style={isDateOpen ? saveActionsWithCloseStyle : saveActionsStyle}>
           <button
             className="icon-button"
             type="button"
@@ -338,6 +349,16 @@ export function DailyEntryList({
             <Save size={18} />
             Tételek mentése
           </button>
+          {isDateOpen && (
+            <button
+              className="icon-button danger"
+              type="button"
+              onClick={closeDatePicker}
+              aria-label="Dátumválasztó bezárása és visszaállás az alap mai nézetre"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </div>
     </section>
