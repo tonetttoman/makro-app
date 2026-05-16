@@ -197,7 +197,7 @@ function DayRowsTable({ rows }) {
             <th>k</th>
             <th>p</th>
             <th>f</th>
-            <th>CH</th>
+            <th>Ch</th>
           </tr>
         </thead>
         <tbody>
@@ -240,14 +240,14 @@ function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
         <span>Átlag k <strong>{Math.round(group.average.kcal)}</strong></span>
         <span>p átlag <strong>{Math.round(group.average.protein)} g</strong></span>
         <span>f átlag <strong>{Math.round(group.average.fat)} g</strong></span>
-        <span>CH átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
+        <span>Ch átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
       </div>
 
       <p className="muted" style={{ marginBottom: 0 }}>
         Heti összesen: {Math.round(group.total.kcal)} k · p {formatStat(group.total.protein)} g · f{" "}
-        {formatStat(group.total.fat)} g · CH {formatStat(group.total.carbs)} g. Makróarány átlagból:{" "}
+        {formatStat(group.total.fat)} g · Ch {formatStat(group.total.carbs)} g. Makróarány átlagból:{" "}
         {Math.round(group.ratio.protein)}% p, {Math.round(group.ratio.fat)}% f,{" "}
-        {Math.round(group.ratio.carbs)}% CH.
+        {Math.round(group.ratio.carbs)}% Ch.
       </p>
 
       {isOpen && showDailyDetails && <DayRowsTable rows={group.rows} />}
@@ -279,11 +279,11 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
           <span>Átlag k <strong>{Math.round(average.kcal)}</strong></span>
           <span>p átlag <strong>{Math.round(average.protein)} g</strong></span>
           <span>f átlag <strong>{Math.round(average.fat)} g</strong></span>
-          <span>CH átlag <strong>{Math.round(average.carbs)} g</strong></span>
+          <span>Ch átlag <strong>{Math.round(average.carbs)} g</strong></span>
         </div>
         <p className="muted">
           Az átlag csak a mentett napokat számolja. Mentett napok: {loggedRows.length}. Makróarány átlagból:{" "}
-          {Math.round(ratio.protein)}% p, {Math.round(ratio.fat)}% f, {Math.round(ratio.carbs)}% CH.
+          {Math.round(ratio.protein)}% p, {Math.round(ratio.fat)}% f, {Math.round(ratio.carbs)}% Ch.
         </p>
       </section>
 
