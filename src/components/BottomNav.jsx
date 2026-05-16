@@ -1,8 +1,7 @@
-import { BarChart3, CalendarDays, ClipboardList, Database, Utensils } from "lucide-react";
+import { BarChart3, CalendarDays, Database, Utensils } from "lucide-react";
 
 const ITEMS = [
   { id: "today", label: "Mai", icon: Utensils },
-  { id: "daily", label: "Napi", icon: ClipboardList },
   { id: "weekly", label: "Heti", icon: BarChart3 },
   { id: "monthly", label: "Havi", icon: CalendarDays },
   { id: "data", label: "Adatok", icon: Database }
