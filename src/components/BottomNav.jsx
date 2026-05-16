@@ -1,9 +1,9 @@
 import { BarChart3, Database, Utensils } from "lucide-react";
 
 const ITEMS = [
-  { id: "today", label: "Mai", icon: Utensils },
-  { id: "monthly", label: "Havi", icon: BarChart3 },
-  { id: "data", label: "Adatok", icon: Database }
+  { id: "today", label: "Mai", icon: Utensils, column: 1 },
+  { id: "monthly", label: "Havi", icon: BarChart3, column: 3 },
+  { id: "data", label: "Adatok", icon: Database, column: 5 }
 ];
 
 export function BottomNav({ activeView, onChange }) {
@@ -16,6 +16,7 @@ export function BottomNav({ activeView, onChange }) {
             className={activeView === item.id ? "is-active" : ""}
             key={item.id}
             type="button"
+            style={{ gridColumn: item.column }}
             onClick={() => onChange(item.id)}
           >
             <Icon size={20} aria-hidden="true" />
