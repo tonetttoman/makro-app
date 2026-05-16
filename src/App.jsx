@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
 import { CategoryPicker } from "./components/CategoryPicker";
 import { DataView } from "./components/DataView";
@@ -13,6 +13,7 @@ import { TARGET_NUTRIENTS } from "./data/nutrients";
 import { SUPPLEMENTS } from "./data/supplements";
 import { DEFAULT_TARGETS, calculateTargetNutrients, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
+import { mergeFoodCatalog, readMergedFoodCatalog, writeFoodCatalog } from "./lib/foodCatalog";
 import {
   DIARY_KEY,
   DAILY_LOGS_KEY,
@@ -106,7 +107,7 @@ function upsertDailyLog(dailyLogs, date, totals) {
 export default function App() {
   const [activeView, setActiveView] = useState("today");
   const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
-  const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
+  const [foods, setFoodsState] = useState(() => readMergedFoodCatalog(FOODS));
   const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
   const [supplements, setSupplements] = useLocalStorage(SUPPLEMENTS_KEY, SUPPLEMENTS);
   const [nutrientTargets, setNutrientTargets] = useLocalStorage(NUTRIENT_TARGETS_KEY, TARGET_NUTRIENTS);
@@ -114,6 +115,17 @@ export default function App() {
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
+
+  useEffect(() => {
+    writeFoodCatalog(foods);
+  }, [foods]);
+
+  function setFoods(nextValue) {
+    setFoodsState((current) => {
+      const resolvedFoods = typeof nextValue === "function" ? nextValue(current) : nextValue;
+      return mergeFoodCatalog(FOODS, Array.isArray(resolvedFoods) ? resolvedFoods : []);
+    });
+  }
 
   const workDate = workspace.date || todayKey;
   const todayEntries = workspace.entries || [];
