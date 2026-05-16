@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { averageTotals, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
+import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
+import { dailyEntryChipStyles } from "./DailyEntryList";
 import { MacroChips } from "./DailyLogsView";
+
+const WEEKDAYS = ["vas", "hét", "ked", "sze", "csü", "pén", "szo"];
 
 function toPoints(values, max, height = 58) {
   return values
@@ -33,6 +36,12 @@ function formatStat(value) {
 
 function formatMacroLine(row) {
   return `${formatStat(row.kcal)} k · p ${formatStat(row.protein)} g · f ${formatStat(row.fat)} g · Ch ${formatStat(row.carbs)} g`;
+}
+
+function formatDateWithDay(dateKey) {
+  const date = new Date(`${dateKey}T12:00:00`);
+  const dayName = WEEKDAYS[date.getDay()] || "";
+  return `${formatShortDate(dateKey)} · ${dayName}`;
 }
 
 function formatDateRange(startKey, endKey) {
@@ -74,19 +83,21 @@ function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
 
   if (entries.length) {
     const detailedTotals = calculateTotals(entries, foods);
-    if (hasAnyMacroValue(detailedTotals) || !summary) {
-      return {
-        dateKey,
-        sourceType: "detailed",
-        ...detailedTotals
-      };
-    }
+    return {
+      dateKey,
+      entries,
+      sourceType: hasAnyMacroValue(detailedTotals) || !summary ? "detailed" : "summary",
+      status: "mentett tételek",
+      ...detailedTotals
+    };
   }
 
   if (summary) {
     return {
       dateKey,
+      entries: [],
       sourceType: "summary",
+      status: "összesített importált nap",
       kcal: toNumber(summary.kcal),
       protein: toNumber(summary.protein),
       fat: toNumber(summary.fat),
@@ -99,7 +110,9 @@ function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
 
   return {
     dateKey,
+    entries: [],
     sourceType: "empty",
+    status: "nincs mentett adat",
     kcal: 0,
     protein: 0,
     fat: 0,
@@ -190,6 +203,13 @@ const openDetailStyle = {
   background: "rgba(10, 24, 21, 0.45)"
 };
 
+const nestedListStyle = {
+  display: "grid",
+  gap: 0,
+  padding: "2px 0",
+  borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+};
+
 function MacroTrendChart({ rows, target }) {
   const values = rows.map((row) => row.kcal);
   const averageValues = movingAverage(values, 7);
@@ -242,40 +262,94 @@ function MacroTrendChart({ rows, target }) {
   );
 }
 
-function DayRowsTable({ rows }) {
+function EntryPreview({ entries, foods }) {
+  if (!entries.length) return null;
+
   return (
-    <div className="table-panel" style={{ marginTop: "0", boxShadow: "none" }}>
-      <table>
-        <thead>
-          <tr>
-            <th>Nap</th>
-            <th>k</th>
-            <th>p</th>
-            <th>f</th>
-            <th>Ch</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.dateKey} className={row.sourceType === "summary" ? "summary-row" : ""}>
-              <td>
-                {formatShortDate(row.dateKey)}
-                {row.sourceType === "summary" && <span className="summary-day-label">összesített importált nap</span>}
-                {row.sourceType === "empty" && <span className="summary-day-label">nincs mentett adat</span>}
-              </td>
-              <td>{formatStat(row.kcal)}</td>
-              <td>{formatStat(row.protein)}</td>
-              <td>{formatStat(row.fat)}</td>
-              <td>{formatStat(row.carbs)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={{ display: "grid", gap: "8px" }}>
+      {entries.map((entry) => {
+        const food = foods.find((item) => item.id === entry.foodId);
+        if (!food) return null;
+        const values = calculateEntry(food, Number(entry.amount) || 0);
+        return (
+          <div
+            key={entry.entryId}
+            style={{
+              display: "grid",
+              gap: "5px",
+              padding: "8px 0",
+              borderTop: "1px solid rgba(135, 175, 157, 0.12)"
+            }}
+          >
+            <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
+            <div style={dailyEntryChipStyles.compactSummaryStyle} aria-label="Mennyiség és tápértékek">
+              <span className="entry-amount-badge" style={dailyEntryChipStyles.amountBadgeStyle}>
+                {formatStat(entry.amount)} {food.unit}
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>k</small>
+                <strong>{Math.round(values.kcal)}</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
+                <strong>{formatStat(values.protein)} g</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
+                <strong>{formatStat(values.fat)} g</strong>
+              </span>
+              <span style={dailyEntryChipStyles.macroChipStyle}>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
+                <strong>{formatStat(values.carbs)} g</strong>
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
+function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
+  const ratio = calculateMacroRatio(row);
+
+  return (
+    <div style={listRowStyle}>
+      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span style={rowTitleStyle}>
+          <span style={titleAndChipsStyle}>
+            <strong>{formatDateWithDay(row.dateKey)}</strong>
+            <MacroChips totals={row} />
+          </span>
+          <small className="muted">{row.status}</small>
+        </span>
+        <strong>{isOpen ? "▼" : "▶"}</strong>
+      </button>
+
+      {isOpen && (
+        <div style={openDetailStyle}>
+          <p className="muted" style={{ margin: 0 }}>
+            Makróarány: {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch
+          </p>
+
+          {row.entries.length > 0 && (
+            <button className="primary-button secondary" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
+              Betöltés szerkesztésre a Mai fülre
+            </button>
+          )}
+
+          {row.entries.length > 0 ? (
+            <EntryPreview entries={row.entries} foods={foods} />
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoadToToday, foods, showDailyDetails = true }) {
   return (
     <div style={listRowStyle}>
       <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
@@ -291,24 +365,31 @@ function WeekSummaryCard({ group, isOpen, onToggle, showDailyDetails = true }) {
 
       {isOpen && showDailyDetails && (
         <div style={openDetailStyle}>
-          <div className="average-grid" style={{ marginBottom: 0 }}>
-            <span>Átlag k <strong>{Math.round(group.average.kcal)}</strong></span>
-            <span>p átlag <strong>{Math.round(group.average.protein)} g</strong></span>
-            <span>f átlag <strong>{Math.round(group.average.fat)} g</strong></span>
-            <span>Ch átlag <strong>{Math.round(group.average.carbs)} g</strong></span>
-          </div>
           <p className="muted" style={{ margin: 0 }}>
-            Makróarány: {Math.round(group.ratio.protein)}% p · {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch
+            Átlag: {formatMacroLine(group.average)}. Makróarány: {Math.round(group.ratio.protein)}% p ·{" "}
+            {Math.round(group.ratio.fat)}% f · {Math.round(group.ratio.carbs)}% Ch.
           </p>
-          <DayRowsTable rows={group.rows} />
+          <div style={nestedListStyle}>
+            {group.rows.map((row) => (
+              <DaySummaryRow
+                key={row.dateKey}
+                row={row}
+                isOpen={Boolean(openDays[row.dateKey])}
+                onToggle={() => onToggleDay(row.dateKey)}
+                onLoadToToday={onLoadToToday}
+                foods={foods}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
+export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoadToToday }) {
   const [openGroups, setOpenGroups] = useState({});
+  const [openDays, setOpenDays] = useState({});
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
   const loggedRows = rows.filter((row) => row.sourceType !== "empty");
@@ -319,6 +400,10 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
 
   function toggleGroup(groupId) {
     setOpenGroups((current) => ({ ...current, [groupId]: !current[groupId] }));
+  }
+
+  function toggleDay(dateKey) {
+    setOpenDays((current) => ({ ...current, [dateKey]: !current[dateKey] }));
   }
 
   return (
@@ -339,7 +424,11 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title }) {
             key={group.id}
             group={group}
             isOpen={Boolean(openGroups[group.id])}
+            openDays={openDays}
             onToggle={() => toggleGroup(group.id)}
+            onToggleDay={toggleDay}
+            onLoadToToday={onLoadToToday}
+            foods={foods}
             showDailyDetails
           />
         ))}
