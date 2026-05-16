@@ -35,26 +35,31 @@ const entryCountBadgeStyle = {
 
 const rowStyle = {
   display: "grid",
-  gap: "7px",
-  padding: "9px 2px",
+  gap: "6px",
+  padding: "7px 2px",
   borderTop: "1px solid rgba(135, 175, 157, 0.11)"
 };
 
 const rowTopStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(0, 1fr) auto",
-  alignItems: "start",
+  alignItems: "center",
   gap: "8px"
 };
 
 const titleRowStyle = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "7px",
   minWidth: 0
 };
 
 const itemTitleStyle = {
   margin: 0,
   fontSize: "0.98rem",
-  lineHeight: 1.15
+  lineHeight: 1.1,
+  whiteSpace: "nowrap"
 };
 
 const compactSummaryStyle = {
@@ -62,15 +67,15 @@ const compactSummaryStyle = {
   flexWrap: "wrap",
   alignItems: "center",
   gap: "6px",
-  marginTop: "6px"
+  marginTop: 0
 };
 
 const amountBadgeStyle = {
-  minHeight: "26px",
-  minWidth: "48px",
+  minHeight: "28px",
+  minWidth: "58px",
   marginTop: 0,
-  padding: "5px 10px",
-  fontSize: "0.78rem",
+  padding: "6px 11px",
+  fontSize: "0.8rem",
   lineHeight: 1.05
 };
 
@@ -79,14 +84,14 @@ const macroChipStyle = {
   alignItems: "baseline",
   justifyContent: "center",
   gap: "4px",
-  minHeight: "26px",
-  minWidth: "58px",
-  padding: "5px 9px",
+  minHeight: "28px",
+  minWidth: "68px",
+  padding: "6px 10px",
   border: "1px solid rgba(135, 175, 157, 0.16)",
   borderRadius: "999px",
   background: "rgba(29, 45, 41, 0.56)",
   color: "var(--text)",
-  fontSize: "0.74rem",
+  fontSize: "0.76rem",
   fontWeight: 850,
   lineHeight: 1.05
 };
