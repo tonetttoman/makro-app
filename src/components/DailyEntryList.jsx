@@ -127,7 +127,7 @@ export function DailyEntryList({
     return (
       <section className="empty-state daily-entry-empty">
         <h2>Nincs még tétel</h2>
-        <p>Nyisd meg a hozzáadást, válassz kategóriát, aztán dobj be valami ehetőt. Forradalmi technológia.</p>
+        <p>Nyisd meg a hozzáadást, válassz kategóriát, majd válassz élelmiszert.</p>
       </section>
     );
   }
@@ -135,10 +135,7 @@ export function DailyEntryList({
   return (
     <section className="daily-entry-panel" aria-label="Napi kalkulációs lista">
       <div className="daily-entry-header">
-        <div>
-          <p className="eyebrow">Mai tételek</p>
-          <h2>{entries.length} tétel</h2>
-        </div>
+        <p className="eyebrow">Mai tételek</p>
         <div className="daily-entry-header__actions">
           <span className="daily-entry-date">{formatDisplayDate(workDate)}</span>
           {isDateOpen ? (
