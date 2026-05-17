@@ -115,17 +115,19 @@ export default function App() {
   const [activeView, setActiveView] = useState("today");
   const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+
   const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
-  const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
   const [supplements, setSupplements] = useLocalStorage(SUPPLEMENTS_KEY, SUPPLEMENTS);
   const [nutrientTargets, setNutrientTargets] = useLocalStorage(NUTRIENT_TARGETS_KEY, TARGET_NUTRIENTS);
   const [diary, setDiary] = useLocalStorage(DIARY_KEY, {});
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
+  const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
 
   useEffect(() => {
-    setWorkspace(getWorkspaceForDate(diary, toDateKey()));
+    const currentDiary = diary || {};
+    setWorkspace(getWorkspaceForDate(currentDiary, todayKey));
   }, []);
 
   const workDate = workspace.date || todayKey;
@@ -136,13 +138,6 @@ export default function App() {
   const todayFoodAmounts = useMemo(() => getDailyFoodAmounts(todayEntries), [todayEntries]);
   const visibleFoods = useMemo(() => {
     const filteredFoods = foods.filter((food) => isRenderableFood(food) && food.category === activeCategory);
-
-    if (import.meta.env.DEV) {
-      console.log("foods", foods);
-      console.log("selectedCategory", activeCategory);
-      console.log("filteredFoods", filteredFoods);
-    }
-
     return sortFoodsByName(filteredFoods);
   }, [activeCategory, foods]);
 
