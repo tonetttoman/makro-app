@@ -173,6 +173,19 @@ export default function App() {
     }
   }, [activeCategory, foodCategories]);
 
+  useEffect(() => {
+    if (!isQuickAddOpen && foodSearch) {
+      setFoodSearch("");
+    }
+  }, [foodSearch, isQuickAddOpen]);
+
+  useEffect(() => {
+    if (activeView !== "today") {
+      if (isQuickAddOpen) setIsQuickAddOpen(false);
+      if (foodSearch) setFoodSearch("");
+    }
+  }, [activeView, foodSearch, isQuickAddOpen]);
+
   function persistEntriesForDate(date, nextEntries) {
     const sanitizedEntries = nextEntries.map((entry) => ({
       ...entry,

@@ -330,6 +330,7 @@ export function TodayView({
             dailyAmounts={dailyAmounts}
             onAdd={(food) => {
               onAddFood(food);
+              onFoodSearchChange?.("");
               onToggleQuickAdd?.(false);
             }}
           />
