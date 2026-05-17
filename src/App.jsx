@@ -254,6 +254,7 @@ export default function App() {
           totals={totals}
           targets={targets}
           workDate={workDate}
+          todayKey={todayKey}
           entries={todayEntries}
           foods={foods}
           dailyAmounts={todayFoodAmounts}

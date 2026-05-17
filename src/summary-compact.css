@@ -320,6 +320,14 @@
     0 12px 26px rgba(0, 0, 0, 0.16);
 }
 
+.today-list-block.is-editing-past-day .today-entries,
+.today-list-block.is-editing-past-day .today-empty-list {
+  border-color: rgba(244, 63, 94, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(244, 63, 94, 0.16),
+    0 12px 26px rgba(0, 0, 0, 0.16);
+}
+
 .today-entry-row {
   border-bottom: 1px solid rgba(148, 163, 184, 0.045);
 }

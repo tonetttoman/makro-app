@@ -144,6 +144,7 @@ function TodayEntriesList({
   entries,
   foods,
   workDate,
+  isEditingPastDay,
   menuOpen,
   onToggleMenu,
   onSave,
@@ -158,7 +159,7 @@ function TodayEntriesList({
   }
 
   return (
-    <section className="today-list-block" aria-label="Mai tételek">
+    <section className={`today-list-block ${isEditingPastDay ? "is-editing-past-day" : ""}`} aria-label="Mai tételek">
       <div className="today-list-header">
         <h2>Mai tételek</h2>
         <button
@@ -269,6 +270,7 @@ export function TodayView({
   totals,
   targets,
   workDate,
+  todayKey,
   entries,
   foods,
   dailyAmounts,
@@ -287,6 +289,7 @@ export function TodayView({
 }) {
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
   const nutrientPreviewCount = useMemo(() => Object.keys(targetNutrients || {}).length, [targetNutrients]);
+  const isEditingPastDay = workDate !== todayKey;
 
   return (
     <main className="page today-view">
@@ -325,6 +328,7 @@ export function TodayView({
         entries={entries}
         foods={foods}
         workDate={workDate}
+        isEditingPastDay={isEditingPastDay}
         menuOpen={isTopMenuOpen}
         onToggleMenu={(next) => setIsTopMenuOpen((current) => (typeof next === "boolean" ? next : !current))}
         onSave={() => {
