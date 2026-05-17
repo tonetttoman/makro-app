@@ -19,6 +19,47 @@ function numberValue(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function roundTargetNumber(value) {
+  return Math.max(0, Math.round(Number(value) || 0));
+}
+
+function calculateKcalFromMacros(protein, fat, carbs) {
+  return roundTargetNumber(protein * 4 + fat * 9 + carbs * 4);
+}
+
+function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCarbs, fallbackTargets) {
+  const protein = Math.max(0, Number(currentProtein) || 0);
+  const fat = Math.max(0, Number(currentFat) || 0);
+  const carbs = Math.max(0, Number(currentCarbs) || 0);
+  const safeTargetKcal = roundTargetNumber(targetKcal);
+
+  const currentMacroKcal = calculateKcalFromMacros(protein, fat, carbs);
+  const fallbackProtein = Math.max(0, Number(fallbackTargets?.protein) || 0);
+  const fallbackFat = Math.max(0, Number(fallbackTargets?.fat) || 0);
+  const fallbackCarbs = Math.max(0, Number(fallbackTargets?.carbs) || 0);
+  const fallbackMacroKcal = calculateKcalFromMacros(fallbackProtein, fallbackFat, fallbackCarbs);
+
+  const baseProtein = currentMacroKcal > 0 ? protein : fallbackProtein;
+  const baseFat = currentMacroKcal > 0 ? fat : fallbackFat;
+  const baseCarbs = currentMacroKcal > 0 ? carbs : fallbackCarbs;
+  const baseKcal = currentMacroKcal > 0 ? currentMacroKcal : fallbackMacroKcal || 1;
+
+  const proteinRatio = (baseProtein * 4) / baseKcal;
+  const fatRatio = (baseFat * 9) / baseKcal;
+  const carbsRatio = (baseCarbs * 4) / baseKcal;
+
+  const nextProtein = roundTargetNumber((safeTargetKcal * proteinRatio) / 4);
+  const nextFat = roundTargetNumber((safeTargetKcal * fatRatio) / 9);
+  const nextCarbs = roundTargetNumber((safeTargetKcal * carbsRatio) / 4);
+
+  return {
+    protein: nextProtein,
+    fat: nextFat,
+    carbs: nextCarbs,
+    kcal: calculateKcalFromMacros(nextProtein, nextFat, nextCarbs)
+  };
+}
+
 function createBlankFood() {
   return {
     id: "",
@@ -194,6 +235,13 @@ export function DataView({
     ? `Új vagy szerkesztett kiegészítő – ${supplementDraft.name}`
     : "Új vagy szerkesztett kiegészítő";
 
+  const macroFieldConfig = [
+    { key: "kcal", label: "kcal" },
+    { key: "protein", label: "protein" },
+    { key: "fat", label: "fat" },
+    { key: "carbs", label: "carbs" }
+  ];
+
   const recipeFoods = useMemo(
     () => sortFoodsByName(foods.filter((food) => food?.id && food?.name && Number(food.baseAmount) > 0)),
     [foods]
@@ -250,6 +298,26 @@ export function DataView({
       setRecipeDraft((current) => ({ ...current, category: foodCategories[0] }));
     }
   }, [foodCategories, recipeDraft.category]);
+
+  function handleTargetChange(key, rawValue) {
+    const nextValue = roundTargetNumber(numberValue(rawValue));
+
+    if (key === "kcal") {
+      setTargets((current) => scaleMacrosToCalories(nextValue, current.protein, current.fat, current.carbs, current));
+      return;
+    }
+
+    setTargets((current) => {
+      const nextTargets = {
+        ...current,
+        [key]: nextValue
+      };
+      return {
+        ...nextTargets,
+        kcal: calculateKcalFromMacros(nextTargets.protein, nextTargets.fat, nextTargets.carbs)
+      };
+    });
+  }
 
   function saveFood() {
     const id = foodDraft.id || slugify(foodDraft.name) || `food-${Date.now()}`;
@@ -503,13 +571,13 @@ export function DataView({
         </button>
         {isMacroTargetsOpen && (
           <div className="form-grid">
-            {Object.entries(targets).map(([key, value]) => (
-              <Field key={key} label={key}>
+            {macroFieldConfig.map(({ key, label }) => (
+              <Field key={key} label={label}>
                 <input
                   inputMode="decimal"
                   type="number"
-                  value={value}
-                  onChange={(event) => setTargets({ ...targets, [key]: numberValue(event.target.value) })}
+                  value={targets[key]}
+                  onChange={(event) => handleTargetChange(key, event.target.value)}
                 />
               </Field>
             ))}
