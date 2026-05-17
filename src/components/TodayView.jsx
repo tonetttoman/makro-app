@@ -37,13 +37,6 @@ function formatAmount(value, unit) {
   return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} ${unit}`;
 }
 
-function formatDisplayDate(date) {
-  if (!date) return "";
-  const [year, month, day] = String(date).split("-");
-  if (!year || !month || !day) return date;
-  return `${year}. ${month}. ${day}.`;
-}
-
 function TodaySummaryCard({ totals, targets }) {
   const kcal = Math.round(totals.kcal);
 
@@ -52,11 +45,15 @@ function TodaySummaryCard({ totals, targets }) {
       <div className="today-summary-orbit" aria-hidden="true" />
 
       <div className="today-summary-hero">
-        <span className="today-summary-flame"><Flame size={22} aria-hidden="true" /></span>
+        <span className="today-summary-flame">
+          <Flame size={20} aria-hidden="true" />
+        </span>
+
         <div className="today-summary-kcal">
           <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
           <span>kcal</span>
         </div>
+
         <p className="today-summary-target">cél: {targets.kcal.toLocaleString("hu-HU")} kcal</p>
       </div>
 
@@ -67,10 +64,12 @@ function TodaySummaryCard({ totals, targets }) {
             <div className="today-summary-metric" key={item.key}>
               <div className="today-summary-metric-row">
                 <span className={`today-summary-metric-icon is-${item.tone}`}>
-                  <Icon size={16} aria-hidden="true" />
+                  <Icon size={15} aria-hidden="true" />
                 </span>
                 <span className="today-summary-metric-label">{item.label}</span>
-                <strong>{formatGram(totals[item.key])} / {formatGram(targets[item.key])}</strong>
+                <strong>
+                  {formatGram(totals[item.key])} / {formatGram(targets[item.key])}
+                </strong>
               </div>
               <ProgressBar value={totals[item.key]} max={targets[item.key]} tone={item.tone === "amber" ? "amber" : "green"} />
             </div>
@@ -87,20 +86,12 @@ function TodayEntryEditor({ entry, food, onAmountChange, onToggleLock, onRemove 
   return (
     <div className="today-entry-editor">
       <div className="today-entry-editor-row">
-        <button
-          className="today-secondary-action"
-          type="button"
-          onClick={() => onToggleLock(entry.entryId)}
-        >
-          {isLocked ? <Unlock size={15} aria-hidden="true" /> : <Lock size={15} aria-hidden="true" />}
+        <button className="today-secondary-action" type="button" onClick={() => onToggleLock(entry.entryId)}>
+          {isLocked ? <Unlock size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
           {isLocked ? "Feloldás" : "Zárolás"}
         </button>
-        <button
-          className="today-secondary-action is-danger"
-          type="button"
-          onClick={() => onRemove(entry.entryId)}
-        >
-          <Trash2 size={15} aria-hidden="true" />
+        <button className="today-secondary-action is-danger" type="button" onClick={() => onRemove(entry.entryId)}>
+          <Trash2 size={14} aria-hidden="true" />
           Törlés
         </button>
       </div>
@@ -113,7 +104,7 @@ function TodayEntryEditor({ entry, food, onAmountChange, onToggleLock, onRemove 
             onClick={() => onAmountChange(entry.entryId, Math.max(0, (Number(entry.amount) || 0) - food.step))}
             aria-label="Mennyiség csökkentése"
           >
-            <Minus size={16} />
+            <Minus size={15} />
           </button>
 
           <label className="today-entry-stepper-input">
@@ -136,7 +127,7 @@ function TodayEntryEditor({ entry, food, onAmountChange, onToggleLock, onRemove 
             onClick={() => onAmountChange(entry.entryId, (Number(entry.amount) || 0) + food.step)}
             aria-label="Mennyiség növelése"
           >
-            <Plus size={16} />
+            <Plus size={15} />
           </button>
         </div>
       )}
@@ -173,20 +164,20 @@ function TodayEntriesList({
           aria-expanded={menuOpen}
           aria-label="Mai műveletek"
         >
-          {menuOpen ? <X size={18} aria-hidden="true" /> : <EllipsisVertical size={18} aria-hidden="true" />}
+          {menuOpen ? <X size={15} aria-hidden="true" /> : <EllipsisVertical size={15} aria-hidden="true" />}
         </button>
       </div>
 
       {menuOpen && (
         <div className="today-top-actions">
           <button className="today-secondary-action is-amber" type="button" onClick={onSave}>
-            <Save size={16} aria-hidden="true" />
+            <Save size={15} aria-hidden="true" />
             Tételek mentése
           </button>
 
           <label className="today-date-field">
             <span>
-              <CalendarDays size={15} aria-hidden="true" />
+              <CalendarDays size={14} aria-hidden="true" />
               Mentés dátuma
             </span>
             <input
@@ -210,6 +201,7 @@ function TodayEntriesList({
           {entries.map((entry) => {
             const food = findFoodById(entry.foodId, foods);
             if (!food) return null;
+
             const values = calculateEntry(food, entry.amount);
             const isExpanded = expandedEntryId === entry.entryId;
 
@@ -228,9 +220,18 @@ function TodayEntriesList({
                   </div>
 
                   <div className="today-entry-macros" aria-label="Makrók">
-                    <span><small>P</small>{Math.round(values.protein * 10) / 10} g</span>
-                    <span><small>F</small>{Math.round(values.fat * 10) / 10} g</span>
-                    <span><small>Ch</small>{Math.round(values.carbs * 10) / 10} g</span>
+                    <span>
+                      <small>P</small>
+                      {Math.round(values.protein * 10) / 10} g
+                    </span>
+                    <span>
+                      <small>F</small>
+                      {Math.round(values.fat * 10) / 10} g
+                    </span>
+                    <span>
+                      <small>Ch</small>
+                      {Math.round(values.carbs * 10) / 10} g
+                    </span>
                   </div>
 
                   <button
@@ -240,7 +241,7 @@ function TodayEntriesList({
                     aria-expanded={isExpanded}
                     aria-label="Tétel műveletei"
                   >
-                    <EllipsisVertical size={18} aria-hidden="true" />
+                    <EllipsisVertical size={15} aria-hidden="true" />
                   </button>
                 </div>
 
@@ -286,10 +287,6 @@ export function TodayView({
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
   const nutrientPreviewCount = useMemo(() => Object.keys(targetNutrients || {}).length, [targetNutrients]);
 
-  function handleToggleQuickAdd() {
-    onToggleQuickAdd?.();
-  }
-
   return (
     <main className="page today-view">
       <header className="today-view__header" aria-label="Mai nézet">
@@ -298,12 +295,7 @@ export function TodayView({
 
       <TodaySummaryCard totals={totals} targets={targets} />
 
-      <button
-        className="today-add-cta"
-        type="button"
-        onClick={handleToggleQuickAdd}
-        aria-expanded={isQuickAddOpen}
-      >
+      <button className="today-add-cta" type="button" onClick={() => onToggleQuickAdd?.()} aria-expanded={isQuickAddOpen}>
         <Plus size={24} aria-hidden="true" />
         étel hozzáadása
       </button>
@@ -315,8 +307,8 @@ export function TodayView({
               <strong>Gyors hozzáadás</strong>
               <span>{nutrientPreviewCount} célanyag-előnézet</span>
             </div>
-            <button className="today-sheet-close" type="button" onClick={handleToggleQuickAdd} aria-label="Bezárás">
-              <X size={18} />
+            <button className="today-sheet-close" type="button" onClick={() => onToggleQuickAdd?.(false)} aria-label="Bezárás">
+              <X size={17} />
             </button>
           </div>
 
