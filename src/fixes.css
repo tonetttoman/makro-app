@@ -564,6 +564,69 @@
   color: rgba(148, 163, 184, 0.82);
 }
 
+.recipe-ingredient-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.recipe-ingredient-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(16, 22, 31, 0.82), rgba(10, 14, 22, 0.76));
+}
+
+.recipe-ingredient-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.recipe-ingredient-row strong {
+  color: rgba(248, 250, 252, 0.94);
+  font-size: 0.92rem;
+  font-weight: 680;
+}
+
+.recipe-ingredient-row span {
+  color: rgba(148, 163, 184, 0.8);
+  font-size: 0.78rem;
+  font-weight: 620;
+}
+
+.recipe-summary-card {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 21, 31, 0.84), rgba(9, 13, 21, 0.76));
+}
+
+.recipe-summary-card strong {
+  color: rgba(248, 250, 252, 0.96);
+  font-size: 0.94rem;
+  font-weight: 720;
+}
+
+.recipe-summary-card span {
+  color: rgba(226, 232, 240, 0.9);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.recipe-summary-card small {
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
 /* Monthly/detail cleanup: override old green inline remnants without touching the working logic. */
 [style*="rgba(24, 70, 51"],
 [style*="rgba(12, 45, 33"],

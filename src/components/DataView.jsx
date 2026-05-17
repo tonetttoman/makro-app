@@ -1,5 +1,6 @@
 import { Download, Upload } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { calculateEntry } from "../lib/calculations";
 import { FOOD_CATEGORIES } from "../data/foods";
 
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp"];
@@ -45,6 +46,16 @@ function createBlankSupplement() {
     step: 1,
     defaultDose: 1,
     targetNutrients: {}
+  };
+}
+
+function createBlankRecipe() {
+  return {
+    name: "",
+    category: "Főtt ételek",
+    ingredientFoodId: "",
+    ingredientAmount: "",
+    ingredients: []
   };
 }
 
@@ -120,6 +131,7 @@ function NutrientInputs({ values, onChange, nutrientTargets }) {
 export function DataView({
   foods,
   setFoods,
+  foodCategories = FOOD_CATEGORIES,
   dailyFoodAmounts = {},
   supplements,
   setSupplements,
@@ -136,7 +148,7 @@ export function DataView({
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
-  const [activeFoodCategory, setActiveFoodCategory] = useState(FOOD_CATEGORIES[0]);
+  const [activeFoodCategory, setActiveFoodCategory] = useState(foodCategories[0] || FOOD_CATEGORIES[0]);
   const [foodDraft, setFoodDraft] = useState(createBlankFood);
   const [supplementDraft, setSupplementDraft] = useState(createBlankSupplement);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
@@ -145,6 +157,8 @@ export function DataView({
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isFoodNutrientsOpen, setIsFoodNutrientsOpen] = useState(false);
   const [isSupplementEditorOpen, setIsSupplementEditorOpen] = useState(false);
+  const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
+  const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe);
 
   const exportData = useMemo(
     () => ({
@@ -171,6 +185,41 @@ export function DataView({
     ? `Új vagy szerkesztett kiegészítő – ${supplementDraft.name}`
     : "Új vagy szerkesztett kiegészítő";
 
+  const recipeFoods = useMemo(
+    () => sortFoodsByName(foods.filter((food) => food?.id && food?.name && Number(food.baseAmount) > 0)),
+    [foods]
+  );
+  const recipeTotals = useMemo(
+    () =>
+      recipeDraft.ingredients.reduce(
+        (totals, ingredient) => {
+          const food = foods.find((item) => item.id === ingredient.foodId);
+          if (!food) return totals;
+          const values = calculateEntry(food, ingredient.amount);
+          return {
+            kcal: totals.kcal + values.kcal,
+            protein: totals.protein + values.protein,
+            fat: totals.fat + values.fat,
+            carbs: totals.carbs + values.carbs
+          };
+        },
+        { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+      ),
+    [foods, recipeDraft.ingredients]
+  );
+
+  useEffect(() => {
+    if (foodCategories.length && !foodCategories.includes(activeFoodCategory)) {
+      setActiveFoodCategory(foodCategories[0]);
+    }
+  }, [activeFoodCategory, foodCategories]);
+
+  useEffect(() => {
+    if (foodCategories.length && !foodCategories.includes(recipeDraft.category)) {
+      setRecipeDraft((current) => ({ ...current, category: foodCategories[0] }));
+    }
+  }, [foodCategories, recipeDraft.category]);
+
   function saveFood() {
     const id = foodDraft.id || slugify(foodDraft.name) || `food-${Date.now()}`;
     const nextFood = {
@@ -195,6 +244,75 @@ export function DataView({
   function startNewFood() {
     setFoodDraft({ ...createBlankFood(), category: activeFoodCategory });
     setIsFoodEditorOpen(true);
+  }
+
+  function addRecipeIngredient() {
+    const foodId = recipeDraft.ingredientFoodId;
+    const amount = numberValue(recipeDraft.ingredientAmount);
+    if (!foodId || amount <= 0) return;
+    const ingredientFood = foods.find((food) => food.id === foodId);
+    if (!ingredientFood) return;
+
+    setRecipeDraft((current) => ({
+      ...current,
+      ingredientFoodId: "",
+      ingredientAmount: "",
+      ingredients: [...current.ingredients, { foodId, amount }]
+    }));
+  }
+
+  function removeRecipeIngredient(indexToRemove) {
+    setRecipeDraft((current) => ({
+      ...current,
+      ingredients: current.ingredients.filter((_, index) => index !== indexToRemove)
+    }));
+  }
+
+  function saveRecipe() {
+    const recipeName = String(recipeDraft.name || "").trim();
+    if (!recipeName) {
+      alert("A recept neve kötelező.");
+      return;
+    }
+    if (!recipeDraft.ingredients.length) {
+      alert("Legalább egy alapanyag szükséges.");
+      return;
+    }
+    if (recipeDraft.ingredients.some((ingredient) => numberValue(ingredient.amount) <= 0)) {
+      alert("Minden alapanyag mennyisége legyen pozitív szám.");
+      return;
+    }
+
+    const id = `recipe-${slugify(recipeName) || Date.now()}`;
+    const nextFood = {
+      id,
+      name: recipeName,
+      category: recipeDraft.category || "Főtt ételek",
+      unit: "%",
+      baseAmount: 100,
+      defaultAmount: 10,
+      step: 5,
+      kcal: recipeTotals.kcal,
+      protein: recipeTotals.protein,
+      fat: recipeTotals.fat,
+      carbs: recipeTotals.carbs,
+      isRecipe: true,
+      recipe: {
+        ingredients: recipeDraft.ingredients.map((ingredient) => ({
+          foodId: ingredient.foodId,
+          amount: numberValue(ingredient.amount)
+        }))
+      },
+      targetNutrients: {}
+    };
+
+    setFoods((current) => {
+      const exists = current.some((food) => food.id === id);
+      return exists ? current.map((food) => (food.id === id ? nextFood : food)) : [...current, nextFood];
+    });
+    setRecipeDraft(createBlankRecipe());
+    setIsRecipeEditorOpen(false);
+    setActiveFoodCategory(nextFood.category);
   }
 
   function saveSupplement() {
@@ -407,7 +525,7 @@ export function DataView({
         {isFoodEditorOpen && (
           <>
             <div className="category-scroll data-category-scroll" aria-label="Élelmiszer kategóriák">
-              {FOOD_CATEGORIES.map((category) => (
+              {foodCategories.map((category) => (
                 <button
                   className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
                   key={category}
@@ -455,7 +573,7 @@ export function DataView({
                   value={foodDraft.category}
                   onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}
                 >
-                  {FOOD_CATEGORIES.map((category) => (
+                  {foodCategories.map((category) => (
                     <option key={category}>{category}</option>
                   ))}
                 </select>
@@ -497,6 +615,106 @@ export function DataView({
             <button className="primary-button full" type="button" onClick={saveFood}>
               Élelmiszer mentése
             </button>
+            <button
+              className="collapsible-header"
+              type="button"
+              onClick={() => setIsRecipeEditorOpen((current) => !current)}
+              aria-expanded={isRecipeEditorOpen}
+            >
+              <span>Új recept hozzáadása</span>
+              <strong>{isRecipeEditorOpen ? "▾" : "▸"}</strong>
+            </button>
+            {isRecipeEditorOpen && (
+              <>
+                <div className="form-grid">
+                  <Field label="Recept neve">
+                    <input
+                      value={recipeDraft.name}
+                      onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Kategória">
+                    <select
+                      value={recipeDraft.category}
+                      onChange={(event) => setRecipeDraft((current) => ({ ...current, category: event.target.value }))}
+                    >
+                      {foodCategories.map((category) => (
+                        <option key={category}>{category}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Alapanyag">
+                    <select
+                      value={recipeDraft.ingredientFoodId}
+                      onChange={(event) =>
+                        setRecipeDraft((current) => ({ ...current, ingredientFoodId: event.target.value }))
+                      }
+                    >
+                      <option value="">Válassz alapanyagot</option>
+                      {recipeFoods.map((food) => (
+                        <option key={food.id} value={food.id}>
+                          {food.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Mennyiség">
+                    <input
+                      inputMode="decimal"
+                      type="number"
+                      min="0"
+                      value={recipeDraft.ingredientAmount}
+                      onChange={(event) =>
+                        setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))
+                      }
+                    />
+                  </Field>
+                </div>
+
+                <div className="data-actions">
+                  <button className="primary-button secondary" type="button" onClick={addRecipeIngredient}>
+                    Alapanyag hozzáadása
+                  </button>
+                </div>
+
+                {recipeDraft.ingredients.length > 0 && (
+                  <div className="recipe-ingredient-list">
+                    {recipeDraft.ingredients.map((ingredient, index) => {
+                      const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
+                      if (!ingredientFood) return null;
+                      return (
+                        <div className="recipe-ingredient-row" key={`${ingredient.foodId}-${index}`}>
+                          <div>
+                            <strong>{ingredientFood.name}</strong>
+                            <span>{Math.round((ingredient.amount || 0) * 10) / 10} {ingredientFood.unit}</span>
+                          </div>
+                          <button
+                            className="secondary-button"
+                            type="button"
+                            onClick={() => removeRecipeIngredient(index)}
+                          >
+                            Törlés
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="recipe-summary-card">
+                  <strong>Teljes recept összesítés</strong>
+                  <span>{Math.round(recipeTotals.kcal)} kcal</span>
+                  <span>
+                    P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g
+                  </span>
+                  <small>100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
+                </div>
+
+                <button className="primary-button full" type="button" onClick={saveRecipe}>
+                  Mentés receptként
+                </button>
+              </>
+            )}
           </>
         )}
       </section>
