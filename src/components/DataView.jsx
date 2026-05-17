@@ -209,6 +209,13 @@ export function DataView({
   const [isSupplementEditorOpen, setIsSupplementEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe);
+  const [targetDrafts, setTargetDrafts] = useState(() => ({
+    kcal: String(targets.kcal ?? ""),
+    protein: String(targets.protein ?? ""),
+    fat: String(targets.fat ?? ""),
+    carbs: String(targets.carbs ?? "")
+  }));
+  const [activeTargetField, setActiveTargetField] = useState(null);
 
   const exportData = useMemo(
     () => ({
@@ -299,24 +306,53 @@ export function DataView({
     }
   }, [foodCategories, recipeDraft.category]);
 
-  function handleTargetChange(key, rawValue) {
-    const nextValue = roundTargetNumber(numberValue(rawValue));
+  useEffect(() => {
+    setTargetDrafts((current) => ({
+      kcal: activeTargetField === "kcal" ? current.kcal : String(targets.kcal ?? ""),
+      protein: activeTargetField === "protein" ? current.protein : String(targets.protein ?? ""),
+      fat: activeTargetField === "fat" ? current.fat : String(targets.fat ?? ""),
+      carbs: activeTargetField === "carbs" ? current.carbs : String(targets.carbs ?? "")
+    }));
+  }, [activeTargetField, targets]);
+
+  function syncTargetDrafts(nextTargets) {
+    setTargetDrafts({
+      kcal: String(nextTargets.kcal ?? ""),
+      protein: String(nextTargets.protein ?? ""),
+      fat: String(nextTargets.fat ?? ""),
+      carbs: String(nextTargets.carbs ?? "")
+    });
+  }
+
+  function handleTargetDraftChange(key, rawValue) {
+    setTargetDrafts((current) => ({
+      ...current,
+      [key]: rawValue
+    }));
+  }
+
+  function commitTargetField(key) {
+    const fallbackValue = Math.max(0, Number(targets[key]) || 0);
+    const nextValue = roundTargetNumber(numberValue(targetDrafts[key], fallbackValue));
+    let nextTargets;
 
     if (key === "kcal") {
-      setTargets((current) => scaleMacrosToCalories(nextValue, current.protein, current.fat, current.carbs, current));
+      nextTargets = scaleMacrosToCalories(nextValue, targets.protein, targets.fat, targets.carbs, targets);
+      setTargets(nextTargets);
+      syncTargetDrafts(nextTargets);
       return;
     }
 
-    setTargets((current) => {
-      const nextTargets = {
-        ...current,
-        [key]: nextValue
-      };
-      return {
-        ...nextTargets,
-        kcal: calculateKcalFromMacros(nextTargets.protein, nextTargets.fat, nextTargets.carbs)
-      };
-    });
+    nextTargets = {
+      ...targets,
+      [key]: nextValue
+    };
+    nextTargets = {
+      ...nextTargets,
+      kcal: calculateKcalFromMacros(nextTargets.protein, nextTargets.fat, nextTargets.carbs)
+    };
+    setTargets(nextTargets);
+    syncTargetDrafts(nextTargets);
   }
 
   function saveFood() {
@@ -576,8 +612,18 @@ export function DataView({
                 <input
                   inputMode="decimal"
                   type="number"
-                  value={targets[key]}
-                  onChange={(event) => handleTargetChange(key, event.target.value)}
+                  value={targetDrafts[key]}
+                  onFocus={() => setActiveTargetField(key)}
+                  onChange={(event) => handleTargetDraftChange(key, event.target.value)}
+                  onBlur={() => {
+                    commitTargetField(key);
+                    setActiveTargetField((current) => (current === key ? null : current));
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
                 />
               </Field>
             ))}
