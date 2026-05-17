@@ -53,6 +53,7 @@ function createBlankRecipe() {
   return {
     name: "",
     category: "Főtt ételek",
+    ingredientSearch: "",
     ingredientFoodId: "",
     ingredientAmount: "",
     ingredients: []
@@ -61,6 +62,14 @@ function createBlankRecipe() {
 
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
+}
+
+function normalizeSearch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 }
 
 function normalizeDailyLog(log) {
@@ -207,6 +216,28 @@ export function DataView({
       ),
     [foods, recipeDraft.ingredients]
   );
+  const recipeIngredientMatches = useMemo(() => {
+    const query = normalizeSearch(recipeDraft.ingredientSearch);
+    const items = query
+      ? recipeFoods.filter((food) => normalizeSearch(food.name).includes(query))
+      : recipeFoods;
+
+    return [...items]
+      .sort((a, b) => {
+        const normalizedA = normalizeSearch(a.name);
+        const normalizedB = normalizeSearch(b.name);
+        const aStarts = query ? normalizedA.startsWith(query) : false;
+        const bStarts = query ? normalizedB.startsWith(query) : false;
+        if (aStarts !== bStarts) return aStarts ? -1 : 1;
+        if (query) {
+          const aIndex = normalizedA.indexOf(query);
+          const bIndex = normalizedB.indexOf(query);
+          if (aIndex !== bIndex) return aIndex - bIndex;
+        }
+        return a.name.localeCompare(b.name, "hu", { sensitivity: "base" });
+      })
+      .slice(0, query ? 12 : 8);
+  }, [recipeDraft.ingredientSearch, recipeFoods]);
 
   useEffect(() => {
     if (foodCategories.length && !foodCategories.includes(activeFoodCategory)) {
@@ -247,7 +278,11 @@ export function DataView({
   }
 
   function addRecipeIngredient() {
-    const foodId = recipeDraft.ingredientFoodId;
+    const normalizedQuery = normalizeSearch(recipeDraft.ingredientSearch);
+    const foodId =
+      recipeDraft.ingredientFoodId ||
+      recipeFoods.find((food) => normalizeSearch(food.name) === normalizedQuery)?.id ||
+      recipeIngredientMatches[0]?.id;
     const amount = numberValue(recipeDraft.ingredientAmount);
     if (!foodId || amount <= 0) return;
     const ingredientFood = foods.find((food) => food.id === foodId);
@@ -255,6 +290,7 @@ export function DataView({
 
     setRecipeDraft((current) => ({
       ...current,
+      ingredientSearch: "",
       ingredientFoodId: "",
       ingredientAmount: "",
       ingredients: [...current.ingredients, { foodId, amount }]
@@ -643,20 +679,19 @@ export function DataView({
                       ))}
                     </select>
                   </Field>
-                  <Field label="Alapanyag">
-                    <select
-                      value={recipeDraft.ingredientFoodId}
+                  <Field label="Alapanyag keresése">
+                    <input
+                      type="search"
+                      value={recipeDraft.ingredientSearch}
+                      placeholder="Keresés alapanyag névre..."
                       onChange={(event) =>
-                        setRecipeDraft((current) => ({ ...current, ingredientFoodId: event.target.value }))
+                        setRecipeDraft((current) => ({
+                          ...current,
+                          ingredientSearch: event.target.value,
+                          ingredientFoodId: ""
+                        }))
                       }
-                    >
-                      <option value="">Válassz alapanyagot</option>
-                      {recipeFoods.map((food) => (
-                        <option key={food.id} value={food.id}>
-                          {food.name}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </Field>
                   <Field label="Mennyiség">
                     <input
@@ -669,6 +704,28 @@ export function DataView({
                       }
                     />
                   </Field>
+                </div>
+
+                <div className="recipe-search-results" aria-label="Recept alapanyag találatok">
+                  {recipeIngredientMatches.map((food) => (
+                    <button
+                      key={food.id}
+                      className={`recipe-search-option ${recipeDraft.ingredientFoodId === food.id ? "is-active" : ""}`}
+                      type="button"
+                      onClick={() =>
+                        setRecipeDraft((current) => ({
+                          ...current,
+                          ingredientFoodId: food.id,
+                          ingredientSearch: food.name
+                        }))
+                      }
+                    >
+                      <strong>{food.name}</strong>
+                      <span>
+                        {Math.round(food.kcal)} kcal · {food.category}
+                      </span>
+                    </button>
+                  ))}
                 </div>
 
                 <div className="data-actions">
