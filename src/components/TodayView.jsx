@@ -215,11 +215,11 @@ function TodayEntriesList({
                   <div className="today-entry-main">
                     <div className="today-entry-copy">
                       <h3>{food.name}</h3>
-                      <span>{formatAmount(entry.amount, food.unit)}</span>
                     </div>
 
                     <div className="today-entry-values">
                       <strong>{formatKcal(values.kcal)}</strong>
+                      <span>{formatAmount(entry.amount, food.unit)}</span>
                     </div>
                   </div>
 
