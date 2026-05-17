@@ -276,9 +276,15 @@ export function DataView({
   }
 
   return (
-    <main className="page">
-      <section className="panel">
+    <main className="page page--data">
+      <section className="panel data-hero-panel">
         <p className="eyebrow">Adatok</p>
+        <h1 className="data-page-title">Beállítások és adatok</h1>
+        <p className="muted data-page-copy">A célértékek, import/export és szerkesztési funkciók itt maradnak, ugyanabban a sötét, mobilos app-nyelvben.</p>
+      </section>
+
+      <section className="panel data-section-panel">
+        <p className="eyebrow">Mentések</p>
         <button
           className="collapsible-header"
           type="button"
@@ -286,7 +292,7 @@ export function DataView({
           aria-expanded={isBackupOpen}
         >
           <span>Import / export / biztonsági mentés</span>
-          <strong>{isBackupOpen ? "▼" : "▶"}</strong>
+          <strong>{isBackupOpen ? "▾" : "▸"}</strong>
         </button>
         {isBackupOpen && (
           <>
@@ -309,8 +315,7 @@ export function DataView({
 
             <h2 className="section-subtitle">Napi napló / visszamenőleges összesítések</h2>
             <p className="muted">
-              A napi napló import summary-only napokat ment a `dailyLogs` adatszerkezetbe. Meglévő dátumnál frissít, új
-              dátumnál hozzáad.
+              A napi napló import summary-only napokat ment a `dailyLogs` adatszerkezetbe. Meglévő dátumnál frissít, új dátumnál hozzáad.
             </p>
             <div className="data-actions">
               <button className="primary-button" type="button" onClick={exportDailyLogs}>
@@ -331,8 +336,8 @@ export function DataView({
         )}
       </section>
 
-      <section className="panel">
-        <p className="eyebrow">Napi célértékek</p>
+      <section className="panel data-section-panel">
+        <p className="eyebrow">Célértékek</p>
         <button
           className="collapsible-header"
           type="button"
@@ -340,7 +345,7 @@ export function DataView({
           aria-expanded={isMacroTargetsOpen}
         >
           <span>Makró célok – {macroTargetSummary}</span>
-          <strong>{isMacroTargetsOpen ? "▼" : "▶"}</strong>
+          <strong>{isMacroTargetsOpen ? "▾" : "▸"}</strong>
         </button>
         {isMacroTargetsOpen && (
           <div className="form-grid">
@@ -364,7 +369,7 @@ export function DataView({
           aria-expanded={isNutrientTargetsOpen}
         >
           <span>Célanyag célok – {nutrientTargetSummary}</span>
-          <strong>{isNutrientTargetsOpen ? "▼" : "▶"}</strong>
+          <strong>{isNutrientTargetsOpen ? "▾" : "▸"}</strong>
         </button>
         {isNutrientTargetsOpen && (
           <div className="form-grid">
@@ -388,7 +393,7 @@ export function DataView({
         )}
       </section>
 
-      <section className="panel">
+      <section className="panel data-section-panel">
         <p className="eyebrow">Élelmiszerek</p>
         <button
           className="collapsible-header"
@@ -397,7 +402,7 @@ export function DataView({
           aria-expanded={isFoodEditorOpen}
         >
           <span>{foodEditorTitle}</span>
-          <strong>{isFoodEditorOpen ? "▼" : "▶"}</strong>
+          <strong>{isFoodEditorOpen ? "▾" : "▸"}</strong>
         </button>
         {isFoodEditorOpen && (
           <>
@@ -443,10 +448,7 @@ export function DataView({
             </div>
             <div className="form-grid">
               <Field label="Név">
-                <input
-                  value={foodDraft.name}
-                  onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })}
-                />
+                <input value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
               </Field>
               <Field label="Kategória">
                 <select
@@ -459,10 +461,7 @@ export function DataView({
                 </select>
               </Field>
               <Field label="Egység">
-                <select
-                  value={foodDraft.unit}
-                  onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}
-                >
+                <select value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
                   {UNITS.map((unit) => (
                     <option key={unit}>{unit}</option>
                   ))}
@@ -486,7 +485,7 @@ export function DataView({
               aria-expanded={isFoodNutrientsOpen}
             >
               <span>Célanyagok / mikrotápanyagok ({foodNutrientCount} megadva)</span>
-              <strong>{isFoodNutrientsOpen ? "▼" : "▶"}</strong>
+              <strong>{isFoodNutrientsOpen ? "▾" : "▸"}</strong>
             </button>
             {isFoodNutrientsOpen && (
               <NutrientInputs
@@ -502,7 +501,7 @@ export function DataView({
         )}
       </section>
 
-      <section className="panel">
+      <section className="panel data-section-panel">
         <p className="eyebrow">Kiegészítők</p>
         <button
           className="collapsible-header"
@@ -511,7 +510,7 @@ export function DataView({
           aria-expanded={isSupplementEditorOpen}
         >
           <span>{supplementEditorTitle}</span>
-          <strong>{isSupplementEditorOpen ? "▼" : "▶"}</strong>
+          <strong>{isSupplementEditorOpen ? "▾" : "▸"}</strong>
         </button>
         {isSupplementEditorOpen && (
           <>

@@ -1,8 +1,7 @@
+import { CalendarDays, ChevronDown, ChevronUp, PencilLine } from "lucide-react";
 import { useMemo, useState } from "react";
 import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
-import { dailyEntryChipStyles } from "./DailyEntryList";
-import { MacroChips } from "./DailyLogsView";
 
 const WEEKDAYS = ["vas", "hét", "ked", "sze", "csü", "pén", "szo"];
 
@@ -167,12 +166,12 @@ const listPanelStyle = {
 
 function getListRowStyle(isActive = false) {
   return {
-    borderTop: "1px solid rgba(148, 163, 184, 0.12)",
-    padding: "8px 2px",
-    borderLeft: isActive ? "3px solid rgba(56, 189, 248, 0.56)" : "3px solid transparent",
-    background: isActive ? "linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(8, 13, 22, 0.72))" : "transparent",
-    borderRadius: isActive ? "16px" : 0,
-    boxShadow: isActive ? "inset 0 1px 0 rgba(255, 255, 255, 0.03)" : "none"
+    borderTop: "1px solid rgba(148, 163, 184, 0.08)",
+    padding: "10px 2px",
+    borderLeft: isActive ? "2px solid rgba(251, 191, 36, 0.56)" : "2px solid transparent",
+    background: isActive ? "linear-gradient(180deg, rgba(16, 22, 31, 0.92), rgba(10, 14, 22, 0.82))" : "transparent",
+    borderRadius: isActive ? "18px" : 0,
+    boxShadow: isActive ? "inset 0 1px 0 rgba(255, 255, 255, 0.02)" : "none"
   };
 }
 
@@ -192,7 +191,7 @@ const rowButtonStyle = {
 
 const rowTitleStyle = {
   display: "grid",
-  gap: "6px",
+  gap: "8px",
   minWidth: 0
 };
 
@@ -200,13 +199,13 @@ const rowTitleTopStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  gap: "8px",
+  gap: "10px",
   minWidth: 0
 };
 
 const statusInlineStyle = {
   color: "var(--muted)",
-  fontSize: "0.76rem",
+  fontSize: "0.74rem",
   whiteSpace: "nowrap"
 };
 
@@ -215,13 +214,13 @@ function getOpenDetailStyle(isActive = false) {
     display: "grid",
     gap: "10px",
     marginTop: "10px",
-    padding: "10px",
-    border: isActive ? "1px solid rgba(56, 189, 248, 0.24)" : "1px solid rgba(56, 189, 248, 0.16)",
+    padding: "12px",
+    border: isActive ? "1px solid rgba(251, 191, 36, 0.18)" : "1px solid rgba(148, 163, 184, 0.08)",
     borderRadius: "16px",
     background: isActive
-      ? "linear-gradient(180deg, rgba(15, 23, 42, 0.84), rgba(8, 13, 22, 0.76))"
-      : "linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(8, 13, 22, 0.68))",
-    boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)"
+      ? "linear-gradient(180deg, rgba(15, 21, 31, 0.92), rgba(8, 12, 20, 0.84))"
+      : "linear-gradient(180deg, rgba(14, 20, 29, 0.78), rgba(8, 12, 20, 0.68))",
+    boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.02)"
   };
 }
 
@@ -229,7 +228,7 @@ const nestedListStyle = {
   display: "grid",
   gap: 0,
   padding: "2px 0",
-  borderTop: "1px solid rgba(148, 163, 184, 0.12)"
+  borderTop: "1px solid rgba(148, 163, 184, 0.08)"
 };
 
 function SummaryMetricLine({ label, children }) {
@@ -251,14 +250,14 @@ function SummaryLines({ ratio, totals, totalsLabel, emptyText }) {
   return (
     <div className="stats-summary-lines">
       <SummaryMetricLine label="Makróarány">
-        <SummaryValue>{Math.round(ratio.protein)}% p</SummaryValue>
-        <SummaryValue>{Math.round(ratio.fat)}% f</SummaryValue>
-        <SummaryValue>{Math.round(ratio.carbs)}% Ch</SummaryValue>
+        <SummaryValue>P {Math.round(ratio.protein)}%</SummaryValue>
+        <SummaryValue>F {Math.round(ratio.fat)}%</SummaryValue>
+        <SummaryValue>Ch {Math.round(ratio.carbs)}%</SummaryValue>
       </SummaryMetricLine>
       <SummaryMetricLine label={totalsLabel}>
         <SummaryValue>{formatKcal(totals.kcal)}</SummaryValue>
-        <SummaryValue>p {formatStat(totals.protein)} g</SummaryValue>
-        <SummaryValue>f {formatStat(totals.fat)} g</SummaryValue>
+        <SummaryValue>P {formatStat(totals.protein)} g</SummaryValue>
+        <SummaryValue>F {formatStat(totals.fat)} g</SummaryValue>
         <SummaryValue>Ch {formatStat(totals.carbs)} g</SummaryValue>
       </SummaryMetricLine>
     </div>
@@ -301,12 +300,7 @@ function MacroTrendChart({ rows, target }) {
         })}
         <polyline points={toPoints(values, max)} className="trend-chart__value" />
         <polyline points={toPoints(averageValues, max)} className="trend-chart__average" />
-        <circle
-          className="trend-chart__current"
-          cx={values.length === 1 ? 3 : 97}
-          cy={58 - 4 - (current / max) * 48}
-          r="2"
-        />
+        <circle className="trend-chart__current" cx={values.length === 1 ? 3 : 97} cy={58 - 4 - (current / max) * 48} r="2" />
       </svg>
       <div className="chart-legend">
         <span><i className="legend-line value" /> Aktuális érték</span>
@@ -321,41 +315,28 @@ function EntryPreview({ entries, foods }) {
   if (!entries.length) return null;
 
   return (
-    <div style={{ display: "grid", gap: "8px" }}>
+    <div className="stats-entry-preview">
       {entries.map((entry) => {
         const food = foods.find((item) => item.id === entry.foodId);
         if (!food) return null;
         const values = calculateEntry(food, Number(entry.amount) || 0);
         return (
-          <div
-            key={entry.entryId}
-            style={{
-              display: "grid",
-              gap: "5px",
-              padding: "8px 0",
-              borderTop: "1px solid rgba(148, 163, 184, 0.12)"
-            }}
-          >
-            <strong style={{ fontSize: "0.92rem", lineHeight: 1.15 }}>{food.name}</strong>
-            <div style={dailyEntryChipStyles.compactSummaryStyle} aria-label="Mennyiség és tápértékek">
-              <span className="entry-amount-badge" style={dailyEntryChipStyles.amountBadgeStyle}>
-                {formatStat(entry.amount)} {food.unit}
-              </span>
-              <span style={dailyEntryChipStyles.macroChipStyle}>
-                <strong>{formatKcal(values.kcal)}</strong>
-              </span>
-              <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
-                <strong>{formatStat(values.protein)} g</strong>
-              </span>
-              <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
-                <strong>{formatStat(values.fat)} g</strong>
-              </span>
-              <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
-                <strong>{formatStat(values.carbs)} g</strong>
-              </span>
+          <div className="stats-entry-preview-row" key={entry.entryId}>
+            <div className="stats-entry-preview-top">
+              <div className="stats-entry-preview-main">
+                <strong>{food.name}</strong>
+                <div className="stats-entry-preview-macros" aria-label="Mennyiség és tápértékek">
+                  <span><small>P</small><strong>{formatStat(values.protein)} g</strong></span>
+                  <span><small>F</small><strong>{formatStat(values.fat)} g</strong></span>
+                  <span><small>Ch</small><strong>{formatStat(values.carbs)} g</strong></span>
+                </div>
+              </div>
+              <div className="stats-entry-preview-side">
+                <span className="stats-entry-preview-kcal">{Math.round(values.kcal)} kcal</span>
+                <span className="stats-entry-preview-amount">
+                  {formatStat(entry.amount)} {food.unit}
+                </span>
+              </div>
             </div>
           </div>
         );
@@ -364,48 +345,51 @@ function EntryPreview({ entries, foods }) {
   );
 }
 
-function DaySummaryRow({ row, isOpen, isEntryPreviewOpen, onToggle, onToggleEntryPreview, onLoadToToday, foods }) {
+function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   const ratio = calculateMacroRatio(row);
 
   return (
-    <div style={getListRowStyle(isOpen)}>
-      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
-        <span style={rowTitleStyle}>
-          <span style={rowTitleTopStyle}>
-            <strong>{formatDateWithDay(row.dateKey)}</strong>
-            <small style={statusInlineStyle}>{row.status}</small>
+    <div className={`stats-row-card ${isOpen ? "is-active" : ""}`} style={getListRowStyle(isOpen)}>
+      <button className="stats-row-toggle" style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span className="stats-row-title" style={rowTitleStyle}>
+          <span className="stats-row-title-top" style={rowTitleTopStyle}>
+            <span className="stats-row-title-main">
+              <CalendarDays size={16} aria-hidden="true" />
+              <strong>{formatDateWithDay(row.dateKey)}</strong>
+            </span>
+            <span className="stats-row-side">
+              <strong className="stats-row-kcal">{Math.round(Number(row.kcal) || 0)} kcal</strong>
+              <small className="stats-row-status">{row.status}</small>
+            </span>
           </span>
-          <MacroChips totals={row} active={isOpen} />
+          <span className="stats-row-macros" aria-label="Makró összesítés">
+            <span><small>P</small><strong>{formatStat(row.protein)} g</strong></span>
+            <span><small>F</small><strong>{formatStat(row.fat)} g</strong></span>
+            <span><small>Ch</small><strong>{formatStat(row.carbs)} g</strong></span>
+          </span>
         </span>
-        <strong>{isOpen ? "▾" : "▸"}</strong>
+        <span className="stats-row-chevron">{isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
       </button>
 
       {isOpen && (
-        <div style={getOpenDetailStyle(true)}>
-          <p className="muted" style={{ margin: 0 }}>
-            Makróarány: {Math.round(ratio.protein)}% p · {Math.round(ratio.fat)}% f · {Math.round(ratio.carbs)}% Ch
+        <div className="stats-open-panel is-day" style={getOpenDetailStyle(true)}>
+          <p className="muted stats-inline-copy" style={{ margin: 0 }}>
+            Makróarány: P {Math.round(ratio.protein)}% · F {Math.round(ratio.fat)}% · Ch {Math.round(ratio.carbs)}%
           </p>
 
-          <button className="primary-button secondary" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
-            Betöltés szerkesztésre a Mai fülre
-          </button>
+          <div className="stats-action-row">
+            <button className="secondary-button full stats-load-button" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
+              <PencilLine size={16} aria-hidden="true" />
+              Betöltés szerkesztésre
+            </button>
+          </div>
 
           {row.entries.length > 0 ? (
-            <>
-              <button
-                className="secondary-button full"
-                type="button"
-                onClick={() => onToggleEntryPreview(row.dateKey)}
-                aria-expanded={isEntryPreviewOpen}
-              >
-                {isEntryPreviewOpen ? "Tételes lista bezárása" : `Tételes lista megnyitása (${row.entries.length})`}
-              </button>
-              {isEntryPreviewOpen && <EntryPreview entries={row.entries} foods={foods} />}
-            </>
+            <EntryPreview entries={row.entries} foods={foods} />
           ) : row.sourceType === "summary" ? (
-            <p className="muted" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
+            <p className="muted stats-inline-copy" style={{ margin: 0 }}>Ez csak összesített importált nap, részletes tétellista nélkül.</p>
           ) : (
-            <p className="muted" style={{ margin: 0 }}>Ehhez a naphoz még nincs bevitel. Betöltéssel üres szerkesztési napként nyílik meg.</p>
+            <p className="muted stats-inline-copy" style={{ margin: 0 }}>Ehhez a naphoz még nincs bevitel. Betöltéssel üres szerkesztési napként nyílik meg.</p>
           )}
         </div>
       )}
@@ -413,40 +397,58 @@ function DaySummaryRow({ row, isOpen, isEntryPreviewOpen, onToggle, onToggleEntr
   );
 }
 
-function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, openEntryPreviews, onToggle, onToggleDay, onToggleEntryPreview, onLoadToToday, foods, showDailyDetails = true }) {
+function WeekSummaryCard({
+  group,
+  isOpen,
+  hasOpenDay,
+  openDays,
+  onToggle,
+  onToggleDay,
+  onLoadToToday,
+  foods,
+  showDailyDetails = true
+}) {
   const isWeekActive = isOpen && !hasOpenDay;
   const visibleRows = hasOpenDay ? group.rows.filter((row) => openDays[row.dateKey]) : group.rows;
 
   return (
-    <div style={getListRowStyle(isWeekActive)}>
-      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
-        <span style={rowTitleStyle}>
-          <span style={rowTitleTopStyle}>
-            <strong>{group.label}</strong>
-            <small style={statusInlineStyle}>{group.loggedRows.length} mentett nap</small>
+    <div className={`stats-row-card is-week ${isWeekActive ? "is-active" : ""}`} style={getListRowStyle(isWeekActive)}>
+      <button className="stats-row-toggle" style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span className="stats-row-title" style={rowTitleStyle}>
+          <span className="stats-row-title-top" style={rowTitleTopStyle}>
+            <span className="stats-row-title-main">
+              <CalendarDays size={16} aria-hidden="true" />
+              <strong>{group.label}</strong>
+            </span>
+            <span className="stats-row-side">
+              <strong className="stats-row-kcal">{Math.round(Number(group.total.kcal) || 0)} kcal</strong>
+              <small className="stats-row-status">{group.loggedRows.length} mentett nap</small>
+            </span>
           </span>
-          <MacroChips totals={group.total} active={isWeekActive} />
+          <span className="stats-row-macros" aria-label="Makró összesítés">
+            <span><small>P</small><strong>{formatStat(group.total.protein)} g</strong></span>
+            <span><small>F</small><strong>{formatStat(group.total.fat)} g</strong></span>
+            <span><small>Ch</small><strong>{formatStat(group.total.carbs)} g</strong></span>
+          </span>
         </span>
-        <strong>{isOpen ? "▾" : "▸"}</strong>
+        <span className="stats-row-chevron">{isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>
       </button>
 
       {isOpen && showDailyDetails && (
-        <div style={getOpenDetailStyle(false)}>
-          <p className="muted" style={{ margin: 0 }}>
-            Átlag: {formatKcal(group.average.kcal)} | p {formatStat(group.average.protein)} g | f {formatStat(group.average.fat)} g | Ch {formatStat(group.average.carbs)} g
+        <div className="stats-open-panel is-week" style={getOpenDetailStyle(false)}>
+          <p className="muted stats-inline-copy" style={{ margin: 0 }}>
+            Átlag: {formatKcal(group.average.kcal)} · P {formatStat(group.average.protein)} g · F {formatStat(group.average.fat)} g · Ch {formatStat(group.average.carbs)} g
           </p>
-          <p className="muted" style={{ margin: 0 }}>
-            Makróarány: {Math.round(group.ratio.protein)}% p | {Math.round(group.ratio.fat)}% f | {Math.round(group.ratio.carbs)}% Ch
+          <p className="muted stats-inline-copy" style={{ margin: 0 }}>
+            Makróarány: P {Math.round(group.ratio.protein)}% · F {Math.round(group.ratio.fat)}% · Ch {Math.round(group.ratio.carbs)}%
           </p>
-          <div style={nestedListStyle}>
+          <div className="stats-nested-list" style={nestedListStyle}>
             {visibleRows.map((row) => (
               <DaySummaryRow
                 key={row.dateKey}
                 row={row}
                 isOpen={Boolean(openDays[row.dateKey])}
-                isEntryPreviewOpen={Boolean(openEntryPreviews[row.dateKey])}
                 onToggle={() => onToggleDay(row.dateKey)}
-                onToggleEntryPreview={onToggleEntryPreview}
                 onLoadToToday={onLoadToToday}
                 foods={foods}
               />
@@ -461,7 +463,6 @@ function WeekSummaryCard({ group, isOpen, hasOpenDay, openDays, openEntryPreview
 export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoadToToday }) {
   const [openGroups, setOpenGroups] = useState(null);
   const [openDays, setOpenDays] = useState({});
-  const [openEntryPreviews, setOpenEntryPreviews] = useState({});
   const keys = getRangeKeys(days);
   const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
   const loggedRows = rows.filter((row) => row.sourceType !== "empty");
@@ -472,9 +473,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const defaultOpenGroups = useMemo(() => (weekGroups[0] ? { [weekGroups[0].id]: true } : {}), [weekGroups]);
   const visibleOpenGroups = openGroups ?? defaultOpenGroups;
   const focusedGroupIds = Object.keys(visibleOpenGroups).filter((groupId) => visibleOpenGroups[groupId]);
-  const visibleWeekGroups = focusedGroupIds.length
-    ? weekGroups.filter((group) => visibleOpenGroups[group.id])
-    : weekGroups;
+  const visibleWeekGroups = focusedGroupIds.length ? weekGroups.filter((group) => visibleOpenGroups[group.id]) : weekGroups;
   const activeDayKey = Object.keys(openDays).find((dateKey) => openDays[dateKey]);
   const activeDay = activeDayKey ? rows.find((row) => row.dateKey === activeDayKey) : null;
   const explicitlyFocusedGroupId = openGroups ? Object.keys(openGroups).find((groupId) => openGroups[groupId]) : null;
@@ -520,7 +519,6 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
       const base = current ?? defaultOpenGroups;
       const nextIsOpen = !base[groupId];
       setOpenDays({});
-      setOpenEntryPreviews({});
       return nextIsOpen ? { [groupId]: true } : {};
     });
   }
@@ -528,20 +526,16 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   function toggleDay(dateKey) {
     setOpenDays((current) => {
       const nextIsOpen = !current[dateKey];
-      setOpenEntryPreviews({});
       return nextIsOpen ? { [dateKey]: true } : {};
     });
   }
 
-  function toggleEntryPreview(dateKey) {
-    setOpenEntryPreviews((current) => ({ [dateKey]: !current[dateKey] }));
-  }
-
   return (
-    <main className="page">
+    <main className="page page--stats">
       <section className="panel stats-summary-panel">
         <div className="stats-summary-header">
           <div className="stats-summary-title-block">
+            <p className="eyebrow">Havi</p>
             <h1>{summaryTitle}</h1>
             {summaryRangeLabel && <p className="stats-summary-range">{summaryRangeLabel}</p>}
           </div>
@@ -558,7 +552,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
         />
       </section>
 
-      <section className="panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
+      <section className="panel stats-list-panel" style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
         {visibleWeekGroups.map((group) => {
           const hasOpenDay = group.rows.some((row) => openDays[row.dateKey]);
           return (
@@ -568,10 +562,8 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
               isOpen={Boolean(visibleOpenGroups[group.id])}
               hasOpenDay={hasOpenDay}
               openDays={openDays}
-              openEntryPreviews={openEntryPreviews}
               onToggle={() => toggleGroup(group.id)}
               onToggleDay={toggleDay}
-              onToggleEntryPreview={toggleEntryPreview}
               onLoadToToday={onLoadToToday}
               foods={foods}
               showDailyDetails

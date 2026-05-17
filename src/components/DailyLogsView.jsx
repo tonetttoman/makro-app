@@ -65,8 +65,8 @@ const listPanelStyle = {
 };
 
 const rowStyle = {
-  borderTop: "1px solid rgba(148, 163, 184, 0.12)",
-  padding: "8px 2px"
+  borderTop: "1px solid rgba(148, 163, 184, 0.08)",
+  padding: "10px 2px"
 };
 
 const rowButtonStyle = {
@@ -107,88 +107,24 @@ const openDetailStyle = {
   display: "grid",
   gap: "10px",
   marginTop: "10px",
-  padding: "10px",
-  border: "1px solid rgba(56, 189, 248, 0.18)",
+  padding: "12px",
+  border: "1px solid rgba(148, 163, 184, 0.08)",
   borderRadius: "16px",
   background: "linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(8, 13, 22, 0.74))",
   boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.03)"
 };
 
-const summaryChipGroupStyle = {
-  display: "grid",
-  gap: "6px"
-};
-
-const macroChipRowStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  alignItems: "center",
-  gap: "8px"
-};
-
-const kcalChipStyle = {
-  ...dailyEntryChipStyles.macroChipStyle,
-  minWidth: "92px",
-  minHeight: "32px",
-  padding: "7px 13px",
-  fontSize: "0.86rem",
-  background: "rgba(15, 23, 42, 0.78)",
-  border: "1px solid rgba(56, 189, 248, 0.22)",
-  boxShadow: "0 0 0 1px rgba(56, 189, 248, 0.05) inset"
-};
-
-const activeKcalChipStyle = {
-  ...kcalChipStyle,
-  border: "1px solid rgba(56, 189, 248, 0.32)",
-  background: "rgba(15, 23, 42, 0.88)"
-};
-
-const macroChipStyle = {
-  ...dailyEntryChipStyles.macroChipStyle,
-  minWidth: "74px",
-  minHeight: "30px",
-  padding: "6px 11px",
-  fontSize: "0.78rem",
-  background: "rgba(15, 23, 42, 0.72)",
-  border: "1px solid rgba(56, 189, 248, 0.18)"
-};
-
-const activeMacroChipStyle = {
-  ...macroChipStyle,
-  border: "1px solid rgba(56, 189, 248, 0.28)",
-  background: "rgba(15, 23, 42, 0.84)"
-};
-
-export const summaryMacroChipStyles = {
-  summaryChipGroupStyle,
-  macroChipRowStyle,
-  kcalChipStyle,
-  activeKcalChipStyle,
-  macroChipStyle,
-  activeMacroChipStyle
-};
-
 export function MacroChips({ totals, active = false }) {
   return (
-    <div style={summaryChipGroupStyle} aria-label="Makró összesítés">
-      <div>
-        <span style={active ? activeKcalChipStyle : kcalChipStyle}>
-          <strong>{formatKcal(totals.kcal)}</strong>
-        </span>
+    <div className={`stats-macro-strip ${active ? "is-active" : ""}`} aria-label="Makró összesítés">
+      <div className="stats-macro-strip__kcal">
+        <strong>{Math.round(Number(totals.kcal) || 0)}</strong>
+        <span>kcal</span>
       </div>
-      <div style={macroChipRowStyle}>
-        <span style={active ? activeMacroChipStyle : macroChipStyle}>
-          <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
-          <strong>{formatStat(totals.protein)} g</strong>
-        </span>
-        <span style={active ? activeMacroChipStyle : macroChipStyle}>
-          <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
-          <strong>{formatStat(totals.fat)} g</strong>
-        </span>
-        <span style={active ? activeMacroChipStyle : macroChipStyle}>
-          <small style={dailyEntryChipStyles.macroLabelStyle}>Ch</small>
-          <strong>{formatStat(totals.carbs)} g</strong>
-        </span>
+      <div className="stats-macro-strip__macros">
+        <span><small>P</small><strong>{formatStat(totals.protein)} g</strong></span>
+        <span><small>F</small><strong>{formatStat(totals.fat)} g</strong></span>
+        <span><small>Ch</small><strong>{formatStat(totals.carbs)} g</strong></span>
       </div>
     </div>
   );
@@ -223,11 +159,11 @@ function EntryPreview({ entries, foods }) {
                 <strong>{formatKcal(values.kcal)}</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>p</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>P</small>
                 <strong>{formatStat(values.protein)} g</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
-                <small style={dailyEntryChipStyles.macroLabelStyle}>f</small>
+                <small style={dailyEntryChipStyles.macroLabelStyle}>F</small>
                 <strong>{formatStat(values.fat)} g</strong>
               </span>
               <span style={dailyEntryChipStyles.macroChipStyle}>
@@ -278,7 +214,7 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
                   </span>
                   <MacroChips totals={row} active={isOpen} />
                 </span>
-                <strong>{isOpen ? "▼" : "▶"}</strong>
+                <strong>{isOpen ? "▾" : "▸"}</strong>
               </button>
 
               {isOpen && (
