@@ -215,27 +215,26 @@ function TodayEntriesList({
                   <div className="today-entry-main">
                     <div className="today-entry-copy">
                       <h3>{food.name}</h3>
+                      <div className="today-entry-macros" aria-label="Makrók">
+                        <span>
+                          <small>P</small>
+                          {Math.round(values.protein * 10) / 10} g
+                        </span>
+                        <span>
+                          <small>F</small>
+                          {Math.round(values.fat * 10) / 10} g
+                        </span>
+                        <span>
+                          <small>Ch</small>
+                          {Math.round(values.carbs * 10) / 10} g
+                        </span>
+                      </div>
                     </div>
 
                     <div className="today-entry-values">
                       <strong>{formatKcal(values.kcal)}</strong>
                       <span>{formatAmount(entry.amount, food.unit)}</span>
                     </div>
-                  </div>
-
-                  <div className="today-entry-macros" aria-label="Makrók">
-                    <span>
-                      <small>P</small>
-                      {Math.round(values.protein * 10) / 10} g
-                    </span>
-                    <span>
-                      <small>F</small>
-                      {Math.round(values.fat * 10) / 10} g
-                    </span>
-                    <span>
-                      <small>Ch</small>
-                      {Math.round(values.carbs * 10) / 10} g
-                    </span>
                   </div>
 
                   <button
