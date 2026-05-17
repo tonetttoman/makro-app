@@ -3,12 +3,10 @@ import {
   Droplet,
   EllipsisVertical,
   Flame,
-  Lock,
   Minus,
   Plus,
   Save,
   Trash2,
-  Unlock,
   Wheat,
   X
 } from "lucide-react";
@@ -67,9 +65,9 @@ function TodaySummaryCard({ totals, targets }) {
           <div className="today-summary-kcal">
             <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
             <span>kcal</span>
-        </div>
+          </div>
 
-        <p className="today-summary-target">cél: {targets.kcal.toLocaleString("hu-HU")} kcal</p>
+          <p className="today-summary-target">cél: {targets.kcal.toLocaleString("hu-HU")} kcal</p>
         </div>
       </div>
 
@@ -96,57 +94,48 @@ function TodaySummaryCard({ totals, targets }) {
   );
 }
 
-function TodayEntryEditor({ entry, food, onAmountChange, onToggleLock, onRemove }) {
-  const isLocked = Boolean(entry.locked);
-
+function TodayEntryEditor({ entry, food, onAmountChange, onRemove }) {
   return (
     <div className="today-entry-editor">
       <div className="today-entry-editor-row">
-        <button className="today-secondary-action" type="button" onClick={() => onToggleLock(entry.entryId)}>
-          {isLocked ? <Unlock size={14} aria-hidden="true" /> : <Lock size={14} aria-hidden="true" />}
-          {isLocked ? "Feloldás" : "Zárolás"}
-        </button>
-        <button className="today-secondary-action is-danger" type="button" onClick={() => onRemove(entry.entryId)}>
-          <Trash2 size={14} aria-hidden="true" />
-          Törlés
+        <button className="today-inline-delete" type="button" onClick={() => onRemove(entry.entryId)} aria-label="Tétel törlése">
+          <Trash2 size={15} aria-hidden="true" />
         </button>
       </div>
 
-      {!isLocked && (
-        <div className="today-entry-stepper">
-          <button
-            className="today-stepper-button"
-            type="button"
-            onClick={() => onAmountChange(entry.entryId, Math.max(0, (Number(entry.amount) || 0) - food.step))}
-            aria-label="Mennyiség csökkentése"
-          >
-            <Minus size={15} />
-          </button>
+      <div className="today-entry-stepper">
+        <button
+          className="today-stepper-button"
+          type="button"
+          onClick={() => onAmountChange(entry.entryId, Math.max(0, (Number(entry.amount) || 0) - food.step))}
+          aria-label="Mennyiség csökkentése"
+        >
+          <Minus size={14} />
+        </button>
 
-          <label className="today-entry-stepper-input">
-            <span>Mennyiség</span>
-            <input
-              inputMode="decimal"
-              min="0"
-              step={food.step}
-              type="number"
-              value={entry.amount}
-              onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
-            />
-          </label>
+        <label className="today-entry-stepper-input">
+          <span>Mennyiség</span>
+          <input
+            inputMode="decimal"
+            min="0"
+            step={food.step}
+            type="number"
+            value={entry.amount}
+            onChange={(event) => onAmountChange(entry.entryId, Number(event.target.value))}
+          />
+        </label>
 
-          <span className="today-entry-stepper-unit">{food.unit}</span>
+        <span className="today-entry-stepper-unit">{food.unit}</span>
 
-          <button
-            className="today-stepper-button"
-            type="button"
-            onClick={() => onAmountChange(entry.entryId, (Number(entry.amount) || 0) + food.step)}
-            aria-label="Mennyiség növelése"
-          >
-            <Plus size={15} />
-          </button>
-        </div>
-      )}
+        <button
+          className="today-stepper-button"
+          type="button"
+          onClick={() => onAmountChange(entry.entryId, (Number(entry.amount) || 0) + food.step)}
+          aria-label="Mennyiség növelése"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -160,7 +149,6 @@ function TodayEntriesList({
   onSave,
   onWorkDateChange,
   onAmountChange,
-  onToggleLock,
   onRemove
 }) {
   const [expandedEntryId, setExpandedEntryId] = useState(null);
@@ -266,7 +254,6 @@ function TodayEntriesList({
                     entry={entry}
                     food={food}
                     onAmountChange={onAmountChange}
-                    onToggleLock={onToggleLock}
                     onRemove={onRemove}
                   />
                 )}
@@ -297,7 +284,6 @@ export function TodayView({
   onSave,
   onWorkDateChange,
   onAmountChange,
-  onToggleLock,
   onRemove
 }) {
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
@@ -351,7 +337,6 @@ export function TodayView({
           setIsTopMenuOpen(false);
         }}
         onAmountChange={onAmountChange}
-        onToggleLock={onToggleLock}
         onRemove={onRemove}
       />
     </main>
