@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BottomNav } from "./components/BottomNav";
 import { DataView } from "./components/DataView";
 import { StatsView } from "./components/StatsView";
@@ -156,11 +156,18 @@ export default function App() {
   const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
   const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
+  const preserveLoadedDayRef = useRef(false);
 
   useEffect(() => {
     const currentDiary = diary || {};
     setWorkspace(getWorkspaceForDate(currentDiary, dailyLogs, todayKey));
   }, []);
+
+  useEffect(() => {
+    if (activeView === "today" && preserveLoadedDayRef.current) {
+      preserveLoadedDayRef.current = false;
+    }
+  }, [activeView]);
 
   const workDate = workspace.date || todayKey;
   const todayEntries = workspace.entries || [];
@@ -293,6 +300,10 @@ export default function App() {
     setWorkspace(getWorkspaceForDate(diary, dailyLogs, nextDate));
   }
 
+  function handleReturnToToday() {
+    setWorkspace(getWorkspaceForDate(diary, dailyLogs, todayKey));
+  }
+
   function handleAddSupplement(supplement) {
     updateSupplementEntries([...supplementEntries, createSupplementEntry(supplement)]);
   }
@@ -313,7 +324,24 @@ export default function App() {
   }
 
   function handleLoadToToday(date) {
+    preserveLoadedDayRef.current = true;
     setWorkspace(getWorkspaceForDate(diary, dailyLogs, date));
+    setActiveView("today");
+  }
+
+  function handleViewChange(nextView) {
+    if (nextView === activeView) return;
+
+    if (nextView !== "today") {
+      setIsQuickAddOpen(false);
+      setActiveView(nextView);
+      return;
+    }
+
+    setIsQuickAddOpen(false);
+    if (workDate !== todayKey) {
+      setWorkspace(getWorkspaceForDate(diary, dailyLogs, todayKey));
+    }
     setActiveView("today");
   }
 
@@ -341,6 +369,7 @@ export default function App() {
           onAddFood={handleAddFood}
           onSave={handleConfirmDailyLog}
           onWorkDateChange={handleWorkDateChange}
+          onReturnToToday={handleReturnToToday}
           onAmountChange={handleAmountChange}
           onRemove={handleRemove}
           quickAddFoods={visibleFoods}
@@ -394,7 +423,7 @@ export default function App() {
         />
       )}
 
-      <BottomNav activeView={activeView} onChange={setActiveView} />
+      <BottomNav activeView={activeView} onChange={handleViewChange} />
     </div>
   );
 }

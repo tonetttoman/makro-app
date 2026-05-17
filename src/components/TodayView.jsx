@@ -144,11 +144,13 @@ function TodayEntriesList({
   entries,
   foods,
   workDate,
+  todayKey,
   isEditingPastDay,
   menuOpen,
   onToggleMenu,
   onSave,
   onWorkDateChange,
+  onReturnToToday,
   onAmountChange,
   onRemove
 }) {
@@ -185,14 +187,29 @@ function TodayEntriesList({
               <CalendarDays size={14} aria-hidden="true" />
               Mentés dátuma
             </span>
-            <input
-              type="date"
-              value={workDate}
-              onChange={(event) => {
-                onWorkDateChange(event.target.value);
-                onToggleMenu(false);
-              }}
-            />
+            <div className="today-date-field__row">
+              <input
+                type="date"
+                value={workDate}
+                onChange={(event) => {
+                  onWorkDateChange(event.target.value);
+                  onToggleMenu(false);
+                }}
+              />
+              {workDate !== todayKey && (
+                <button
+                  className="today-date-reset"
+                  type="button"
+                  onClick={() => {
+                    onReturnToToday?.();
+                    onToggleMenu(false);
+                  }}
+                  aria-label="Vissza a mai naphoz"
+                >
+                  <X size={14} aria-hidden="true" />
+                </button>
+              )}
+            </div>
           </label>
         </div>
       )}
@@ -286,6 +303,7 @@ export function TodayView({
   onAddFood,
   onSave,
   onWorkDateChange,
+  onReturnToToday,
   onAmountChange,
   onRemove
 }) {
@@ -341,6 +359,7 @@ export function TodayView({
         entries={entries}
         foods={foods}
         workDate={workDate}
+        todayKey={todayKey}
         isEditingPastDay={isEditingPastDay}
         menuOpen={isTopMenuOpen}
         onToggleMenu={(next) => setIsTopMenuOpen((current) => (typeof next === "boolean" ? next : !current))}
@@ -350,6 +369,10 @@ export function TodayView({
         }}
         onWorkDateChange={(nextDate) => {
           onWorkDateChange?.(nextDate);
+          setIsTopMenuOpen(false);
+        }}
+        onReturnToToday={() => {
+          onReturnToToday?.();
           setIsTopMenuOpen(false);
         }}
         onAmountChange={onAmountChange}

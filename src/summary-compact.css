@@ -319,6 +319,13 @@
   gap: 6px;
 }
 
+.today-date-field__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .today-date-field span {
   display: inline-flex;
   align-items: center;
@@ -326,6 +333,18 @@
   color: var(--muted);
   font-size: 0.76rem;
   font-weight: 750;
+}
+
+.today-date-reset {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(244, 63, 94, 0.22);
+  border-radius: 12px;
+  background: rgba(244, 63, 94, 0.08);
+  color: rgba(251, 203, 213, 0.88);
 }
 
 .today-entries {
