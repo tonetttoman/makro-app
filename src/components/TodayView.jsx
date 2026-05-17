@@ -39,22 +39,38 @@ function formatAmount(value, unit) {
 
 function TodaySummaryCard({ totals, targets }) {
   const kcal = Math.round(totals.kcal);
+  const kcalTarget = Math.max(1, Number(targets.kcal) || 0);
+  const progressRatio = Math.max(0, Number(totals.kcal) || 0) / kcalTarget;
+  const progressPercent = progressRatio <= 0 ? 2.5 : Math.min(100, Math.max(progressRatio * 100, 4));
 
   return (
     <section className="today-summary-card" aria-label="Mai összesítő">
-      <div className="today-summary-orbit" aria-hidden="true" />
+      <svg className="today-kcal-arc" viewBox="0 0 220 220" aria-hidden="true">
+        <defs>
+          <linearGradient id="today-kcal-arc-gradient" x1="42" y1="28" x2="88" y2="196" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#ffe291" stopOpacity="0.78" />
+            <stop offset="38%" stopColor="#fcd34d" stopOpacity="0.96" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.84" />
+          </linearGradient>
+        </defs>
+        <path className="today-kcal-arc__track" pathLength="100" d="M 148 24 A 88 88 0 1 0 148 196" />
+        <path
+          className="today-kcal-arc__progress"
+          pathLength="100"
+          d="M 148 24 A 88 88 0 1 0 148 196"
+          style={{ strokeDasharray: `${progressPercent} 100` }}
+        />
+      </svg>
 
       <div className="today-summary-hero">
-        <span className="today-summary-flame">
-          <Flame size={20} aria-hidden="true" />
-        </span>
-
-        <div className="today-summary-kcal">
-          <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
-          <span>kcal</span>
+        <div className="today-kcal-content">
+          <div className="today-summary-kcal">
+            <strong>{kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}</strong>
+            <span>kcal</span>
         </div>
 
         <p className="today-summary-target">cél: {targets.kcal.toLocaleString("hu-HU")} kcal</p>
+        </div>
       </div>
 
       <div className="today-summary-metrics">
@@ -289,10 +305,6 @@ export function TodayView({
 
   return (
     <main className="page today-view">
-      <header className="today-view__header" aria-label="Mai nézet">
-        <h1>Mai</h1>
-      </header>
-
       <TodaySummaryCard totals={totals} targets={targets} />
 
       <button className="today-add-cta" type="button" onClick={() => onToggleQuickAdd?.()} aria-expanded={isQuickAddOpen}>
