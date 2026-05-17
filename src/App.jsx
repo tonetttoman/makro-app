@@ -33,6 +33,14 @@ function sortFoodsByName(items) {
   return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
 }
 
+function normalizeSearch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
 function isRenderableFood(food) {
   return Boolean(
     food &&
@@ -115,6 +123,7 @@ export default function App() {
   const [activeView, setActiveView] = useState("today");
   const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [foodSearch, setFoodSearch] = useState("");
 
   const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
   const [supplements, setSupplements] = useLocalStorage(SUPPLEMENTS_KEY, SUPPLEMENTS);
@@ -136,10 +145,33 @@ export default function App() {
   const totals = useMemo(() => calculateTotals(todayEntries, foods), [foods, todayEntries]);
   const targetNutrients = useMemo(() => calculateTargetNutrients(todayEntries, foods), [foods, todayEntries]);
   const todayFoodAmounts = useMemo(() => getDailyFoodAmounts(todayEntries), [todayEntries]);
+  const foodCategories = useMemo(() => {
+    const ordered = [...FOOD_CATEGORIES];
+    foods.forEach((food) => {
+      if (typeof food?.category === "string" && food.category.trim() && !ordered.includes(food.category)) {
+        ordered.push(food.category);
+      }
+    });
+    if (!ordered.includes("Főtt ételek")) ordered.push("Főtt ételek");
+    return ordered;
+  }, [foods]);
   const visibleFoods = useMemo(() => {
-    const filteredFoods = foods.filter((food) => isRenderableFood(food) && food.category === activeCategory);
+    const normalizedSearch = normalizeSearch(foodSearch);
+    const filteredFoods = foods.filter((food) => {
+      if (!isRenderableFood(food)) return false;
+      if (normalizedSearch) {
+        return normalizeSearch(food.name).includes(normalizedSearch);
+      }
+      return food.category === activeCategory;
+    });
     return sortFoodsByName(filteredFoods);
-  }, [activeCategory, foods]);
+  }, [activeCategory, foodSearch, foods]);
+
+  useEffect(() => {
+    if (!foodCategories.includes(activeCategory)) {
+      setActiveCategory(foodCategories[0] || FOOD_CATEGORIES[0]);
+    }
+  }, [activeCategory, foodCategories]);
 
   function persistEntriesForDate(date, nextEntries) {
     const sanitizedEntries = nextEntries.map((entry) => ({
@@ -260,12 +292,14 @@ export default function App() {
           dailyAmounts={todayFoodAmounts}
           targetNutrients={targetNutrients}
           activeCategory={activeCategory}
-          categories={FOOD_CATEGORIES}
+          categories={foodCategories}
+          foodSearch={foodSearch}
           isQuickAddOpen={isQuickAddOpen}
           onToggleQuickAdd={(nextState) =>
             setIsQuickAddOpen((current) => (typeof nextState === "boolean" ? nextState : !current))
           }
           onSelectCategory={setActiveCategory}
+          onFoodSearchChange={setFoodSearch}
           onAddFood={handleAddFood}
           onSave={handleConfirmDailyLog}
           onWorkDateChange={handleWorkDateChange}
@@ -305,6 +339,7 @@ export default function App() {
         <DataView
           foods={foods}
           setFoods={setFoods}
+          foodCategories={foodCategories}
           dailyFoodAmounts={todayFoodAmounts}
           supplements={supplements}
           setSupplements={setSupplements}

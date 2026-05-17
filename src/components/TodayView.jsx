@@ -278,9 +278,11 @@ export function TodayView({
   activeCategory,
   categories,
   quickAddFoods,
+  foodSearch,
   isQuickAddOpen,
   onToggleQuickAdd,
   onSelectCategory,
+  onFoodSearchChange,
   onAddFood,
   onSave,
   onWorkDateChange,
@@ -311,6 +313,16 @@ export function TodayView({
               <X size={17} />
             </button>
           </div>
+
+          <label className="today-search-field">
+            <span>Keresés ételnév alapján...</span>
+            <input
+              type="search"
+              value={foodSearch}
+              onChange={(event) => onFoodSearchChange?.(event.target.value)}
+              placeholder="Keresés ételnév alapján..."
+            />
+          </label>
 
           <CategoryPicker categories={categories} activeCategory={activeCategory} onSelect={onSelectCategory} />
           <FoodGrid
