@@ -25,8 +25,31 @@ function getSavedEntriesForDate(diary, date) {
   return (diary[date]?.entries || []).map((entry) => ({ ...entry, locked: true }));
 }
 
-function getWorkspaceForDate(diary, date) {
-  return { date, entries: getSavedEntriesForDate(diary, date) };
+function getDailyLogByDate(dailyLogs, date) {
+  return (Array.isArray(dailyLogs) ? dailyLogs : []).find((log) => String(log.date).trim().slice(0, 10) === date);
+}
+
+function getImportedTotalsForDate(dailyLogs, date) {
+  const summary = getDailyLogByDate(dailyLogs, date);
+  if (!summary) return null;
+
+  const totals = {
+    kcal: Number(summary.kcal) || 0,
+    protein: Number(summary.protein) || 0,
+    fat: Number(summary.fat) || 0,
+    carbs: Number(summary.carbs) || 0
+  };
+
+  return Object.values(totals).some((value) => Math.abs(value) > 0) ? totals : null;
+}
+
+function getWorkspaceForDate(diary, dailyLogs, date) {
+  const entries = getSavedEntriesForDate(diary, date);
+  return {
+    date,
+    entries,
+    importedTotals: entries.length ? null : getImportedTotalsForDate(dailyLogs, date)
+  };
 }
 
 function sortFoodsByName(items) {
@@ -136,13 +159,17 @@ export default function App() {
 
   useEffect(() => {
     const currentDiary = diary || {};
-    setWorkspace(getWorkspaceForDate(currentDiary, todayKey));
+    setWorkspace(getWorkspaceForDate(currentDiary, dailyLogs, todayKey));
   }, []);
 
   const workDate = workspace.date || todayKey;
   const todayEntries = workspace.entries || [];
+  const importedTotals = !todayEntries.length ? workspace.importedTotals || getImportedTotalsForDate(dailyLogs, workDate) : null;
   const supplementEntries = supplementDiary[todayKey]?.entries || [];
-  const totals = useMemo(() => calculateTotals(todayEntries, foods), [foods, todayEntries]);
+  const totals = useMemo(
+    () => (todayEntries.length ? calculateTotals(todayEntries, foods) : importedTotals || { kcal: 0, protein: 0, fat: 0, carbs: 0 }),
+    [foods, importedTotals, todayEntries]
+  );
   const targetNutrients = useMemo(() => calculateTargetNutrients(todayEntries, foods), [foods, todayEntries]);
   const todayFoodAmounts = useMemo(() => getDailyFoodAmounts(todayEntries), [todayEntries]);
   const foodCategories = useMemo(() => {
@@ -196,7 +223,8 @@ export default function App() {
     setWorkspace((current) => ({
       ...current,
       date,
-      entries: sanitizedEntries
+      entries: sanitizedEntries,
+      importedTotals: null
     }));
 
     if (!sanitizedEntries.length) {
@@ -262,7 +290,7 @@ export default function App() {
   function handleWorkDateChange(date) {
     const nextDate = date || todayKey;
     if (nextDate === workDate) return;
-    setWorkspace(getWorkspaceForDate(diary, nextDate));
+    setWorkspace(getWorkspaceForDate(diary, dailyLogs, nextDate));
   }
 
   function handleAddSupplement(supplement) {
@@ -284,11 +312,8 @@ export default function App() {
     persistEntriesForDate(workDate, todayEntries);
   }
 
-  function handleLoadToToday(date, entries) {
-    setWorkspace({
-      date,
-      entries: entries.map((entry) => ({ ...entry, locked: true }))
-    });
+  function handleLoadToToday(date) {
+    setWorkspace(getWorkspaceForDate(diary, dailyLogs, date));
     setActiveView("today");
   }
 
