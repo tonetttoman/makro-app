@@ -62,15 +62,14 @@ function TodaySummaryCard({ totals, targets }) {
 
       <div className="today-summary-hero">
         <div className="today-kcal-content">
-          {/* KIZÁRÓLAG EZEN SZÖVEGES ELEMEK STÍLUSÁT FINOMÍTOTTUK A SZELŐSEBB, KEVÉSBÉ AGRESSZÍV MEGJELENÉSÉRT */}
-          <div className="today-summary-kcal" style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "4px" }}>
-            <strong style={{ fontWeight: "400", fontSize: "3.5rem", letterSpacing: "-0.02em" }}>
+          <div className="today-summary-kcal flex items-baseline justify-center gap-1">
+            <strong className="text-[3.5rem] font-normal tracking-[-0.02em]">
               {kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}
             </strong>
-            <span style={{ fontWeight: "400", color: "#8a99ad", fontSize: "1.1rem" }}>kcal</span>
+            <span className="text-[1.1rem] font-normal text-[#8a99ad]">kcal</span>
           </div>
 
-          <p className="today-summary-target" style={{ fontWeight: "400", color: "#8a99ad", margin: "4px 0 0", fontSize: "0.88rem", letterSpacing: "0.01em" }}>
+          <p className="today-summary-target mb-0 mt-1 text-[0.88rem] font-normal tracking-[0.01em] text-[#8a99ad]">
             cél: {targets.kcal.toLocaleString("hu-HU")} kcal
           </p>
         </div>
