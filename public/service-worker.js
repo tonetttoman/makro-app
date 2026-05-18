@@ -1,5 +1,12 @@
-const CACHE_NAME = "etrend-pwa-v2";
-const STATIC_ASSETS = ["/", "/index.html", "/manifest.webmanifest"];
+const BASE_PATH = "/makro-app/";
+const CACHE_NAME = "etrend-pwa-v3";
+const STATIC_ASSETS = [
+  BASE_PATH,
+  BASE_PATH + "index.html",
+  BASE_PATH + "manifest.webmanifest",
+  BASE_PATH + "pwa-192.png",
+  BASE_PATH + "pwa-512.png"
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,7 +41,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => caches.match("/"));
+        .catch(() => caches.match(BASE_PATH).then((fallback) => fallback || caches.match(BASE_PATH + "index.html")));
     })
   );
 });

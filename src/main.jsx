@@ -7,7 +7,11 @@ import "./summary-compact.css";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js").catch(() => {});
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}service-worker.js`, {
+        scope: import.meta.env.BASE_URL
+      })
+      .catch(() => {});
   });
 }
 
