@@ -1,4 +1,4 @@
-﻿import { Download, Plus, Search, Upload } from "lucide-react";
+﻿import { Download, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateEntry } from "../lib/calculations";
 import { FOOD_CATEGORIES } from "../data/foods";
@@ -186,7 +186,7 @@ export function DataView({
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
 
-  const [activeFoodCategory, setActiveFoodCategory] = useState(foodCategories[0] || FOOD_CATEGORIES[0]);
+  const [foodSearch, setFoodSearch] = useState("");
   const [foodDraft, setFoodDraft] = useState(createBlankFood());
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
@@ -202,12 +202,6 @@ export function DataView({
   const [activeTargetField, setActiveTargetField] = useState(null);
 
   useEffect(() => {
-    if (!foodCategories.includes(activeFoodCategory)) {
-      setActiveFoodCategory(foodCategories[0] || FOOD_CATEGORIES[0]);
-    }
-  }, [activeFoodCategory, foodCategories]);
-
-  useEffect(() => {
     setTargetDrafts((current) => ({
       kcal: activeTargetField === "kcal" ? current.kcal : String(roundTargetNumber(targets?.kcal)),
       protein: activeTargetField === "protein" ? current.protein : String(roundTargetNumber(targets?.protein)),
@@ -217,17 +211,34 @@ export function DataView({
   }, [targets, activeTargetField]);
 
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
-  const activeCategoryFoods = useMemo(() => {
-    const category = activeFoodCategory || foodCategories[0];
-    return sortedFoods.filter((food) => food.category === category);
-  }, [activeFoodCategory, foodCategories, sortedFoods]);
+  const normalizedFoodSearch = normalizeSearch(foodSearch);
+  const filteredFoods = useMemo(() => {
+    if (!normalizedFoodSearch) return [];
+    return sortedFoods
+      .map((food) => {
+        const normalizedName = normalizeSearch(food.name);
+        const starts = normalizedName.startsWith(normalizedFoodSearch) ? 0 : 1;
+        const index = normalizedName.indexOf(normalizedFoodSearch);
+        return { food, starts, index };
+      })
+      .filter(({ index }) => index >= 0)
+      .sort(
+        (a, b) =>
+          a.starts - b.starts ||
+          a.index - b.index ||
+          a.food.name.localeCompare(b.food.name, "hu", { sensitivity: "base" })
+      )
+      .slice(0, 16)
+      .map(({ food }) => food);
+  }, [normalizedFoodSearch, sortedFoods]);
+
   const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${foodDraft.name}` : "Új vagy szerkesztett élelmiszer";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P${roundTargetNumber(targets?.protein)} · Zs${roundTargetNumber(targets?.fat)} · CH${roundTargetNumber(targets?.carbs)}`;
 
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
     const candidates = sortFoodsByName(foods.filter((food) => !food.isRecipe));
-    if (!normalizedRecipeSearch) return candidates.slice(0, 10);
+    if (!normalizedRecipeSearch) return [];
     return candidates
       .map((food) => {
         const normalizedName = normalizeSearch(food.name);
@@ -375,9 +386,6 @@ export function DataView({
       if (existingIndex === -1) return [...current, nextFood];
       return current.map((food) => (food.id === nextFood.id ? nextFood : food));
     });
-
-    setFoodDraft(nextFood);
-    setActiveFoodCategory(nextFood.category);
   }
 
   function addRecipeIngredient() {
@@ -417,7 +425,7 @@ export function DataView({
     const nextRecipe = {
       id: `recipe-${slugify(name)}-${Date.now()}`,
       name,
-      category: recipeDraft.category || "Főtt ételek",
+      category: "Főtt ételek",
       unit: "%",
       baseAmount: 100,
       defaultAmount: 10,
@@ -456,11 +464,6 @@ export function DataView({
               <AppField label="Recept neve">
                 <input className={appInputClassName} value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
               </AppField>
-              <AppField label="Kategória">
-                <select className={appInputClassName} value={recipeDraft.category} onChange={(event) => setRecipeDraft((current) => ({ ...current, category: event.target.value }))}>
-                  {foodCategories.map((category) => <option key={category}>{category}</option>)}
-                </select>
-              </AppField>
               <AppField label="Alapanyag keresése">
                 <div className="relative">
                   <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -478,19 +481,25 @@ export function DataView({
               </AppField>
             </div>
 
-            <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label="Recept alapanyag találatok">
-              {recipeIngredientMatches.map((food) => (
-                <button
-                  key={food.id}
-                  className={`grid gap-1 rounded-[18px] border px-4 py-3 text-left transition-colors ${recipeDraft.ingredientFoodId === food.id ? "border-cyan-400/35 bg-cyan-400/10" : "border-slate-700/40 bg-[#0c131e] hover:bg-slate-900/60"}`}
-                  type="button"
-                  onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: food.name }))}
-                >
-                  <strong className="text-sm font-semibold text-slate-100">{food.name}</strong>
-                  <AppMetaText>{Math.round(food.kcal)} kcal · {food.category}</AppMetaText>
-                </button>
-              ))}
-            </div>
+            {normalizedRecipeSearch ? (
+              <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label="Recept alapanyag találatok">
+                {recipeIngredientMatches.map((food) => (
+                  <button
+                    key={food.id}
+                    className={`grid gap-1 rounded-[18px] border px-4 py-3 text-left transition-colors ${recipeDraft.ingredientFoodId === food.id ? "border-cyan-400/35 bg-cyan-400/10" : "border-slate-700/40 bg-[#0c131e] hover:bg-slate-900/60"}`}
+                    type="button"
+                    onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: food.name }))}
+                  >
+                    <strong className="text-sm font-semibold text-slate-100">{food.name}</strong>
+                    <AppMetaText>{Math.round(food.kcal)} kcal · {food.category}</AppMetaText>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[18px] border border-dashed border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-400">
+                Kezdj el gépelni az alapanyag kereséséhez.
+              </div>
+            )}
 
             <div className="mt-4 flex flex-wrap gap-2.5">
               <AppButton type="button" onClick={addRecipeIngredient}>Alapanyag hozzáadása</AppButton>
@@ -521,7 +530,7 @@ export function DataView({
               <small className="text-xs leading-5 text-slate-500">100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
             </div>
 
-            <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
+            <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
           </div>
         ) : null}
       </AppCard>
@@ -529,51 +538,57 @@ export function DataView({
       <AppCard>
         <AppToggleHeader
           title="Élelmiszer-adatbázis"
-          summary={`${activeCategoryFoods.length} tétel · ${activeFoodCategory}`}
+          summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"}
           isOpen={isFoodDatabaseOpen}
           onToggle={() => setIsFoodDatabaseOpen((current) => !current)}
         />
 
         {isFoodDatabaseOpen ? (
           <>
-            <div className="category-scroll mb-3 mt-3" aria-label="Élelmiszer kategóriák">
-              {foodCategories.map((category) => (
-                <button
-                  className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
-                  key={category}
-                  type="button"
-                  onClick={() => setActiveFoodCategory(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-hidden rounded-[22px] border border-slate-700/40 bg-[#0d1420]">
-              <div className="divide-y divide-slate-700/35">
-                {activeCategoryFoods.map((food) => (
-                  <button
-                    className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors ${foodDraft.id === food.id ? "bg-cyan-400/8" : "bg-transparent hover:bg-slate-900/35"}`}
-                    key={food.id}
-                    type="button"
-                    onClick={() => {
-                      setFoodDraft(food);
-                      setIsFoodEditorOpen(true);
-                    }}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{food.name}</strong>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
-                        <span>{food.category}</span>
-                        <span>{food.step} {food.unit} lépték</span>
-                        {dailyFoodAmounts?.[food.id] > 0 ? <span className="text-cyan-300">ma: {Math.round(dailyFoodAmounts[food.id] * 10) / 10} {food.unit}</span> : null}
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right text-sm font-medium text-slate-200">{Math.round(food.kcal)} kcal</div>
-                  </button>
-                ))}
+            <AppField className="mt-3" label="Élelmiszer keresése">
+              <div className="relative">
+                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  className={`${appInputClassName} pl-10 pr-3`}
+                  type="search"
+                  value={foodSearch}
+                  placeholder="Keresés élelmiszer névre..."
+                  onChange={(event) => setFoodSearch(event.target.value)}
+                />
               </div>
-            </div>
+            </AppField>
+
+            {normalizedFoodSearch ? (
+              <div className="mt-3 overflow-hidden rounded-[22px] border border-slate-700/40 bg-[#0d1420]">
+                <div className="divide-y divide-slate-700/35">
+                  {filteredFoods.map((food) => (
+                    <button
+                      className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors ${foodDraft.id === food.id ? "bg-cyan-400/8" : "bg-transparent hover:bg-slate-900/35"}`}
+                      key={food.id}
+                      type="button"
+                      onClick={() => {
+                        setFoodDraft(food);
+                        setIsFoodEditorOpen(true);
+                      }}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{food.name}</strong>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
+                          <span>{Math.round(food.kcal)} kcal</span>
+                          <span>P {Math.round((food.protein || 0) * 10) / 10} g</span>
+                          <span>F {Math.round((food.fat || 0) * 10) / 10} g</span>
+                          <span>Ch {Math.round((food.carbs || 0) * 10) / 10} g</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-[18px] border border-dashed border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-400">
+                Kezdj el gépelni az élelmiszer kereséséhez.
+              </div>
+            )}
 
             <button
               className="mt-4 flex w-full items-center justify-between rounded-[20px] border border-white/6 bg-[#0d1420] px-4 py-3 text-left text-slate-50"
@@ -611,18 +626,6 @@ export function DataView({
                 <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>Élelmiszer mentése</AppButton>
               </div>
             ) : null}
-
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              <AppButton
-                type="button"
-                onClick={() => {
-                  startNewFood();
-                  setIsFoodEditorOpen(true);
-                }}
-              >
-                <Plus size={16} className="mr-2" /> Új élelmiszer
-              </AppButton>
-            </div>
           </>
         ) : null}
       </AppCard>
@@ -666,7 +669,7 @@ export function DataView({
           <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
             <AppSectionTitle>Teljes adatmentés</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="primary" type="button" onClick={exportJson}>
+              <AppButton className="w-full" variant="action" type="button" onClick={exportJson}>
                 <Download size={18} className="mr-2" /> JSON export
               </AppButton>
               <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}>
@@ -679,7 +682,7 @@ export function DataView({
           <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
             <AppSectionTitle>Napi napló</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="primary" type="button" onClick={exportDailyLogs}>
+              <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}>
                 <Download size={18} className="mr-2" /> Napi napló export
               </AppButton>
               <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}>

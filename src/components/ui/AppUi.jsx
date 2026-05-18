@@ -46,6 +46,8 @@ export function AppButton({ children, variant = "secondary", className = "", ...
   const variantClass =
     variant === "primary"
       ? "inline-flex min-h-[42px] items-center justify-center rounded-2xl bg-[#f5b041] px-4 text-sm font-semibold text-slate-950 shadow-[0_10px_24px_rgba(245,176,65,0.18)]"
+      : variant === "action"
+        ? "inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-cyan-400/20 bg-[#0d1420] px-4 text-sm font-semibold text-cyan-200"
       : variant === "danger"
         ? "inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-rose-400/20 bg-[#1a1116] px-4 text-sm font-semibold text-rose-200"
         : "inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-cyan-400/20 bg-[#0d1420] px-4 text-sm font-semibold text-cyan-200";
