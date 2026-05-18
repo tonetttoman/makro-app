@@ -1,7 +1,17 @@
-﻿import { Download, Upload, Plus, Search } from "lucide-react";
+﻿import { Download, Plus, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateEntry } from "../lib/calculations";
 import { FOOD_CATEGORIES } from "../data/foods";
+import {
+  AppButton,
+  AppCard,
+  AppField,
+  AppMetaText,
+  AppPage,
+  AppSectionTitle,
+  AppToggleHeader,
+  appInputClassName
+} from "./ui/AppUi";
 
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp", "%"];
 const macroFieldConfig = [
@@ -155,38 +165,6 @@ function downloadJson(filename, payload) {
   URL.revokeObjectURL(url);
 }
 
-function SectionCard({ eyebrow, title, description, children, actions = null }) {
-  return (
-    <section className="panel mb-3.5 rounded-[28px] border border-emerald-300/14 bg-[linear-gradient(180deg,rgba(21,33,31,0.96),rgba(8,15,14,0.98))] p-4 shadow-[0_14px_34px_rgba(0,0,0,0.24)]">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow mb-2 text-cyan-300">{eyebrow}</p>
-          <h2 className="text-lg font-semibold text-slate-50">{title}</h2>
-          {description ? <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p> : null}
-        </div>
-        {actions}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Field({ label, tone = "default", children }) {
-  const toneClass =
-    tone === "fat"
-      ? "text-amber-300"
-      : tone === "macro"
-        ? "text-cyan-300"
-        : "text-slate-300";
-
-  return (
-    <label className="grid gap-2 rounded-[20px] border border-emerald-300/12 bg-slate-950/20 p-4">
-      <span className={`text-xs font-semibold uppercase tracking-[0.16em] ${toneClass}`}>{label}</span>
-      {children}
-    </label>
-  );
-}
-
 export function DataView({
   foods,
   setFoods,
@@ -210,6 +188,8 @@ export function DataView({
 
   const [activeFoodCategory, setActiveFoodCategory] = useState(foodCategories[0] || FOOD_CATEGORIES[0]);
   const [foodDraft, setFoodDraft] = useState(createBlankFood());
+  const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
+  const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe());
@@ -237,13 +217,12 @@ export function DataView({
   }, [targets, activeTargetField]);
 
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
-
   const activeCategoryFoods = useMemo(() => {
     const category = activeFoodCategory || foodCategories[0];
     return sortedFoods.filter((food) => food.category === category);
   }, [activeFoodCategory, foodCategories, sortedFoods]);
-
-  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${foodDraft.name}` : "Új élelmiszer";
+  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${foodDraft.name}` : "Új vagy szerkesztett élelmiszer";
+  const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P${roundTargetNumber(targets?.protein)} · Zs${roundTargetNumber(targets?.fat)} · CH${roundTargetNumber(targets?.carbs)}`;
 
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
@@ -462,216 +441,44 @@ export function DataView({
   }
 
   return (
-    <main className="page page--data pb-28">
-      <section className="panel mb-3.5 rounded-[28px] border border-emerald-300/18 bg-[linear-gradient(180deg,rgba(24,38,34,0.96),rgba(10,20,18,0.98))] p-5 shadow-[0_18px_44px_rgba(0,0,0,0.26)]">
-        <p className="eyebrow mb-2 text-cyan-300">Adatok</p>
-        <h1 className="mb-0 text-[clamp(1.9rem,7vw,2.4rem)] font-semibold tracking-[-0.05em] text-slate-50">Beállítások és adatok</h1>
-        <p className="mt-3 max-w-[48ch] text-sm leading-6 text-slate-300">
-          A mentések, célértékek, élelmiszerek és receptek ugyanabban a sötét, mobilos app-nyelvben maradnak, mint a Mai és Havi nézetben.
-        </p>
-      </section>
-
-      <SectionCard
-        eyebrow="Mentések"
-        title="Import / export"
-        description="A teljes adatmentés és a napi napló külön, átlátható blokkban maradnak."
-      >
-        <div className="grid gap-3">
-          <div className="rounded-[22px] border border-emerald-300/12 bg-slate-950/20 p-4">
-            <h3 className="text-base font-semibold text-slate-100">Teljes adatmentés</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Ételek, célértékek, naplók és beállítások exportja vagy visszatöltése.</p>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <button className="primary-button justify-center" type="button" onClick={exportJson}>
-                <Download size={18} /> JSON export
-              </button>
-              <button className="secondary-button justify-center" type="button" onClick={() => fileInputRef.current?.click()}>
-                <Upload size={18} /> JSON import
-              </button>
-            </div>
-            <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
-          </div>
-
-          <div className="rounded-[22px] border border-emerald-300/12 bg-slate-950/20 p-4">
-            <h3 className="text-base font-semibold text-slate-100">Napi napló</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">Summary-only napok exportja és visszatöltése a napi összesítésekhez.</p>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <button className="primary-button justify-center" type="button" onClick={exportDailyLogs}>
-                <Download size={18} /> Napi napló export
-              </button>
-              <button className="secondary-button justify-center" type="button" onClick={() => dailyLogInputRef.current?.click()}>
-                <Upload size={18} /> Napi napló import
-              </button>
-            </div>
-            <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
-          </div>
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        eyebrow="Napi célértékek"
-        title="Makró célok"
-        description="Csak a kcal, fehérje, zsír és szénhidrát célok látszanak, mobilon is kényelmes szerkesztéssel."
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          {macroFieldConfig.map(({ key, label }) => (
-            <Field key={key} label={label} tone={key === "fat" ? "fat" : key === "kcal" ? "default" : "macro"}>
-              <input
-                className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-base text-slate-50"
-                inputMode="decimal"
-                type="number"
-                value={targetDrafts[key]}
-                onFocus={() => setActiveTargetField(key)}
-                onChange={(event) => handleTargetDraftChange(key, event.target.value)}
-                onBlur={() => {
-                  commitTargetField(key);
-                  setActiveTargetField((current) => (current === key ? null : current));
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") event.currentTarget.blur();
-                }}
-              />
-            </Field>
-          ))}
-        </div>
-      </SectionCard>
-
-      <SectionCard
-        eyebrow="Élelmiszerek"
-        title="Élelmiszer-adatbázis"
-        description="Kategória szerint rendezett lista, külön szerkesztőblokkal és mobilbarát adatmezőkkel."
-        actions={
-          <button
-            className="inline-flex min-h-[42px] items-center justify-center rounded-2xl border border-cyan-400/20 bg-slate-950/25 px-4 text-sm font-semibold text-cyan-200"
-            type="button"
-            onClick={startNewFood}
-          >
-            <Plus size={16} className="mr-2" /> Új élelmiszer
-          </button>
-        }
-      >
-        <div className="category-scroll mb-3" aria-label="Élelmiszer kategóriák">
-          {foodCategories.map((category) => (
-            <button
-              className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
-              key={category}
-              type="button"
-              onClick={() => setActiveFoodCategory(category)}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        <div className="overflow-hidden rounded-[22px] border border-emerald-300/12 bg-slate-950/20">
-          <div className="divide-y divide-slate-700/35">
-            {activeCategoryFoods.map((food) => (
-              <button
-                className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors ${foodDraft.id === food.id ? "bg-cyan-400/8" : "bg-transparent hover:bg-slate-900/35"}`}
-                key={food.id}
-                type="button"
-                onClick={() => {
-                  setFoodDraft(food);
-                  setIsFoodEditorOpen(true);
-                }}
-              >
-                <div className="min-w-0 flex-1">
-                  <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{food.name}</strong>
-                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
-                    <span>{food.category}</span>
-                    <span>{food.step} {food.unit} lépték</span>
-                    {dailyFoodAmounts?.[food.id] > 0 ? (
-                      <span className="text-cyan-300">ma: {Math.round(dailyFoodAmounts[food.id] * 10) / 10} {food.unit}</span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right text-sm font-medium text-slate-200">{Math.round(food.kcal)} kcal</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button
-          className="mt-4 flex w-full items-center justify-between rounded-[20px] border border-emerald-300/12 bg-slate-950/20 px-4 py-3 text-left text-slate-50"
-          type="button"
-          onClick={() => setIsFoodEditorOpen((current) => !current)}
-          aria-expanded={isFoodEditorOpen}
-        >
-          <span className="min-w-0 text-sm font-semibold">{foodEditorTitle}</span>
-          <strong className="ml-4 shrink-0 text-cyan-300">{isFoodEditorOpen ? "▲" : "▶"}</strong>
-        </button>
-
-        {isFoodEditorOpen ? (
-          <div className="mt-3 rounded-[22px] border border-emerald-300/12 bg-slate-950/20 p-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Név">
-                <input className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
-              </Field>
-              <Field label="Kategória">
-                <select className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}>
-                  {foodCategories.map((category) => <option key={category}>{category}</option>)}
-                </select>
-              </Field>
-              <Field label="Egység">
-                <select className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
-                  {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
-                </select>
-              </Field>
-              {foodFieldConfig.map(({ key, label }) => (
-                <Field key={key} label={label} tone={key === "fat" ? "fat" : ["protein", "carbs"].includes(key) ? "macro" : "default"}>
-                  <input className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" inputMode="decimal" type="number" value={foodDraft[key]} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })} />
-                </Field>
-              ))}
-            </div>
-
-            <button className="primary-button full mt-4" type="button" onClick={saveFood}>Élelmiszer mentése</button>
-          </div>
-        ) : null}
-      </SectionCard>
-
-      <SectionCard
-        eyebrow="Receptek"
-        title="Új recept hozzáadása"
-        description="A receptépítés külön fő blokkba került, hogy ne keveredjen az alap élelmiszer-adatbázissal."
-      >
-        <button
-          className="flex w-full items-center justify-between rounded-[20px] border border-emerald-300/12 bg-slate-950/20 px-4 py-3 text-left text-slate-50"
-          type="button"
-          onClick={() => setIsRecipeEditorOpen((current) => !current)}
-          aria-expanded={isRecipeEditorOpen}
-        >
-          <span className="min-w-0 text-sm font-semibold">Recept szerkesztő</span>
-          <strong className="ml-4 shrink-0 text-cyan-300">{isRecipeEditorOpen ? "▲" : "▶"}</strong>
-        </button>
+    <AppPage>
+      <AppCard>
+        <AppToggleHeader
+          title="Új recept hozzáadása"
+          summary={isRecipeEditorOpen ? "Recept szerkesztő nyitva" : "Recept szerkesztő"}
+          isOpen={isRecipeEditorOpen}
+          onToggle={() => setIsRecipeEditorOpen((current) => !current)}
+        />
 
         {isRecipeEditorOpen ? (
-          <div className="mt-3 rounded-[22px] border border-emerald-300/12 bg-slate-950/20 p-4">
+          <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Recept neve">
-                <input className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
-              </Field>
-              <Field label="Kategória">
-                <select className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" value={recipeDraft.category} onChange={(event) => setRecipeDraft((current) => ({ ...current, category: event.target.value }))}>
+              <AppField label="Recept neve">
+                <input className={appInputClassName} value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
+              </AppField>
+              <AppField label="Kategória">
+                <select className={appInputClassName} value={recipeDraft.category} onChange={(event) => setRecipeDraft((current) => ({ ...current, category: event.target.value }))}>
                   {foodCategories.map((category) => <option key={category}>{category}</option>)}
                 </select>
-              </Field>
-              <Field label="Alapanyag keresése">
+              </AppField>
+              <AppField label="Alapanyag keresése">
                 <div className="relative">
                   <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                   <input
-                    className="min-h-[42px] w-full rounded-2xl border border-slate-700/50 bg-[#060c13] pl-10 pr-3 text-slate-50"
+                    className={`${appInputClassName} pl-10 pr-3`}
                     type="search"
                     value={recipeDraft.ingredientSearch}
                     placeholder="Keresés alapanyag névre..."
                     onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))}
                   />
                 </div>
-              </Field>
-              <Field label="Mennyiség">
-                <input className="min-h-[42px] rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50" inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
-              </Field>
+              </AppField>
+              <AppField label="Mennyiség">
+                <input className={appInputClassName} inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
+              </AppField>
             </div>
 
-            <div className="mt-4 grid gap-2 max-h-[280px] overflow-y-auto" aria-label="Recept alapanyag találatok">
+            <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label="Recept alapanyag találatok">
               {recipeIngredientMatches.map((food) => (
                 <button
                   key={food.id}
@@ -680,13 +487,13 @@ export function DataView({
                   onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: food.name }))}
                 >
                   <strong className="text-sm font-semibold text-slate-100">{food.name}</strong>
-                  <span className="text-xs leading-5 text-slate-400">{Math.round(food.kcal)} kcal · {food.category}</span>
+                  <AppMetaText>{Math.round(food.kcal)} kcal · {food.category}</AppMetaText>
                 </button>
               ))}
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2.5">
-              <button className="secondary-button" type="button" onClick={addRecipeIngredient}>Alapanyag hozzáadása</button>
+              <AppButton type="button" onClick={addRecipeIngredient}>Alapanyag hozzáadása</AppButton>
             </div>
 
             {recipeDraft.ingredients.length > 0 ? (
@@ -698,27 +505,192 @@ export function DataView({
                     <div className="flex items-center justify-between gap-3 rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3" key={`${ingredient.foodId}-${index}`}>
                       <div className="min-w-0">
                         <strong className="block text-sm font-semibold text-slate-100">{ingredientFood.name}</strong>
-                        <span className="text-xs leading-5 text-slate-400">{Math.round((ingredient.amount || 0) * 10) / 10} {ingredientFood.unit}</span>
+                        <AppMetaText>{Math.round((ingredient.amount || 0) * 10) / 10} {ingredientFood.unit}</AppMetaText>
                       </div>
-                      <button className="secondary-button" type="button" onClick={() => removeRecipeIngredient(index)}>Törlés</button>
+                      <AppButton type="button" onClick={() => removeRecipeIngredient(index)}>Törlés</AppButton>
                     </div>
                   );
                 })}
               </div>
             ) : null}
 
-            <div className="mt-4 grid gap-1 rounded-[18px] border border-emerald-300/12 bg-[#0c131e] px-4 py-3 text-sm text-slate-300">
+            <div className="mt-4 grid gap-1 rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-300">
               <strong className="text-sm font-semibold text-slate-100">Teljes recept összesítés</strong>
               <span>{Math.round(recipeTotals.kcal)} kcal</span>
               <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
               <small className="text-xs leading-5 text-slate-500">100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
             </div>
 
-            <button className="primary-button full mt-4" type="button" onClick={saveRecipe}>Mentés receptként</button>
+            <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
           </div>
         ) : null}
-      </SectionCard>
-    </main>
+      </AppCard>
+
+      <AppCard>
+        <AppToggleHeader
+          title="Élelmiszer-adatbázis"
+          summary={`${activeCategoryFoods.length} tétel · ${activeFoodCategory}`}
+          isOpen={isFoodDatabaseOpen}
+          onToggle={() => setIsFoodDatabaseOpen((current) => !current)}
+        />
+
+        {isFoodDatabaseOpen ? (
+          <>
+            <div className="category-scroll mb-3 mt-3" aria-label="Élelmiszer kategóriák">
+              {foodCategories.map((category) => (
+                <button
+                  className={`category-pill ${category === activeFoodCategory ? "is-active" : ""}`}
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveFoodCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+
+            <div className="overflow-hidden rounded-[22px] border border-slate-700/40 bg-[#0d1420]">
+              <div className="divide-y divide-slate-700/35">
+                {activeCategoryFoods.map((food) => (
+                  <button
+                    className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors ${foodDraft.id === food.id ? "bg-cyan-400/8" : "bg-transparent hover:bg-slate-900/35"}`}
+                    key={food.id}
+                    type="button"
+                    onClick={() => {
+                      setFoodDraft(food);
+                      setIsFoodEditorOpen(true);
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{food.name}</strong>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
+                        <span>{food.category}</span>
+                        <span>{food.step} {food.unit} lépték</span>
+                        {dailyFoodAmounts?.[food.id] > 0 ? <span className="text-cyan-300">ma: {Math.round(dailyFoodAmounts[food.id] * 10) / 10} {food.unit}</span> : null}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right text-sm font-medium text-slate-200">{Math.round(food.kcal)} kcal</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              className="mt-4 flex w-full items-center justify-between rounded-[20px] border border-white/6 bg-[#0d1420] px-4 py-3 text-left text-slate-50"
+              type="button"
+              onClick={() => setIsFoodEditorOpen((current) => !current)}
+              aria-expanded={isFoodEditorOpen}
+            >
+              <span className="min-w-0 text-sm font-semibold">{foodEditorTitle}</span>
+              <strong className="ml-4 shrink-0 text-cyan-300">{isFoodEditorOpen ? "▲" : "▶"}</strong>
+            </button>
+
+            {isFoodEditorOpen ? (
+              <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <AppField label="Név">
+                    <input className={appInputClassName} value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
+                  </AppField>
+                  <AppField label="Kategória">
+                    <select className={appInputClassName} value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}>
+                      {foodCategories.map((category) => <option key={category}>{category}</option>)}
+                    </select>
+                  </AppField>
+                  <AppField label="Egység">
+                    <select className={appInputClassName} value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
+                      {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
+                    </select>
+                  </AppField>
+                  {foodFieldConfig.map(({ key, label }) => (
+                    <AppField key={key} label={label} tone={key === "fat" ? "fat" : ["protein", "carbs"].includes(key) ? "macro" : "default"}>
+                      <input className={appInputClassName} inputMode="decimal" type="number" value={foodDraft[key]} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })} />
+                    </AppField>
+                  ))}
+                </div>
+
+                <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>Élelmiszer mentése</AppButton>
+              </div>
+            ) : null}
+
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              <AppButton
+                type="button"
+                onClick={() => {
+                  startNewFood();
+                  setIsFoodEditorOpen(true);
+                }}
+              >
+                <Plus size={16} className="mr-2" /> Új élelmiszer
+              </AppButton>
+            </div>
+          </>
+        ) : null}
+      </AppCard>
+
+      <AppCard>
+        <AppToggleHeader
+          title="Makró célok"
+          summary={macroTargetSummary}
+          isOpen={isMacroTargetsOpen}
+          onToggle={() => setIsMacroTargetsOpen((current) => !current)}
+        />
+
+        {isMacroTargetsOpen ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {macroFieldConfig.map(({ key, label }) => (
+              <AppField key={key} label={label} tone={key === "fat" ? "fat" : key === "kcal" ? "default" : "macro"}>
+                <input
+                  className={`${appInputClassName} text-base`}
+                  inputMode="decimal"
+                  type="number"
+                  value={targetDrafts[key]}
+                  onFocus={() => setActiveTargetField(key)}
+                  onChange={(event) => handleTargetDraftChange(key, event.target.value)}
+                  onBlur={() => {
+                    commitTargetField(key);
+                    setActiveTargetField((current) => (current === key ? null : current));
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
+                  }}
+                />
+              </AppField>
+            ))}
+          </div>
+        ) : null}
+      </AppCard>
+
+      <AppCard>
+        <AppSectionTitle>Import / export / biztonsági mentés</AppSectionTitle>
+        <div className="mt-3 grid gap-3">
+          <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
+            <AppSectionTitle>Teljes adatmentés</AppSectionTitle>
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              <AppButton className="w-full" variant="primary" type="button" onClick={exportJson}>
+                <Download size={18} className="mr-2" /> JSON export
+              </AppButton>
+              <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}>
+                <Upload size={18} className="mr-2" /> JSON import
+              </AppButton>
+            </div>
+            <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
+          </div>
+
+          <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
+            <AppSectionTitle>Napi napló</AppSectionTitle>
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+              <AppButton className="w-full" variant="primary" type="button" onClick={exportDailyLogs}>
+                <Download size={18} className="mr-2" /> Napi napló export
+              </AppButton>
+              <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}>
+                <Upload size={18} className="mr-2" /> Napi napló import
+              </AppButton>
+            </div>
+            <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
+          </div>
+        </div>
+      </AppCard>
+    </AppPage>
   );
 }
 
