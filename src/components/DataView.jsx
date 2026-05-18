@@ -185,6 +185,7 @@ export function DataView({
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
+  const recipeCardRef = useRef(null);
 
   const [foodSearch, setFoodSearch] = useState("");
   const [foodDraft, setFoodDraft] = useState(createBlankFood());
@@ -209,6 +210,22 @@ export function DataView({
       carbs: activeTargetField === "carbs" ? current.carbs : String(roundTargetNumber(targets?.carbs))
     }));
   }, [targets, activeTargetField]);
+
+  useEffect(() => {
+    if (!isFoodDatabaseOpen && foodSearch) {
+      setFoodSearch("");
+    }
+  }, [isFoodDatabaseOpen, foodSearch]);
+
+  useEffect(() => {
+    if (!isRecipeEditorOpen && (recipeDraft.ingredientSearch || recipeDraft.ingredientFoodId)) {
+      setRecipeDraft((current) => ({
+        ...current,
+        ingredientSearch: "",
+        ingredientFoodId: ""
+      }));
+    }
+  }, [isRecipeEditorOpen, recipeDraft.ingredientFoodId, recipeDraft.ingredientSearch]);
 
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
   const normalizedFoodSearch = normalizeSearch(foodSearch);
@@ -448,18 +465,42 @@ export function DataView({
     setIsRecipeEditorOpen(false);
   }
 
+  function loadRecipeForEditing(food) {
+    setIsRecipeEditorOpen(true);
+    setIsFoodEditorOpen(false);
+    setIsFoodDatabaseOpen(false);
+    setRecipeDraft({
+      name: food?.name || "",
+      category: "Főtt ételek",
+      ingredientSearch: "",
+      ingredientFoodId: "",
+      ingredientAmount: "",
+      ingredients: Array.isArray(food?.recipe?.ingredients)
+        ? food.recipe.ingredients.map((ingredient) => ({
+            foodId: ingredient.foodId,
+            amount: numberValue(ingredient.amount)
+          }))
+        : []
+    });
+
+    requestAnimationFrame(() => {
+      recipeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   return (
     <AppPage>
-      <AppCard>
-        <AppToggleHeader
-          title="Új recept hozzáadása"
-          summary={isRecipeEditorOpen ? "Recept szerkesztő nyitva" : "Recept szerkesztő"}
-          isOpen={isRecipeEditorOpen}
-          onToggle={() => setIsRecipeEditorOpen((current) => !current)}
-        />
+      <div ref={recipeCardRef}>
+        <AppCard>
+          <AppToggleHeader
+            title="Új recept hozzáadása"
+            summary={isRecipeEditorOpen ? "Recept szerkesztő nyitva" : "Recept szerkesztő"}
+            isOpen={isRecipeEditorOpen}
+            onToggle={() => setIsRecipeEditorOpen((current) => !current)}
+          />
 
-        {isRecipeEditorOpen ? (
-          <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
+          {isRecipeEditorOpen ? (
+            <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <AppField label="Recept neve">
                 <input className={appInputClassName} value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
@@ -530,10 +571,11 @@ export function DataView({
               <small className="text-xs leading-5 text-slate-500">100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
             </div>
 
-            <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
-          </div>
-        ) : null}
-      </AppCard>
+              <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
+            </div>
+          ) : null}
+        </AppCard>
+      </div>
 
       <AppCard>
         <AppToggleHeader
@@ -567,6 +609,11 @@ export function DataView({
                       key={food.id}
                       type="button"
                       onClick={() => {
+                        if (food.category === "Főtt ételek") {
+                          loadRecipeForEditing(food);
+                          return;
+                        }
+
                         setFoodDraft(food);
                         setIsFoodEditorOpen(true);
                       }}

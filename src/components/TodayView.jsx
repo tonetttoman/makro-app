@@ -15,6 +15,7 @@ import { calculateEntry, findFoodById } from "../lib/calculations";
 import { CategoryPicker } from "./CategoryPicker";
 import { FoodGrid } from "./FoodGrid";
 import { ProgressBar } from "./ProgressBar";
+import { AppButton, AppMetaText, AppSectionTitle } from "./ui/AppUi";
 
 const SUMMARY_ITEMS = [
   { key: "protein", label: "Fehérje", icon: Droplet, tone: "cyan" },
@@ -236,26 +237,26 @@ function TodayEntriesList({
                 <div className="today-entry-shell">
                   <div className="today-entry-main">
                     <div className="today-entry-copy">
-                      <h3>{food.name}</h3>
+                      <AppSectionTitle className="truncate text-[0.95rem] font-semibold leading-[1.18] text-slate-100">{food.name}</AppSectionTitle>
                       <div className="today-entry-macros" aria-label="Makrók">
-                        <span>
-                          <small>P</small>
+                        <AppMetaText className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+                          <small className="text-[0.61rem] font-semibold uppercase tracking-[0.08em] text-slate-500">P</small>
                           {Math.round(values.protein * 10) / 10} g
-                        </span>
-                        <span>
-                          <small>F</small>
+                        </AppMetaText>
+                        <AppMetaText className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+                          <small className="text-[0.61rem] font-semibold uppercase tracking-[0.08em] text-slate-500">F</small>
                           {Math.round(values.fat * 10) / 10} g
-                        </span>
-                        <span>
-                          <small>Ch</small>
+                        </AppMetaText>
+                        <AppMetaText className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
+                          <small className="text-[0.61rem] font-semibold uppercase tracking-[0.08em] text-slate-500">Ch</small>
                           {Math.round(values.carbs * 10) / 10} g
-                        </span>
+                        </AppMetaText>
                       </div>
                     </div>
 
                     <div className="today-entry-values">
-                      <strong>{formatKcal(values.kcal)}</strong>
-                      <span>{formatAmount(entry.amount, food.unit)}</span>
+                      <AppSectionTitle className="text-[0.95rem] font-semibold leading-none text-slate-100">{formatKcal(values.kcal)}</AppSectionTitle>
+                      <AppMetaText className="text-[0.72rem] font-medium text-slate-400">{formatAmount(entry.amount, food.unit)}</AppMetaText>
                     </div>
                   </div>
 
@@ -319,10 +320,10 @@ export function TodayView({
     <main className="page today-view">
       <TodaySummaryCard totals={totals} targets={targets} />
 
-      <button className="today-add-cta" type="button" onClick={() => onToggleQuickAdd?.()} aria-expanded={isQuickAddOpen}>
+      <AppButton className="w-full min-h-[56px] gap-2.5 rounded-2xl border-cyan-400/20 text-[0.98rem] font-semibold" variant="action" type="button" onClick={() => onToggleQuickAdd?.()} aria-expanded={isQuickAddOpen}>
         <Plus size={24} aria-hidden="true" />
         étel hozzáadása
-      </button>
+      </AppButton>
 
       {isQuickAddOpen && (
         <section className="today-add-sheet" aria-label="Étel hozzáadása">

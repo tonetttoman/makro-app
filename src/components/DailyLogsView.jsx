@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
 import { dailyEntryChipStyles } from "./DailyEntryList";
+import { AppButton } from "./ui/AppUi";
 
 const WEEKDAYS = ["vas", "hét", "ked", "sze", "csü", "pén", "szo"];
 
@@ -225,9 +226,9 @@ export function DailyLogsView({ diary, dailyLogs, foods, onLoadToToday }) {
 
                   {row.entries.length > 0 && (
                     <div className="daily-log-actions">
-                      <button className="primary-button secondary" type="button" onClick={() => onLoadToToday(row.date, row.entries)}>
+                      <AppButton className="w-full gap-1.5" variant="action" type="button" onClick={() => onLoadToToday(row.date, row.entries)}>
                         Betöltés szerkesztésre a Mai fülre
-                      </button>
+                      </AppButton>
                     </div>
                   )}
 
