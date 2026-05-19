@@ -7,6 +7,8 @@ export const appCardClassName = "mb-2.5 overflow-hidden rounded-[28px] border bo
 export const appNestedCardClassName = "rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4";
 export const appNestedPanelClassName = "rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4";
 export const appFlushCardClassName = "overflow-hidden rounded-[22px] border border-slate-700/40 bg-[#0d1420]";
+export const appEmptyCardClassName = "rounded-[18px] border border-dashed border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-400";
+export const appCompactCardClassName = "rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3";
 export const appToggleHeaderClassName = "flex w-full items-center justify-between rounded-[20px] border border-white/6 bg-[#0d1420] px-4 py-3 text-left text-slate-50 transition-colors hover:bg-[#111a28]";
 export const appInputClassName = "min-h-[42px] w-full rounded-2xl border border-slate-700/50 bg-[#060c13] px-3 text-slate-50";
 export const appSearchInputClassName = `${appInputClassName} pl-10 pr-3`;
@@ -39,8 +41,18 @@ export function AppCard({ children, className = "" }) {
   return <section className={cn(appCardClassName, className)}>{children}</section>;
 }
 
-export function AppNestedCard({ children, className = "" }) {
-  return <div className={cn(appNestedCardClassName, className)}>{children}</div>;
+export function AppNestedCard({ children, variant = "nested", className = "" }) {
+  const variantClass =
+    variant === "surface"
+      ? appNestedPanelClassName
+      : variant === "flush"
+        ? appFlushCardClassName
+        : variant === "empty"
+          ? appEmptyCardClassName
+          : variant === "compact"
+            ? appCompactCardClassName
+            : appNestedCardClassName;
+  return <div className={cn(variantClass, className)}>{children}</div>;
 }
 
 export function AppTitle({ children, className = "" }) {

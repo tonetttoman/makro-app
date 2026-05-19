@@ -2,7 +2,7 @@ import { CalendarDays, ChevronDown, ChevronUp, PencilLine } from "lucide-react";
 import { useMemo, useState } from "react";
 import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
-import { AppButton, AppMetaText, AppSectionTitle } from "./ui/AppUi";
+import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle, AppTitle } from "./ui/AppUi";
 
 const WEEKDAYS = ["vas", "hét", "ked", "sze", "csü", "pén", "szo"];
 
@@ -239,9 +239,9 @@ const nestedListStyle = {
 
 function SummaryMetricLine({ label, children }) {
   return (
-    <div className="stats-summary-line" style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "12px" }}>
+    <div className="mb-3 grid gap-1.5">
       <AppMetaText className="text-[0.72rem] font-semibold uppercase tracking-[0.05em] text-slate-400">{label}</AppMetaText>
-      <div className="stats-summary-line-values" style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>{children}</div>
+      <div className="flex flex-wrap gap-3">{children}</div>
     </div>
   );
 }
@@ -251,10 +251,10 @@ function SummaryValue({ children }) {
 }
 
 function SummaryLines({ ratio, totals, totalsLabel, emptyText }) {
-  if (!totals) return <p className="muted stats-summary-detail" style={{ color: "#8a99ad", margin: 0 }}>{emptyText}</p>;
+  if (!totals) return <AppMetaText className="block text-slate-400">{emptyText}</AppMetaText>;
 
   return (
-    <div className="stats-summary-lines" style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+    <div className="mt-4 border-t border-white/5 pt-4">
       <SummaryLinesInternal ratio={ratio} totals={totals} totalsLabel={totalsLabel} />
     </div>
   );
@@ -287,15 +287,15 @@ function MacroTrendChart({ rows, target }) {
   const current = values[values.length - 1] || 0;
 
   return (
-    <div className="chart-card" style={{ background: "rgba(0,0,0,0.15)", padding: "16px", borderRadius: "18px", margin: "14px 0" }}>
-      <div className="chart-card__header" style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
+    <AppNestedCard className="my-3.5" variant="compact">
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="eyebrow" style={{ color: "#f5b041", margin: 0, fontSize: "0.75rem", textTransform: "uppercase" }}>Kalória trend</p>
-          <h2 style={{ fontSize: "1.3rem", margin: "4px 0 0" }}>{formatKcal(current)} ma</h2>
+          <AppMetaText className="block text-[0.75rem] font-semibold uppercase text-amber-300">Kalória trend</AppMetaText>
+          <AppSectionTitle className="mt-1 text-[1.3rem]">{formatKcal(current)} ma</AppSectionTitle>
         </div>
-        <span style={{ color: "#8a99ad", fontSize: "0.85rem" }}>Cél: {target} kcal</span>
+        <AppMetaText className="text-[0.85rem]">Cél: {target} kcal</AppMetaText>
       </div>
-      <svg className="trend-chart" viewBox="0 0 100 64" preserveAspectRatio="none" style={{ width: "100%", height: "74px" }} aria-label="Napi kalória grafikon">
+      <svg viewBox="0 0 100 64" preserveAspectRatio="none" className="h-[74px] w-full" aria-label="Napi kalória grafikon">
         <line x1="2" x2="98" y1={targetY} y2={targetY} style={{ stroke: "rgba(245,176,65,0.3)", strokeWidth: 1 }} />
         {values.map((value, index) => {
           const x = 4 + (index / Math.max(values.length - 1, 1)) * 88;
@@ -315,7 +315,7 @@ function MacroTrendChart({ rows, target }) {
         <polyline points={toPoints(values, max)} style={{ fill: "none", stroke: "#f5b041", strokeWidth: 1.8 }} />
         <polyline points={toPoints(averageValues, max)} style={{ fill: "none", stroke: "#38bdf8", strokeWidth: 1.4, strokeDasharray: "2 2" }} />
       </svg>
-    </div>
+    </AppNestedCard>
   );
 }
 
@@ -323,20 +323,20 @@ function EntryPreview({ entries, foods }) {
   if (!entries.length) return null;
 
   return (
-    <div className="stats-entry-preview" style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+    <div className="mt-2.5 grid gap-2 border-t border-white/5 pt-2.5">
       {entries.map((entry) => {
         const food = foods.find((item) => item.id === entry.foodId);
         if (!food) return null;
         const values = calculateEntry(food, Number(entry.amount) || 0);
         return (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.85rem", padding: "4px 0" }} key={entry.entryId}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <AppSectionTitle className="text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
+          <div className="flex items-center justify-between gap-3 py-1 text-[0.85rem]" key={entry.entryId}>
+            <div className="min-w-0">
+              <AppSectionTitle className="truncate text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
               <AppMetaText className="text-[0.75rem] text-slate-400">
                 P {formatStat(values.protein)}g · F {formatStat(values.fat)}g · Ch {formatStat(values.carbs)}g
               </AppMetaText>
             </div>
-            <div style={{ textAlign: "right" }}>
+            <div className="shrink-0 text-right">
               <AppSectionTitle className="block text-[0.92rem] font-semibold text-slate-100">{Math.round(values.kcal)} kcal</AppSectionTitle>
               <AppMetaText className="text-[0.75rem] text-slate-400">{formatStat(entry.amount)} {food.unit}</AppMetaText>
             </div>
@@ -351,19 +351,17 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   const ratio = calculateMacroRatio(row);
 
   return (
-    <div style={getListRowStyle(isOpen)}>
-      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
-        <span style={rowTitleStyle}>
-          <span style={rowTitleTopStyle}>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <CalendarDays size={14} style={{ color: "#8a99ad" }} />
-              <AppSectionTitle className="text-[0.95rem] font-semibold text-slate-100">{formatDateWithDay(row.dateKey)}</AppSectionTitle>
+    <div className="grid gap-2 border-t border-white/5 py-3.5 first:border-t-0">
+      <button className="flex w-full items-start justify-between gap-3 bg-transparent p-0 text-left text-inherit" type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-3">
+            <span className="flex min-w-0 items-center gap-2">
+              <CalendarDays size={14} className="shrink-0 text-slate-400" />
+              <AppSectionTitle className="truncate text-[0.95rem] font-semibold text-slate-100">{formatDateWithDay(row.dateKey)}</AppSectionTitle>
             </span>
-            <span style={{ textAlign: "right" }}>
-              <AppSectionTitle className="text-[0.95rem] font-semibold text-slate-100">{Math.round(Number(row.kcal) || 0)} kcal</AppSectionTitle>
-            </span>
+            <AppSectionTitle className="shrink-0 text-[0.95rem] font-semibold text-slate-100">{Math.round(Number(row.kcal) || 0)} kcal</AppSectionTitle>
           </span>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
             <AppMetaText className="text-[0.78rem] text-slate-400">P {formatStat(row.protein)}g</AppMetaText>
             <AppMetaText className="text-[0.78rem] text-slate-400">F {formatStat(row.fat)}g</AppMetaText>
             <AppMetaText className="text-[0.78rem] text-slate-400">Ch {formatStat(row.carbs)}g</AppMetaText>
@@ -373,17 +371,17 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
       </button>
 
       {isOpen && (
-        <div style={getOpenDetailStyle()}>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "#8a99ad" }}>
+        <AppNestedCard className="mt-2 grid gap-3" variant="compact">
+          <AppMetaText className="block text-[0.8rem] text-slate-400">
             Makróarány: P {Math.round(ratio.protein)}% · F {Math.round(ratio.fat)}% · Ch {Math.round(ratio.carbs)}%
-          </p>
+          </AppMetaText>
 
           <AppButton className="w-full gap-1.5" variant="action" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
             <PencilLine size={14} /> Betöltés szerkesztésre
           </AppButton>
 
           <EntryPreview entries={row.entries} foods={foods} />
-        </div>
+        </AppNestedCard>
       )}
     </div>
   );
@@ -403,19 +401,17 @@ function WeekSummaryCard({
   const visibleRows = hasOpenDay ? group.rows.filter((row) => openDays[row.dateKey]) : group.rows;
 
   return (
-    <div style={getListRowStyle(isOpen)}>
-      <button style={rowButtonStyle} type="button" onClick={onToggle} aria-expanded={isOpen}>
-        <span style={rowTitleStyle}>
-          <span style={rowTitleTopStyle}>
-            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <CalendarDays size={15} style={{ color: "#f5b041" }} />
-              <AppSectionTitle className="text-[1.02rem] font-semibold text-slate-100">{group.label}</AppSectionTitle>
+    <div className="grid gap-2 border-t border-white/5 py-3.5 first:border-t-0">
+      <button className="flex w-full items-start justify-between gap-3 bg-transparent p-0 text-left text-inherit" type="button" onClick={onToggle} aria-expanded={isOpen}>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center justify-between gap-3">
+            <span className="flex min-w-0 items-center gap-2">
+              <CalendarDays size={15} className="shrink-0 text-amber-300" />
+              <AppSectionTitle className="truncate text-[1.02rem] font-semibold text-slate-100">{group.label}</AppSectionTitle>
             </span>
-            <span style={{ textAlign: "right" }}>
-              <AppSectionTitle className="text-[1.02rem] font-semibold text-slate-100">{Math.round(Number(group.total.kcal) || 0)} kcal</AppSectionTitle>
-            </span>
+            <AppSectionTitle className="shrink-0 text-[1.02rem] font-semibold text-slate-100">{Math.round(Number(group.total.kcal) || 0)} kcal</AppSectionTitle>
           </span>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
             <AppMetaText className="text-[0.82rem] text-slate-400">P {formatStat(group.total.protein)}g</AppMetaText>
             <AppMetaText className="text-[0.82rem] text-slate-400">F {formatStat(group.total.fat)}g</AppMetaText>
             <AppMetaText className="text-[0.82rem] text-slate-400">Ch {formatStat(group.total.carbs)}g</AppMetaText>
@@ -425,12 +421,12 @@ function WeekSummaryCard({
       </button>
 
       {isOpen && showDailyDetails && (
-        <div style={{ padding: "4px 0 0 8px" }}>
-          <div style={{ background: "rgba(0,0,0,0.15)", padding: "12px", borderRadius: "14px", fontSize: "0.8rem", color: "#8a99ad", display: "flex", flexDirection: "column", gap: "4px" }}>
+        <div className="pl-2 pt-1">
+          <AppNestedCard className="grid gap-1 text-[0.8rem] text-slate-400" variant="compact">
             <span>Átlag: {formatKcal(group.average.kcal)} · P {formatStat(group.average.protein)}g · F {formatStat(group.average.fat)}g · Ch {formatStat(group.average.carbs)}g</span>
             <span>Makróarány: P {Math.round(group.ratio.protein)}% · F {Math.round(group.ratio.fat)}% · Ch {Math.round(group.ratio.carbs)}%</span>
-          </div>
-          <div style={nestedListStyle}>
+          </AppNestedCard>
+          <div className="mt-3 border-t border-white/5 pt-1">
             {visibleRows.map((row) => (
               <DaySummaryRow
                 key={row.dateKey}
@@ -447,7 +443,6 @@ function WeekSummaryCard({
     </div>
   );
 }
-
 export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoadToToday }) {
   const [openGroups, setOpenGroups] = useState(null);
   const [openDays, setOpenDays] = useState({});
@@ -519,16 +514,16 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   }
 
   return (
-    <main className="page page--stats" style={{ paddingTop: "12px" }}>
-      <section style={{ background: "#161c26", padding: "22px 20px", borderRadius: "24px", boxShadow: "0 15px 35px rgba(0,0,0,0.4)" }}>
-        <div className="stats-summary-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
-          <div className="stats-summary-title-block">
-            <p className="eyebrow" style={{ color: "#f5b041", margin: 0, fontSize: "0.75rem", textTransform: "uppercase", fontWeight: "700" }}>Összesítés</p>
-            <h1 style={{ fontSize: "1.6rem", fontWeight: "700", margin: "4px 0" }}>{summaryTitle}</h1>
-            {summaryRangeLabel && <p className="stats-summary-range" style={{ color: "#8a99ad", fontSize: "0.85rem", margin: 0 }}>{summaryRangeLabel}</p>}
+    <AppPage className="pt-3">
+      <AppCard className="p-[22px_20px]">
+        <div className="mb-3.5 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <AppMetaText className="block text-[0.75rem] font-semibold uppercase text-amber-300">Összesítés</AppMetaText>
+            <AppTitle className="my-1 text-[1.6rem] font-semibold tracking-normal">{summaryTitle}</AppTitle>
+            {summaryRangeLabel && <AppMetaText className="block text-[0.85rem] text-slate-400">{summaryRangeLabel}</AppMetaText>}
           </div>
-          <div className="stats-summary-meta">
-            <span className="stats-summary-pill" style={{ background: "rgba(255,255,255,0.05)", padding: "6px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "600" }}>{formatSavedDaysLabel(summarySavedDays)}</span>
+          <div className="shrink-0 text-right">
+            <span className="inline-flex rounded-full bg-white/5 px-3 py-1.5 text-[0.8rem] font-semibold text-slate-200">{formatSavedDaysLabel(summarySavedDays)}</span>
           </div>
         </div>
         {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
@@ -538,9 +533,9 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
           totalsLabel={summaryTotalsLabel}
           emptyText={summaryEmptyText}
         />
-      </section>
+      </AppCard>
 
-      <section style={listPanelStyle} aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
+      <AppCard aria-label={isMonthlyView ? "Havi heti összesítők" : "Heti összesítő"}>
         {visibleWeekGroups.map((group) => {
           const hasOpenDay = group.rows.some((row) => openDays[row.dateKey]);
           return (
@@ -558,7 +553,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
             />
           );
         })}
-      </section>
-    </main>
+      </AppCard>
+    </AppPage>
   );
 }
