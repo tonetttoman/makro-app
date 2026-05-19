@@ -789,8 +789,7 @@ export const FOODS = [
     kcal: 559,
     protein: 30,
     fat: 49,
-    carbs: 11,
-    targetNutrients: { magnesium: 592, zinc: 7.6, iron: 8.8 }
+    carbs: 11
   },
   {
     id: "chia-mag",

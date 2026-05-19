@@ -10,7 +10,7 @@ import {
   Wheat,
   X
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { calculateEntry, findFoodById } from "../lib/calculations";
 import { CategoryPicker } from "./CategoryPicker";
 import { FoodGrid } from "./FoodGrid";
@@ -297,7 +297,6 @@ export function TodayView({
   entries,
   foods,
   dailyAmounts,
-  targetNutrients,
   activeCategory,
   categories,
   quickAddFoods,
@@ -314,7 +313,6 @@ export function TodayView({
   onRemove
 }) {
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
-  const nutrientPreviewCount = useMemo(() => Object.keys(targetNutrients || {}).length, [targetNutrients]);
   const isEditingPastDay = workDate !== todayKey;
 
   return (
@@ -331,7 +329,6 @@ export function TodayView({
           <div className="flex items-start justify-between gap-3">
             <div>
               <AppSectionTitle>Gyors hozzáadás</AppSectionTitle>
-              <AppMetaText>{nutrientPreviewCount} célanyag-előnézet</AppMetaText>
             </div>
             <AppButton className="h-9 min-h-0 w-9 rounded-full px-0" variant="secondary" type="button" onClick={() => onToggleQuickAdd?.(false)} aria-label="Bezárás">
               <X size={17} />

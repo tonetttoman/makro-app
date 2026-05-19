@@ -3,19 +3,13 @@ import { BottomNav } from "./components/BottomNav";
 import { DataView } from "./components/DataView";
 import { StatsView } from "./components/StatsView";
 import { TodayView } from "./components/TodayView";
-import { VitaminView } from "./components/VitaminView";
 import { FOOD_CATEGORIES, FOODS } from "./data/foods";
-import { TARGET_NUTRIENTS } from "./data/nutrients";
-import { SUPPLEMENTS } from "./data/supplements";
-import { DEFAULT_TARGETS, calculateTargetNutrients, calculateTotals } from "./lib/calculations";
+import { DEFAULT_TARGETS, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
 import {
   DIARY_KEY,
   DAILY_LOGS_KEY,
   FOODS_KEY,
-  NUTRIENT_TARGETS_KEY,
-  SUPPLEMENT_DIARY_KEY,
-  SUPPLEMENTS_KEY,
   TARGETS_KEY,
   WORKSPACE_KEY
 } from "./lib/storage";
@@ -92,14 +86,6 @@ function createEntry(food) {
   };
 }
 
-function createSupplementEntry(supplement) {
-  return {
-    entryId: createUniqueId(supplement.id),
-    supplementId: supplement.id,
-    amount: supplement.defaultDose,
-    createdAt: new Date().toISOString()
-  };
-}
 
 function getDailyFoodAmounts(entries) {
   return entries.reduce((amounts, entry) => {
@@ -149,11 +135,8 @@ export default function App() {
   const [foodSearch, setFoodSearch] = useState("");
 
   const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
-  const [supplements, setSupplements] = useLocalStorage(SUPPLEMENTS_KEY, SUPPLEMENTS);
-  const [nutrientTargets, setNutrientTargets] = useLocalStorage(NUTRIENT_TARGETS_KEY, TARGET_NUTRIENTS);
   const [diary, setDiary] = useLocalStorage(DIARY_KEY, {});
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
-  const [supplementDiary, setSupplementDiary] = useLocalStorage(SUPPLEMENT_DIARY_KEY, {});
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
   const [workspace, setWorkspace] = useLocalStorage(WORKSPACE_KEY, { date: todayKey, entries: [] });
   const preserveLoadedDayRef = useRef(false);
@@ -172,12 +155,10 @@ export default function App() {
   const workDate = workspace.date || todayKey;
   const todayEntries = workspace.entries || [];
   const importedTotals = !todayEntries.length ? workspace.importedTotals || getImportedTotalsForDate(dailyLogs, workDate) : null;
-  const supplementEntries = supplementDiary[todayKey]?.entries || [];
   const totals = useMemo(
     () => (todayEntries.length ? calculateTotals(todayEntries, foods) : importedTotals || { kcal: 0, protein: 0, fat: 0, carbs: 0 }),
     [foods, importedTotals, todayEntries]
   );
-  const targetNutrients = useMemo(() => calculateTargetNutrients(todayEntries, foods), [foods, todayEntries]);
   const todayFoodAmounts = useMemo(() => getDailyFoodAmounts(todayEntries), [todayEntries]);
   const foodCategories = useMemo(() => {
     const ordered = [...FOOD_CATEGORIES];
@@ -256,15 +237,6 @@ export default function App() {
     setDailyLogs((current) => upsertDailyLog(current, date, savedTotals));
   }
 
-  function updateSupplementEntries(nextEntries) {
-    setSupplementDiary((current) => ({
-      ...current,
-      [todayKey]: {
-        date: todayKey,
-        entries: nextEntries
-      }
-    }));
-  }
 
   function handleAddFood(food) {
     const existingEntry = todayEntries.find((entry) => entry.foodId === food.id);
@@ -304,20 +276,6 @@ export default function App() {
     setWorkspace(getWorkspaceForDate(diary, dailyLogs, todayKey));
   }
 
-  function handleAddSupplement(supplement) {
-    updateSupplementEntries([...supplementEntries, createSupplementEntry(supplement)]);
-  }
-
-  function handleSupplementAmountChange(entryId, amount) {
-    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
-    updateSupplementEntries(
-      supplementEntries.map((entry) => (entry.entryId === entryId ? { ...entry, amount: safeAmount } : entry))
-    );
-  }
-
-  function handleRemoveSupplement(entryId) {
-    updateSupplementEntries(supplementEntries.filter((entry) => entry.entryId !== entryId));
-  }
 
   function handleConfirmDailyLog() {
     persistEntriesForDate(workDate, todayEntries);
@@ -356,7 +314,6 @@ export default function App() {
           entries={todayEntries}
           foods={foods}
           dailyAmounts={todayFoodAmounts}
-          targetNutrients={targetNutrients}
           activeCategory={activeCategory}
           categories={foodCategories}
           foodSearch={foodSearch}
@@ -387,39 +344,18 @@ export default function App() {
           onLoadToToday={handleLoadToToday}
         />
       )}
-      {activeView === "vitamins" && (
-        <VitaminView
-          diary={diary}
-          supplementDiary={supplementDiary}
-          foods={foods}
-          supplements={supplements}
-          nutrientTargets={nutrientTargets}
-          foodNutrients={targetNutrients}
-          supplementEntries={supplementEntries}
-          onAddSupplement={handleAddSupplement}
-          onAddTargetFood={handleAddFood}
-          onSupplementAmountChange={handleSupplementAmountChange}
-          onRemoveSupplement={handleRemoveSupplement}
-        />
-      )}
       {activeView === "data" && (
         <DataView
           foods={foods}
           setFoods={setFoods}
           foodCategories={foodCategories}
           dailyFoodAmounts={todayFoodAmounts}
-          supplements={supplements}
-          setSupplements={setSupplements}
           targets={targets}
           setTargets={setTargets}
-          nutrientTargets={nutrientTargets}
-          setNutrientTargets={setNutrientTargets}
           diary={diary}
           setDiary={setDiary}
           dailyLogs={dailyLogs}
           setDailyLogs={setDailyLogs}
-          supplementDiary={supplementDiary}
-          setSupplementDiary={setSupplementDiary}
         />
       )}
 

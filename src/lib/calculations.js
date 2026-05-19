@@ -1,5 +1,4 @@
 import { FOODS } from "../data/foods";
-import { SUPPLEMENTS } from "../data/supplements";
 
 export const DEFAULT_TARGETS = {
   kcal: 2200,
@@ -12,17 +11,11 @@ export function getFoodById(foodId) {
   return FOODS.find((food) => food.id === foodId);
 }
 
-export function getSupplementById(supplementId) {
-  return SUPPLEMENTS.find((supplement) => supplement.id === supplementId);
-}
 
 export function findFoodById(foodId, foods = FOODS) {
   return foods.find((food) => food.id === foodId);
 }
 
-export function findSupplementById(supplementId, supplements = SUPPLEMENTS) {
-  return supplements.find((supplement) => supplement.id === supplementId);
-}
 
 export function calculateEntry(food, amount) {
   const factor = amount / food.baseAmount;
@@ -66,38 +59,8 @@ export function calculateMacroRatio(totals) {
   };
 }
 
-export function calculateTargetNutrients(entries, foods = FOODS) {
-  return entries.reduce((totals, entry) => {
-    const food = findFoodById(entry.foodId, foods);
-    if (!food?.targetNutrients) return totals;
-    const factor = entry.amount / food.baseAmount;
-    Object.entries(food.targetNutrients).forEach(([nutrientId, value]) => {
-      totals[nutrientId] = (totals[nutrientId] || 0) + value * factor;
-    });
-    return totals;
-  }, {});
-}
 
-export function calculateSupplementNutrients(entries, supplements = SUPPLEMENTS) {
-  return entries.reduce((totals, entry) => {
-    const supplement = findSupplementById(entry.supplementId, supplements);
-    if (!supplement?.targetNutrients) return totals;
-    const factor = entry.amount / supplement.baseDose;
-    Object.entries(supplement.targetNutrients).forEach(([nutrientId, value]) => {
-      totals[nutrientId] = (totals[nutrientId] || 0) + value * factor;
-    });
-    return totals;
-  }, {});
-}
 
-export function combineNutrients(...sources) {
-  return sources.reduce((totals, source) => {
-    Object.entries(source || {}).forEach(([nutrientId, value]) => {
-      totals[nutrientId] = (totals[nutrientId] || 0) + value;
-    });
-    return totals;
-  }, {});
-}
 
 export function averageTotals(dayTotals) {
   if (!dayTotals.length) return { kcal: 0, protein: 0, fat: 0, carbs: 0 };

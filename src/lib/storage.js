@@ -3,11 +3,8 @@ import { DEFAULT_TARGETS } from "./calculations";
 export const DIARY_KEY = "macroDiary.v1";
 export const WORKSPACE_KEY = "todayWorkspace.v1";
 export const TARGETS_KEY = "macroTargets.v1";
-export const SUPPLEMENT_DIARY_KEY = "supplementDiary.v1";
 export const DAILY_LOGS_KEY = "dailyLogs.v1";
 export const FOODS_KEY = "foodsCatalog.v1";
-export const SUPPLEMENTS_KEY = "supplementsCatalog.v1";
-export const NUTRIENT_TARGETS_KEY = "nutrientTargets.v1";
 
 export function readJson(key, fallback) {
   try {

@@ -143,8 +143,7 @@ function createBlankFood() {
     kcal: 0,
     protein: 0,
     fat: 0,
-    carbs: 0,
-    targetNutrients: {}
+    carbs: 0
   };
 }
 
@@ -174,18 +173,12 @@ export function DataView({
   setFoods,
   foodCategories,
   dailyFoodAmounts,
-  supplements,
-  setSupplements,
   targets,
   setTargets,
-  nutrientTargets,
-  setNutrientTargets,
   diary,
   setDiary,
   dailyLogs,
-  setDailyLogs,
-  supplementDiary,
-  setSupplementDiary
+  setDailyLogs
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
@@ -327,12 +320,9 @@ export function DataView({
   function exportJson() {
     downloadJson("makro-app-backup.json", {
       foods,
-      supplements,
       targets,
-      nutrientTargets,
       diary,
       dailyLogs,
-      supplementDiary,
       exportedAt: new Date().toISOString()
     });
   }
@@ -343,12 +333,9 @@ export function DataView({
       const raw = await file.text();
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed.foods)) setFoods(parsed.foods);
-      if (Array.isArray(parsed.supplements)) setSupplements(parsed.supplements);
       if (parsed.targets && typeof parsed.targets === "object") setTargets(parsed.targets);
-      if (parsed.nutrientTargets && typeof parsed.nutrientTargets === "object") setNutrientTargets(parsed.nutrientTargets);
       if (parsed.diary && typeof parsed.diary === "object") setDiary(parsed.diary);
       if (Array.isArray(parsed.dailyLogs)) setDailyLogs(parsed.dailyLogs);
-      if (parsed.supplementDiary && typeof parsed.supplementDiary === "object") setSupplementDiary(parsed.supplementDiary);
     } catch {
       window.alert("A JSON import nem sikerült. Ellenőrizd a fájlt.");
     } finally {

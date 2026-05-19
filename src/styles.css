@@ -102,8 +102,7 @@ select:focus-visible {
 
 .summary,
 .panel,
-.empty-state,
-.nutrient-card {
+.empty-state {
   background:
     linear-gradient(180deg, rgba(24, 34, 50, 0.98), rgba(11, 17, 27, 0.98));
   border: 1px solid rgba(148, 163, 184, 0.16);
