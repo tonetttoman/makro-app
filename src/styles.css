@@ -68,11 +68,7 @@ button {
 
 button,
 input,
-select,
-.panel,
-.summary,
-.quick-button,
-.icon-button {
+select {
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -91,73 +87,6 @@ select:focus-visible {
 .app {
   min-height: 100svh;
   padding-bottom: calc(var(--bottom-nav-height) + 28px + env(safe-area-inset-bottom));
-}
-
-.page {
-  width: 100%;
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: var(--page-padding);
-}
-
-.summary,
-.panel,
-.empty-state {
-  background:
-    linear-gradient(180deg, rgba(24, 34, 50, 0.98), rgba(11, 17, 27, 0.98));
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  border-radius: 24px;
-  box-shadow: var(--shadow);
-}
-
-.summary {
-  position: relative;
-  overflow: hidden;
-  padding: 22px 20px 20px;
-  margin-bottom: 14px;
-  border-color: rgba(56, 189, 248, 0.18);
-}
-
-.summary::before {
-  content: "";
-  position: absolute;
-  inset: 12px auto auto 50%;
-  width: min(220px, 58vw);
-  height: min(220px, 58vw);
-  border: 2px solid rgba(251, 191, 36, 0.72);
-  border-right-color: transparent;
-  border-bottom-color: rgba(251, 191, 36, 0.18);
-  border-radius: 999px;
-  opacity: 0.92;
-  transform: translateX(-50%) rotate(-18deg);
-  pointer-events: none;
-}
-
-.summary::after {
-  content: "";
-  position: absolute;
-  inset: -24% auto auto 50%;
-  width: 170px;
-  height: 170px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.16), transparent 68%);
-  pointer-events: none;
-}
-
-.panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.eyebrow {
-  margin: 0 0 6px;
-  color: var(--cyan);
-  font-size: 0.72rem;
-  font-weight: 850;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 h1,
@@ -179,87 +108,6 @@ h2 {
   line-height: 1.2;
 }
 
-.summary-grid {
-  display: grid;
-  gap: 14px;
-  margin-top: 28px;
-  position: relative;
-  z-index: 1;
-}
-
-.metric {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.metric__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-  color: var(--muted-strong);
-  font-size: 0.92rem;
-}
-
-.metric__row span {
-  letter-spacing: 0.01em;
-}
-
-.metric__row strong {
-  color: var(--text);
-  font-weight: 850;
-}
-
-.panel {
-  padding: 16px;
-  margin-bottom: 14px;
-  overflow: hidden;
-}
-
-.quick-button:hover,
-.icon-button:hover {
-  border-color: rgba(56, 189, 248, 0.42);
-  background-color: rgba(30, 41, 59, 0.82);
-}
-
-.quick-button:active,
-.icon-button:active {
-  transform: translateY(1px) scale(0.99);
-}
-
-.quick-button {
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.9);
-  color: var(--text);
-  padding: 12px;
-  text-align: left;
-}
-
-.quick-button strong {
-  display: block;
-}
-
-.quick-button span {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.form-field {
-  display: grid;
-  gap: 5px;
-}
-
-.form-field span {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
 input,
 select {
   width: 100%;
@@ -271,62 +119,8 @@ select {
   padding: 10px 12px;
 }
 
-.unit {
-  min-width: 42px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.92);
-  color: var(--muted-strong);
-  font-weight: 800;
-}
-
-.icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  width: 42px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.9);
-  color: var(--text);
-  font-weight: 800;
-}
-
-.icon-button.full {
-  width: 100%;
-}
-
-.icon-button.danger {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-.empty-state {
-  padding: 22px;
-  margin-bottom: 14px;
-  color: var(--muted);
-}
-
-.empty-state h2 {
-  color: var(--text);
-  margin-bottom: 8px;
-}
-
 @media (max-width: 380px) {
   :root {
     --page-padding: 10px;
-  }
-
-  .summary,
-  .panel {
-    border-radius: 20px;
   }
 }
