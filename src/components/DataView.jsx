@@ -1,10 +1,11 @@
 import { Download, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { calculateEntry } from "../lib/calculations";
 import { FOOD_CATEGORIES } from "../data/foods";
+import { calculateEntry } from "../lib/calculations";
 import {
   AppButton,
   AppCard,
+  AppDangerButton,
   AppField,
   AppInput,
   AppListRow,
@@ -18,6 +19,8 @@ import {
 } from "./ui/AppUi";
 
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp", "%"];
+const RECIPE_CATEGORY = "Főtt ételek";
+const CATEGORY_LABELS = ["Fehérje", "Tejtermék", "Hús", "Tojás", "Gyümölcs", "Magvak", "Gabona", "Zöldség", "Egyéb", "Receptek"];
 const macroFieldConfig = [
   { key: "kcal", label: "Kcal" },
   { key: "protein", label: "Fehérje" },
@@ -43,7 +46,12 @@ function slugify(value) {
     .replace(/^-|-$/g, "");
 }
 
+function normalizeEntityName(value) {
+  return String(value || "").trim().toLocaleLowerCase("hu-HU");
+}
+
 function numberValue(value, fallback = 0) {
+  if (value === "") return fallback;
   const parsed = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -61,26 +69,21 @@ function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCa
   const fat = Math.max(0, Number(currentFat) || 0);
   const carbs = Math.max(0, Number(currentCarbs) || 0);
   const safeTargetKcal = roundTargetNumber(targetKcal);
-
   const currentMacroKcal = calculateKcalFromMacros(protein, fat, carbs);
   const fallbackProtein = Math.max(0, Number(fallbackTargets?.protein) || 0);
   const fallbackFat = Math.max(0, Number(fallbackTargets?.fat) || 0);
   const fallbackCarbs = Math.max(0, Number(fallbackTargets?.carbs) || 0);
   const fallbackMacroKcal = calculateKcalFromMacros(fallbackProtein, fallbackFat, fallbackCarbs);
-
   const baseProtein = currentMacroKcal > 0 ? protein : fallbackProtein;
   const baseFat = currentMacroKcal > 0 ? fat : fallbackFat;
   const baseCarbs = currentMacroKcal > 0 ? carbs : fallbackCarbs;
   const baseKcal = currentMacroKcal > 0 ? currentMacroKcal : fallbackMacroKcal || 1;
-
   const proteinRatio = (baseProtein * 4) / baseKcal;
   const fatRatio = (baseFat * 9) / baseKcal;
   const carbsRatio = (baseCarbs * 4) / baseKcal;
-
   const nextProtein = roundTargetNumber((safeTargetKcal * proteinRatio) / 4);
   const nextFat = roundTargetNumber((safeTargetKcal * fatRatio) / 9);
   const nextCarbs = roundTargetNumber((safeTargetKcal * carbsRatio) / 4);
-
   return {
     protein: nextProtein,
     fat: nextFat,
@@ -90,11 +93,70 @@ function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCa
 }
 
 function normalizeSearch(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+function repairHungarianMojibake(value) {
+  const text = String(value || "");
+  if (!text) return "";
+  try {
+    const decoded = decodeURIComponent(escape(text));
+    if (!decoded.includes("�")) {
+      return decoded;
+    }
+  } catch {
+  }
+  return text
+    .replace(/Ăˇ/g, "á")
+    .replace(/Ă©/g, "é")
+    .replace(/Ă­/g, "í")
+    .replace(/Ăł/g, "ó")
+    .replace(/Ă¶/g, "ö")
+    .replace(/Ĺ‘/g, "ő")
+    .replace(/Ăş/g, "ú")
+    .replace(/ĂĽ/g, "ü")
+    .replace(/Ĺ±/g, "ű")
+    .replace(/Ă/g, "Á")
+    .replace(/Ă‰/g, "É")
+    .replace(/ĂŤ/g, "Í")
+    .replace(/Ă“/g, "Ó")
+    .replace(/Ă–/g, "Ö")
+    .replace(/Ĺ/g, "Ő")
+    .replace(/Ăš/g, "Ú")
+    .replace(/Ăś/g, "Ü")
+    .replace(/Ĺ°/g, "Ű")
+    .replace(/�/g, "");
+}
+
+function normalizeFoodName(value) {
+  return repairHungarianMojibake(value).trim();
+}
+
+function normalizeFoodCategory(value, { isRecipe = false } = {}) {
+  if (isRecipe) return RECIPE_CATEGORY;
+  const repaired = repairHungarianMojibake(value).trim();
+  const normalized = normalizeSearch(repaired);
+  const matched = CATEGORY_LABELS.find((category) => normalizeSearch(category) === normalized);
+  if (matched === "Receptek") return RECIPE_CATEGORY;
+  if (matched) return matched;
+  const fallback = FOOD_CATEGORIES.map((category) => repairHungarianMojibake(category)).find(
+    (category) => normalizeSearch(category) === normalized
+  );
+  return fallback || repaired || repairHungarianMojibake(FOOD_CATEGORIES[0]) || "Egyéb";
+}
+
+function isRecipeFood(food) {
+  return Boolean(food?.isRecipe) || normalizeFoodCategory(food?.category, { isRecipe: food?.isRecipe }) === RECIPE_CATEGORY;
+}
+
+function getFoodDraftFieldValue(key, value) {
+  if (!["kcal", "protein", "fat", "carbs"].includes(key)) return value;
+  return value === 0 || value === "0" || value === "" || value === null || value === undefined ? "" : value;
+}
+
+function parseFoodDraftFieldValue(key, value) {
+  if (!["kcal", "protein", "fat", "carbs"].includes(key)) return value;
+  return value === "" ? "" : numberValue(value);
 }
 
 function normalizeDailyLog(log) {
@@ -128,34 +190,19 @@ function extractDailyLogs(data) {
 }
 
 function sortFoodsByName(items) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
+  return [...items].sort((a, b) => normalizeFoodName(a.name).localeCompare(normalizeFoodName(b.name), "hu", { sensitivity: "base" }));
 }
 
 function createBlankFood() {
-  return {
-    id: "",
-    name: "",
-    category: FOOD_CATEGORIES[0],
-    unit: "g",
-    baseAmount: 100,
-    step: 10,
-    defaultAmount: 100,
-    kcal: 0,
-    protein: 0,
-    fat: 0,
-    carbs: 0
-  };
+  return { id: "", name: "", category: normalizeFoodCategory(FOOD_CATEGORIES[0]), unit: "g", baseAmount: 100, step: 10, defaultAmount: 100, kcal: "", protein: "", fat: "", carbs: "" };
 }
 
 function createBlankRecipe() {
-  return {
-    name: "",
-    category: "Főtt ételek",
-    ingredientSearch: "",
-    ingredientFoodId: "",
-    ingredientAmount: "",
-    ingredients: []
-  };
+  return { name: "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: [] };
+}
+
+function normalizeIngredientDrafts(ingredients) {
+  return (ingredients || []).map((ingredient) => ({ foodId: ingredient.foodId, amount: ingredient.amount === 0 || ingredient.amount === "0" ? "" : String(ingredient.amount ?? "") }));
 }
 
 function downloadJson(filename, payload) {
@@ -183,7 +230,6 @@ export function DataView({
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
   const recipeCardRef = useRef(null);
-
   const [foodSearch, setFoodSearch] = useState("");
   const [foodDraft, setFoodDraft] = useState(createBlankFood());
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
@@ -191,12 +237,8 @@ export function DataView({
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe());
-  const [targetDrafts, setTargetDrafts] = useState(() => ({
-    kcal: String(roundTargetNumber(targets?.kcal)),
-    protein: String(roundTargetNumber(targets?.protein)),
-    fat: String(roundTargetNumber(targets?.fat)),
-    carbs: String(roundTargetNumber(targets?.carbs))
-  }));
+  const [editingRecipeId, setEditingRecipeId] = useState("");
+  const [targetDrafts, setTargetDrafts] = useState(() => ({ kcal: String(roundTargetNumber(targets?.kcal)), protein: String(roundTargetNumber(targets?.protein)), fat: String(roundTargetNumber(targets?.fat)), carbs: String(roundTargetNumber(targets?.carbs)) }));
   const [activeTargetField, setActiveTargetField] = useState(null);
 
   useEffect(() => {
@@ -209,20 +251,24 @@ export function DataView({
   }, [targets, activeTargetField]);
 
   useEffect(() => {
-    if (!isFoodDatabaseOpen && foodSearch) {
+    if (!isFoodDatabaseOpen) {
       setFoodSearch("");
+      setFoodDraft(createBlankFood());
+      setIsFoodEditorOpen(false);
     }
-  }, [isFoodDatabaseOpen, foodSearch]);
+  }, [isFoodDatabaseOpen]);
 
   useEffect(() => {
-    if (!isRecipeEditorOpen && (recipeDraft.ingredientSearch || recipeDraft.ingredientFoodId)) {
-      setRecipeDraft((current) => ({
-        ...current,
-        ingredientSearch: "",
-        ingredientFoodId: ""
-      }));
+    if (!isFoodEditorOpen) {
+      setFoodDraft(createBlankFood());
     }
-  }, [isRecipeEditorOpen, recipeDraft.ingredientFoodId, recipeDraft.ingredientSearch]);
+  }, [isFoodEditorOpen]);
+
+  useEffect(() => {
+    if (!isRecipeEditorOpen && (recipeDraft.ingredientSearch || recipeDraft.ingredientFoodId || recipeDraft.ingredientAmount)) {
+      setRecipeDraft((current) => ({ ...current, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "" }));
+    }
+  }, [isRecipeEditorOpen, recipeDraft.ingredientAmount, recipeDraft.ingredientFoodId, recipeDraft.ingredientSearch]);
 
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
   const normalizedFoodSearch = normalizeSearch(foodSearch);
@@ -230,38 +276,32 @@ export function DataView({
     if (!normalizedFoodSearch) return [];
     return sortedFoods
       .map((food) => {
-        const normalizedName = normalizeSearch(food.name);
+        const normalizedName = normalizeSearch(normalizeFoodName(food.name));
         const starts = normalizedName.startsWith(normalizedFoodSearch) ? 0 : 1;
         const index = normalizedName.indexOf(normalizedFoodSearch);
         return { food, starts, index };
       })
       .filter(({ index }) => index >= 0)
-      .sort(
-        (a, b) =>
-          a.starts - b.starts ||
-          a.index - b.index ||
-          a.food.name.localeCompare(b.food.name, "hu", { sensitivity: "base" })
-      )
+      .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
       .slice(0, 16)
       .map(({ food }) => food);
   }, [normalizedFoodSearch, sortedFoods]);
 
-  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${foodDraft.name}` : "Új vagy szerkesztett élelmiszer";
+  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Új vagy szerkesztett élelmiszer";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P${roundTargetNumber(targets?.protein)} · Zs${roundTargetNumber(targets?.fat)} · CH${roundTargetNumber(targets?.carbs)}`;
-
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
-    const candidates = sortFoodsByName(foods.filter((food) => !food.isRecipe));
+    const candidates = sortFoodsByName((foods || []).filter((food) => !food.isRecipe));
     if (!normalizedRecipeSearch) return [];
     return candidates
       .map((food) => {
-        const normalizedName = normalizeSearch(food.name);
+        const normalizedName = normalizeSearch(normalizeFoodName(food.name));
         const starts = normalizedName.startsWith(normalizedRecipeSearch) ? 0 : 1;
         const index = normalizedName.indexOf(normalizedRecipeSearch);
         return { food, starts, index };
       })
       .filter(({ index }) => index >= 0)
-      .sort((a, b) => a.starts - b.starts || a.index - b.index || a.food.name.localeCompare(b.food.name, "hu", { sensitivity: "base" }))
+      .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
       .slice(0, 10)
       .map(({ food }) => food);
   }, [foods, normalizedRecipeSearch]);
@@ -284,12 +324,7 @@ export function DataView({
   }, [foods, recipeDraft.ingredients]);
 
   function syncTargetDrafts(nextTargets) {
-    setTargetDrafts({
-      kcal: String(roundTargetNumber(nextTargets.kcal)),
-      protein: String(roundTargetNumber(nextTargets.protein)),
-      fat: String(roundTargetNumber(nextTargets.fat)),
-      carbs: String(roundTargetNumber(nextTargets.carbs))
-    });
+    setTargetDrafts({ kcal: String(roundTargetNumber(nextTargets.kcal)), protein: String(roundTargetNumber(nextTargets.protein)), fat: String(roundTargetNumber(nextTargets.fat)), carbs: String(roundTargetNumber(nextTargets.carbs)) });
   }
 
   function handleTargetDraftChange(key, value) {
@@ -302,29 +337,20 @@ export function DataView({
       syncTargetDrafts(targets);
       return;
     }
-
     const parsed = roundTargetNumber(rawValue);
     let nextTargets;
-
     if (key === "kcal") {
       nextTargets = scaleMacrosToCalories(parsed, targets.protein, targets.fat, targets.carbs, targets);
     } else {
       nextTargets = { ...targets, [key]: parsed };
       nextTargets.kcal = calculateKcalFromMacros(nextTargets.protein, nextTargets.fat, nextTargets.carbs);
     }
-
     setTargets(nextTargets);
     syncTargetDrafts(nextTargets);
   }
 
   function exportJson() {
-    downloadJson("makro-app-backup.json", {
-      foods,
-      targets,
-      diary,
-      dailyLogs,
-      exportedAt: new Date().toISOString()
-    });
+    downloadJson("makro-app-backup.json", { foods, targets, diary, dailyLogs, exportedAt: new Date().toISOString() });
   }
 
   async function importJson(file) {
@@ -368,17 +394,16 @@ export function DataView({
   }
 
   function saveFood() {
-    const name = String(foodDraft.name || "").trim();
+    const name = normalizeFoodName(foodDraft.name);
     if (!name) {
       window.alert("Adj meg nevet az élelmiszerhez.");
       return;
     }
-
     const nextFood = {
       ...foodDraft,
       id: foodDraft.id || `${slugify(name)}-${Date.now()}`,
       name,
-      category: foodDraft.category || foodCategories[0] || FOOD_CATEGORIES[0],
+      category: normalizeFoodCategory(foodDraft.category) || normalizeFoodCategory(foodCategories[0]) || normalizeFoodCategory(FOOD_CATEGORIES[0]),
       unit: foodDraft.unit || "g",
       baseAmount: Math.max(1, numberValue(foodDraft.baseAmount, 100)),
       defaultAmount: Math.max(1, numberValue(foodDraft.defaultAmount, 100)),
@@ -388,12 +413,19 @@ export function DataView({
       fat: Math.max(0, numberValue(foodDraft.fat)),
       carbs: Math.max(0, numberValue(foodDraft.carbs))
     };
-
     setFoods((current) => {
       const existingIndex = current.findIndex((food) => food.id === nextFood.id);
       if (existingIndex === -1) return [...current, nextFood];
       return current.map((food) => (food.id === nextFood.id ? nextFood : food));
     });
+  }
+
+  function deleteFood() {
+    if (!foodDraft.id) return;
+    if (!window.confirm(`Biztosan törlöd ezt az élelmiszert: ${normalizeFoodName(foodDraft.name)}?`)) return;
+    setFoods((current) => current.filter((food) => food.id !== foodDraft.id));
+    setFoodDraft(createBlankFood());
+    setIsFoodEditorOpen(false);
   }
 
   function addRecipeIngredient() {
@@ -402,25 +434,19 @@ export function DataView({
       window.alert("Válassz alapanyagot és adj meg pozitív mennyiséget.");
       return;
     }
-
-    setRecipeDraft((current) => ({
-      ...current,
-      ingredients: [...current.ingredients, { foodId: current.ingredientFoodId, amount }],
-      ingredientAmount: "",
-      ingredientFoodId: "",
-      ingredientSearch: ""
-    }));
+    setRecipeDraft((current) => ({ ...current, ingredients: [...current.ingredients, { foodId: current.ingredientFoodId, amount: String(amount) }], ingredientAmount: "", ingredientFoodId: "", ingredientSearch: "" }));
   }
 
   function removeRecipeIngredient(index) {
-    setRecipeDraft((current) => ({
-      ...current,
-      ingredients: current.ingredients.filter((_, itemIndex) => itemIndex !== index)
-    }));
+    setRecipeDraft((current) => ({ ...current, ingredients: current.ingredients.filter((_, itemIndex) => itemIndex !== index) }));
+  }
+
+  function updateRecipeIngredientAmount(index, value) {
+    setRecipeDraft((current) => ({ ...current, ingredients: current.ingredients.map((ingredient, itemIndex) => (itemIndex === index ? { ...ingredient, amount: value } : ingredient)) }));
   }
 
   function saveRecipe() {
-    const name = String(recipeDraft.name || "").trim();
+    const name = normalizeFoodName(recipeDraft.name);
     if (!name) {
       window.alert("Adj nevet a receptnek.");
       return;
@@ -429,51 +455,31 @@ export function DataView({
       window.alert("Adj hozzá legalább egy alapanyagot a recepthez.");
       return;
     }
+    const normalizedName = normalizeEntityName(name);
+    const existingRecipeByName = foods.find((food) => isRecipeFood(food) && normalizeEntityName(food.name) === normalizedName);
+    const targetRecipeId = existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
+    const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 10, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
+    setFoods((current) => [...current.filter((food) => !(isRecipeFood(food) && (food.id === editingRecipeId || food.id === existingRecipeByName?.id))), nextRecipe]);
+    setEditingRecipeId("");
+    setRecipeDraft(createBlankRecipe());
+    setIsRecipeEditorOpen(false);
+  }
 
-    const nextRecipe = {
-      id: `recipe-${slugify(name)}-${Date.now()}`,
-      name,
-      category: "Főtt ételek",
-      unit: "%",
-      baseAmount: 100,
-      defaultAmount: 10,
-      step: 5,
-      kcal: Math.round(recipeTotals.kcal),
-      protein: Math.round(recipeTotals.protein * 10) / 10,
-      fat: Math.round(recipeTotals.fat * 10) / 10,
-      carbs: Math.round(recipeTotals.carbs * 10) / 10,
-      isRecipe: true,
-      recipe: {
-        ingredients: recipeDraft.ingredients.map((ingredient) => ({
-          foodId: ingredient.foodId,
-          amount: numberValue(ingredient.amount)
-        }))
-      }
-    };
-
-    setFoods((current) => [...current, nextRecipe]);
+  function deleteRecipe() {
+    if (!editingRecipeId) return;
+    if (!window.confirm(`Biztosan törlöd ezt a receptet: ${normalizeFoodName(recipeDraft.name)}?`)) return;
+    setFoods((current) => current.filter((food) => food.id !== editingRecipeId));
+    setEditingRecipeId("");
     setRecipeDraft(createBlankRecipe());
     setIsRecipeEditorOpen(false);
   }
 
   function loadRecipeForEditing(food) {
+    setEditingRecipeId(food?.id || "");
     setIsRecipeEditorOpen(true);
     setIsFoodEditorOpen(false);
     setIsFoodDatabaseOpen(false);
-    setRecipeDraft({
-      name: food?.name || "",
-      category: "Főtt ételek",
-      ingredientSearch: "",
-      ingredientFoodId: "",
-      ingredientAmount: "",
-      ingredients: Array.isArray(food?.recipe?.ingredients)
-        ? food.recipe.ingredients.map((ingredient) => ({
-            foodId: ingredient.foodId,
-            amount: numberValue(ingredient.amount)
-          }))
-        : []
-    });
-
+    setRecipeDraft({ name: normalizeFoodName(food?.name) || "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: normalizeIngredientDrafts(food?.recipe?.ingredients || []) });
     requestAnimationFrame(() => {
       recipeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -483,124 +489,82 @@ export function DataView({
     <AppPage>
       <div ref={recipeCardRef}>
         <AppCard>
-          <AppToggleHeader
-            title="Új recept hozzáadása"
-            summary={isRecipeEditorOpen ? "Recept szerkesztő nyitva" : "Recept szerkesztő"}
-            isOpen={isRecipeEditorOpen}
-            onToggle={() => setIsRecipeEditorOpen((current) => !current)}
-          />
-
+          <AppToggleHeader title={"Új recept hozzáadása"} summary={isRecipeEditorOpen ? "Recept szerkesztő nyitva" : "Recept szerkesztő"} isOpen={isRecipeEditorOpen} onToggle={() => setIsRecipeEditorOpen((current) => !current)} />
           {isRecipeEditorOpen ? (
             <AppNestedCard className="mt-3" variant="surface">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <AppField label="Recept neve">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <AppField label={"Alapanyag keresése"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeDraft.ingredientSearch} placeholder={"Keresés alapanyag névre..."} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))} />
+                </AppField>
+                <AppField label={"Mennyiség"}>
+                  <AppInput inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
+                </AppField>
+              </div>
+              {normalizedRecipeSearch ? (
+                <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label={"Recept alapanyag találatok"}>
+                  {recipeIngredientMatches.map((food) => (
+                    <AppRecipeOption key={food.id} active={recipeDraft.ingredientFoodId === food.id} onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: normalizeFoodName(food.name) }))}>
+                      <strong className="text-sm font-semibold text-slate-100">{normalizeFoodName(food.name)}</strong>
+                      <AppMetaText>{Math.round(food.kcal)} kcal · {normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })}</AppMetaText>
+                    </AppRecipeOption>
+                  ))}
+                </div>
+              ) : (
+                <AppNestedCard className="mt-4" variant="empty">{"Kezdj el gépelni az alapanyag kereséséhez."}</AppNestedCard>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <AppButton type="button" onClick={addRecipeIngredient}>{"Alapanyag hozzáadása"}</AppButton>
+              </div>
+              {recipeDraft.ingredients.length > 0 ? (
+                <div className="mt-4 grid gap-2">
+                  {recipeDraft.ingredients.map((ingredient, index) => {
+                    const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
+                    if (!ingredientFood) return null;
+                    return (
+                      <div className="flex items-center justify-between gap-3 rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3" key={`${ingredient.foodId}-${index}`}>
+                        <div className="min-w-0 flex-1">
+                          <strong className="block text-sm font-semibold text-slate-100">{normalizeFoodName(ingredientFood.name)}</strong>
+                          <div className="mt-2 flex items-center gap-2">
+                            <AppInput className="w-24" inputMode="decimal" min="0" type="number" value={ingredient.amount} onChange={(event) => updateRecipeIngredientAmount(index, event.target.value)} />
+                            <AppMetaText>{ingredientFood.unit}</AppMetaText>
+                          </div>
+                        </div>
+                        <AppButton type="button" onClick={() => removeRecipeIngredient(index)}>{"Törlés"}</AppButton>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              <AppNestedCard className="mt-4 grid gap-1 text-sm text-slate-300" variant="compact">
+                <strong className="text-sm font-semibold text-slate-100">{"Teljes recept összesítés"}</strong>
+                <span>{Math.round(recipeTotals.kcal)} kcal</span>
+                <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
+                <small className="text-xs leading-5 text-slate-500">{"100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg."}</small>
+              </AppNestedCard>
+              <AppField className="mt-4" label={"Recept neve"}>
                 <AppInput value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
               </AppField>
-              <AppField label="Alapanyag keresése">
-                <AppSearchInput
-                      icon={<Search size={16} aria-hidden="true" />}
-                    value={recipeDraft.ingredientSearch}
-                    placeholder="Keresés alapanyag névre..."
-                    onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))}
-                  />
-              </AppField>
-              <AppField label="Mennyiség">
-                <AppInput inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
-              </AppField>
-            </div>
-
-            {normalizedRecipeSearch ? (
-              <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label="Recept alapanyag találatok">
-                {recipeIngredientMatches.map((food) => (
-                  <AppRecipeOption
-                    key={food.id}
-                    active={recipeDraft.ingredientFoodId === food.id}
-                    onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: food.name }))}
-                  >
-                    <strong className="text-sm font-semibold text-slate-100">{food.name}</strong>
-                    <AppMetaText>{Math.round(food.kcal)} kcal · {food.category}</AppMetaText>
-                  </AppRecipeOption>
-                ))}
-              </div>
-            ) : (
-              <AppNestedCard className="mt-4" variant="empty">
-                Kezdj el gépelni az alapanyag kereséséhez.
-              </AppNestedCard>
-            )}
-
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              <AppButton type="button" onClick={addRecipeIngredient}>Alapanyag hozzáadása</AppButton>
-            </div>
-
-            {recipeDraft.ingredients.length > 0 ? (
-              <div className="mt-4 grid gap-2">
-                {recipeDraft.ingredients.map((ingredient, index) => {
-                  const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
-                  if (!ingredientFood) return null;
-                  return (
-                    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3" key={`${ingredient.foodId}-${index}`}>
-                      <div className="min-w-0">
-                        <strong className="block text-sm font-semibold text-slate-100">{ingredientFood.name}</strong>
-                        <AppMetaText>{Math.round((ingredient.amount || 0) * 10) / 10} {ingredientFood.unit}</AppMetaText>
-                      </div>
-                      <AppButton type="button" onClick={() => removeRecipeIngredient(index)}>Törlés</AppButton>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            <AppNestedCard className="mt-4 grid gap-1 text-sm text-slate-300" variant="compact">
-              <strong className="text-sm font-semibold text-slate-100">Teljes recept összesítés</strong>
-              <span>{Math.round(recipeTotals.kcal)} kcal</span>
-              <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
-              <small className="text-xs leading-5 text-slate-500">100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
-            </AppNestedCard>
-
-              <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
+              <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>{"Mentés receptként"}</AppButton>
+              {editingRecipeId ? <AppDangerButton className="mt-3 w-full" type="button" onClick={deleteRecipe}>{"Recept törlése"}</AppDangerButton> : null}
             </AppNestedCard>
           ) : null}
         </AppCard>
       </div>
 
       <AppCard>
-        <AppToggleHeader
-          title="Élelmiszer-adatbázis"
-          summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"}
-          isOpen={isFoodDatabaseOpen}
-          onToggle={() => setIsFoodDatabaseOpen((current) => !current)}
-        />
-
+        <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
         {isFoodDatabaseOpen ? (
           <>
-            <AppField className="mt-3" label="Élelmiszer keresése">
-              <AppSearchInput
-                    icon={<Search size={16} aria-hidden="true" />}
-                  value={foodSearch}
-                  placeholder="Keresés élelmiszer névre..."
-                  onChange={(event) => setFoodSearch(event.target.value)}
-                />
+            <AppField className="mt-3" label={"Élelmiszer keresése"}>
+              <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
             </AppField>
-
             {normalizedFoodSearch ? (
               <AppNestedCard className="mt-3" variant="flush">
                 <div className="divide-y divide-slate-700/35">
                   {filteredFoods.map((food) => (
-                    <AppListRow
-                      active={foodDraft.id === food.id}
-                      key={food.id}
-                      onClick={() => {
-                        if (food.category === "Főtt ételek") {
-                          loadRecipeForEditing(food);
-                          return;
-                        }
-
-                        setFoodDraft(food);
-                        setIsFoodEditorOpen(true);
-                      }}
-                    >
+                    <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
                       <div className="min-w-0 flex-1">
-                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{food.name}</strong>
+                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
                           <span>{Math.round(food.kcal)} kcal</span>
                           <span>P {Math.round((food.protein || 0) * 10) / 10} g</span>
@@ -612,43 +576,22 @@ export function DataView({
                   ))}
                 </div>
               </AppNestedCard>
-            ) : (
-              <AppNestedCard className="mt-3" variant="empty">
-                Kezdj el gépelni az élelmiszer kereséséhez.
-              </AppNestedCard>
-            )}
-
-            <AppToggleHeader
-              className="mt-4"
-              title={foodEditorTitle}
-              isOpen={isFoodEditorOpen}
-              onToggle={() => setIsFoodEditorOpen((current) => !current)}
-            />
-
+            ) : null}
+            <AppToggleHeader className="mt-4" title={foodEditorTitle} summary={foodDraft.id ? "Meglévő étel szerkesztése" : "Új étel rögzítése"} isOpen={isFoodEditorOpen} onToggle={() => setIsFoodEditorOpen((current) => { const next = !current; if (!next) setFoodDraft(createBlankFood()); return next; })} />
             {isFoodEditorOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <AppField label="Név">
-                    <AppInput value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
-                  </AppField>
-                  <AppField label="Kategória">
-                    <AppInput as="select" value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}>
-                      {foodCategories.map((category) => <option key={category}>{category}</option>)}
-                    </AppInput>
-                  </AppField>
-                  <AppField label="Egység">
-                    <AppInput as="select" value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
-                      {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
-                    </AppInput>
-                  </AppField>
+                  <AppField label={"Név"}><AppInput value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} /></AppField>
+                  <AppField label={"Kategória"}><AppInput as="select" value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: normalizeFoodCategory(event.target.value) })}>{Array.from(new Set(foodCategories.map((category) => normalizeFoodCategory(category)))).map((category) => <option key={category}>{category}</option>)}</AppInput></AppField>
+                  <AppField label={"Egység"}><AppInput as="select" value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>{UNITS.map((unit) => <option key={unit}>{unit}</option>)}</AppInput></AppField>
                   {foodFieldConfig.map(({ key, label }) => (
                     <AppField key={key} label={label} tone={key === "fat" ? "fat" : ["protein", "carbs"].includes(key) ? "macro" : "default"}>
-                      <AppInput inputMode="decimal" type="number" value={foodDraft[key]} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })} />
+                      <AppInput inputMode="decimal" type="number" value={getFoodDraftFieldValue(key, foodDraft[key])} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: parseFoodDraftFieldValue(key, event.target.value) })} />
                     </AppField>
                   ))}
                 </div>
-
-                <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>Élelmiszer mentése</AppButton>
+                <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>{"Élelmiszer mentése"}</AppButton>
+                {foodDraft.id ? <AppDangerButton className="mt-3 w-full" type="button" onClick={deleteFood}>{"Élelmiszer törlése"}</AppDangerButton> : null}
               </AppNestedCard>
             ) : null}
           </>
@@ -656,32 +599,12 @@ export function DataView({
       </AppCard>
 
       <AppCard>
-        <AppToggleHeader
-          title="Makró célok"
-          summary={macroTargetSummary}
-          isOpen={isMacroTargetsOpen}
-          onToggle={() => setIsMacroTargetsOpen((current) => !current)}
-        />
-
+        <AppToggleHeader title={"Makró célok"} summary={macroTargetSummary} isOpen={isMacroTargetsOpen} onToggle={() => setIsMacroTargetsOpen((current) => !current)} />
         {isMacroTargetsOpen ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {macroFieldConfig.map(({ key, label }) => (
               <AppField key={key} label={label} tone={key === "fat" ? "fat" : key === "kcal" ? "default" : "macro"}>
-                <AppInput
-                  className="text-base"
-                  inputMode="decimal"
-                  type="number"
-                  value={targetDrafts[key]}
-                  onFocus={() => setActiveTargetField(key)}
-                  onChange={(event) => handleTargetDraftChange(key, event.target.value)}
-                  onBlur={() => {
-                    commitTargetField(key);
-                    setActiveTargetField((current) => (current === key ? null : current));
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") event.currentTarget.blur();
-                  }}
-                />
+                <AppInput className="text-base" inputMode="decimal" type="number" value={targetDrafts[key]} onFocus={() => setActiveTargetField(key)} onChange={(event) => handleTargetDraftChange(key, event.target.value)} onBlur={() => { commitTargetField(key); setActiveTargetField((current) => (current === key ? null : current)); }} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} />
               </AppField>
             ))}
           </div>
@@ -689,30 +612,21 @@ export function DataView({
       </AppCard>
 
       <AppCard>
-        <AppSectionTitle>Import / export / biztonsági mentés</AppSectionTitle>
+        <AppSectionTitle>{"Import / export / biztonsági mentés"}</AppSectionTitle>
         <div className="mt-3 grid gap-3">
           <AppNestedCard>
-            <AppSectionTitle>Teljes adatmentés</AppSectionTitle>
+            <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportJson}>
-                <Download size={18} className="mr-2" /> JSON export
-              </AppButton>
-              <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}>
-                <Upload size={18} className="mr-2" /> JSON import
-              </AppButton>
+              <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
+              <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
             </div>
             <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
           </AppNestedCard>
-
           <AppNestedCard>
-            <AppSectionTitle>Napi napló</AppSectionTitle>
+            <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}>
-                <Download size={18} className="mr-2" /> Napi napló export
-              </AppButton>
-              <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}>
-                <Upload size={18} className="mr-2" /> Napi napló import
-              </AppButton>
+              <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
+              <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
             </div>
             <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
           </AppNestedCard>
@@ -723,3 +637,6 @@ export function DataView({
 }
 
 export default DataView;
+
+
+
