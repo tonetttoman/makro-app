@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import App from "./App.jsx";
 import "./styles.css";
 import "./fixes.css";
-import "./summary-compact.css";
 import "./tailwind.css";
 
 if ("serviceWorker" in navigator) {

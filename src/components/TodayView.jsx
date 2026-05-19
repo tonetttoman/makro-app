@@ -43,8 +43,8 @@ function TodaySummaryCard({ totals, targets }) {
   const progressPercent = progressRatio <= 0 ? 2.5 : Math.min(100, Math.max(progressRatio * 100, 4));
 
   return (
-    <section className="today-summary-card" aria-label="Mai összesítő">
-      <svg className="today-kcal-arc" viewBox="0 0 220 220" aria-hidden="true">
+    <section className="relative grid gap-3 overflow-hidden rounded-[22px] border border-[rgba(148,163,184,0.14)] bg-[linear-gradient(180deg,rgba(23,29,40,0.98),rgba(12,17,27,0.98))] px-[18px] pb-[14px] pt-[15px] shadow-[0_18px_38px_rgba(0,0,0,0.28)] max-[520px]:px-4 max-[520px]:pb-[13px] max-[520px]:pt-[13px] max-[380px]:rounded-[20px]" aria-label="Mai összesítő">
+      <svg className="pointer-events-none absolute left-1/2 top-[10px] h-[min(184px,48vw)] w-[min(184px,48vw)] overflow-visible [transform:translateX(-50%)_translateX(-42px)] max-[520px]:h-[min(170px,45vw)] max-[520px]:w-[min(170px,45vw)] max-[520px]:[transform:translateX(-50%)_translateX(-36px)]" viewBox="0 0 220 220" aria-hidden="true">
         <defs>
           <linearGradient id="today-kcal-arc-gradient" x1="42" y1="28" x2="88" y2="196" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#ffe291" stopOpacity="0.78" />
@@ -52,45 +52,45 @@ function TodaySummaryCard({ totals, targets }) {
             <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.84" />
           </linearGradient>
         </defs>
-        <path className="today-kcal-arc__track" pathLength="100" d="M 148 24 A 88 88 0 1 0 148 196" />
+        <path className="fill-none [stroke:rgba(251,191,36,0.18)] [stroke-width:9] [stroke-linecap:round]" pathLength="100" d="M 148 24 A 88 88 0 1 0 148 196" />
         <path
-          className="today-kcal-arc__progress"
+          className="fill-none [stroke:url(#today-kcal-arc-gradient)] [stroke-width:9] [filter:drop-shadow(0_0_8px_rgba(251,191,36,0.1))] [stroke-linecap:round]"
           pathLength="100"
           d="M 148 24 A 88 88 0 1 0 148 196"
           style={{ strokeDasharray: `${progressPercent} 100` }}
         />
       </svg>
 
-      <div className="today-summary-hero">
-        <div className="today-kcal-content">
-          <div className="today-summary-kcal" style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "4px" }}>
-            <strong style={{ fontWeight: "400", fontSize: "3.5rem", letterSpacing: "-0.02em" }}>
+      <div className="relative z-[1] grid min-h-[126px] content-start justify-items-center gap-1 pt-0 max-[520px]:min-h-[122px]">
+        <div className="grid translate-y-5 justify-items-center gap-1 max-[520px]:translate-y-[18px]">
+          <div className="mt-7 flex translate-x-px items-baseline justify-center gap-[6px] text-center text-[var(--text)]">
+            <strong className="mr-px text-[clamp(2.78rem,12.5vw,4.2rem)] font-[730] leading-[0.9] tracking-[0.02em] [text-shadow:0_10px_22px_rgba(0,0,0,0.18)] max-[380px]:text-[clamp(2.48rem,11.7vw,3.88rem)]">
               {kcal.toLocaleString("hu-HU").replace(/\s/g, " ")}
             </strong>
-            <span style={{ fontWeight: "400", color: "#8a99ad", fontSize: "1.1rem" }}>kcal</span>
+            <span className="translate-y-[-1px] text-[clamp(0.94rem,3.3vw,1.08rem)] font-[540] text-[var(--text)]">kcal</span>
           </div>
 
-          <p className="today-summary-target mb-0 mt-1 text-[0.88rem] font-normal tracking-[0.01em] text-[#8a99ad]">
+          <p className="m-0 translate-y-[-1px] text-[0.88rem] leading-[1.1] text-[var(--muted-strong)]">
             cél: {targets.kcal.toLocaleString("hu-HU")} kcal
           </p>
         </div>
       </div>
 
-      <div className="today-summary-metrics">
+      <div className="relative z-[1] mt-0.5 grid gap-3">
         {SUMMARY_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
-            <div className="today-summary-metric" key={item.key}>
-              <div className="today-summary-metric-row">
-                <span className={`today-summary-metric-icon is-${item.tone}`}>
+            <div className="grid gap-[5px]" key={item.key}>
+              <div className="grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-2 text-[0.85rem] text-[var(--muted-strong)]">
+                <span className={`inline-grid h-[22px] w-[22px] place-items-center rounded-lg ${item.tone === "amber" ? "bg-[rgba(251,191,36,0.06)] text-[var(--amber)]" : "bg-[rgba(56,189,248,0.06)] text-[var(--cyan)]"}`}>
                   <Icon size={15} aria-hidden="true" />
                 </span>
-                <span className="today-summary-metric-label">{item.label}</span>
-                <strong>
+                <span className="font-[690] text-[var(--text)]">{item.label}</span>
+                <strong className="font-[790] text-[var(--text)]">
                   {formatGram(totals[item.key])} / {formatGram(targets[item.key])}
                 </strong>
               </div>
-              <ProgressBar value={totals[item.key]} max={targets[item.key]} tone={item.tone === "amber" ? "amber" : "green"} />
+              <ProgressBar className="h-1 bg-[rgba(148,163,184,0.08)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.02)]" fillClassName={item.tone === "amber" ? "bg-[linear-gradient(90deg,rgba(245,158,11,0.88),rgba(251,191,36,0.94))] shadow-[0_0_10px_rgba(251,191,36,0.1)]" : "bg-[linear-gradient(90deg,rgba(34,197,246,0.9),rgba(96,220,255,0.95))] shadow-[0_0_10px_rgba(56,189,248,0.12)]"} value={totals[item.key]} max={targets[item.key]} tone={item.tone === "amber" ? "amber" : "green"} />
             </div>
           );
         })}
