@@ -10,9 +10,8 @@ import {
   Wheat,
   X
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { calculateEntry, findFoodById } from "../lib/calculations";
-import { CategoryPicker } from "./CategoryPicker";
 import { FoodGrid } from "./FoodGrid";
 import { ProgressBar } from "./ProgressBar";
 import { AppButton, AppCard, AppField, AppInput, AppMetaText, AppNestedCard, AppSearchInput, AppSectionTitle } from "./ui/AppUi";
@@ -297,8 +296,6 @@ export function TodayView({
   entries,
   foods,
   dailyAmounts,
-  activeCategory,
-  categories,
   quickAddFoods,
   foodSearch,
   isQuickAddOpen,
@@ -312,8 +309,12 @@ export function TodayView({
   onAmountChange,
   onRemove
 }) {
-  const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
+  const [isTopMenuOpen, setIsTopMenuOpen] = useState(workDate !== todayKey);
   const isEditingPastDay = workDate !== todayKey;
+
+  useEffect(() => {
+    setIsTopMenuOpen(workDate !== todayKey);
+  }, [workDate, todayKey]);
 
   return (
     <main className="mx-auto w-full max-w-[var(--page-max-width)] p-[var(--page-padding)] pb-28">
@@ -344,16 +345,16 @@ export function TodayView({
             />
           </AppField>
 
-          <CategoryPicker categories={categories} activeCategory={activeCategory} onSelect={onSelectCategory} />
-          <FoodGrid
-            foods={quickAddFoods}
-            dailyAmounts={dailyAmounts}
-            onAdd={(food) => {
-              onAddFood(food);
-              onFoodSearchChange?.("");
-              onToggleQuickAdd?.(false);
-            }}
-          />
+          {foodSearch.trim() ? (
+            <FoodGrid
+              foods={quickAddFoods}
+              onAdd={(food) => {
+                onAddFood(food);
+                onFoodSearchChange?.("");
+                onToggleQuickAdd?.(false);
+              }}
+            />
+          ) : null}
         </AppCard>
       )}
 

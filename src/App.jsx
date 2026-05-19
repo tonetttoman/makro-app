@@ -130,7 +130,6 @@ function removeDailyLog(dailyLogs, date) {
 export default function App() {
   const todayKey = toDateKey();
   const [activeView, setActiveView] = useState("today");
-  const [activeCategory, setActiveCategory] = useState(FOOD_CATEGORIES[0]);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [foodSearch, setFoodSearch] = useState("");
 
@@ -172,21 +171,10 @@ export default function App() {
   }, [foods]);
   const visibleFoods = useMemo(() => {
     const normalizedSearch = normalizeSearch(foodSearch);
-    const filteredFoods = foods.filter((food) => {
-      if (!isRenderableFood(food)) return false;
-      if (normalizedSearch) {
-        return normalizeSearch(food.name).includes(normalizedSearch);
-      }
-      return food.category === activeCategory;
-    });
+    if (!normalizedSearch) return [];
+    const filteredFoods = foods.filter((food) => isRenderableFood(food) && normalizeSearch(food.name).includes(normalizedSearch));
     return sortFoodsByName(filteredFoods);
-  }, [activeCategory, foodSearch, foods]);
-
-  useEffect(() => {
-    if (!foodCategories.includes(activeCategory)) {
-      setActiveCategory(foodCategories[0] || FOOD_CATEGORIES[0]);
-    }
-  }, [activeCategory, foodCategories]);
+  }, [foodSearch, foods]);
 
   useEffect(() => {
     if (!isQuickAddOpen && foodSearch) {
@@ -314,14 +302,11 @@ export default function App() {
           entries={todayEntries}
           foods={foods}
           dailyAmounts={todayFoodAmounts}
-          activeCategory={activeCategory}
-          categories={foodCategories}
           foodSearch={foodSearch}
           isQuickAddOpen={isQuickAddOpen}
           onToggleQuickAdd={(nextState) =>
             setIsQuickAddOpen((current) => (typeof nextState === "boolean" ? nextState : !current))
           }
-          onSelectCategory={setActiveCategory}
           onFoodSearchChange={setFoodSearch}
           onAddFood={handleAddFood}
           onSave={handleConfirmDailyLog}
