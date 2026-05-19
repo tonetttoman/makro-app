@@ -3,3 +3,10 @@ dist/
 .vite/
 .env
 .env.local
+
+dist
+*.log
+temp_bckup
+dataview-diff.txt
+fixes-diff.txt
+screenshots
