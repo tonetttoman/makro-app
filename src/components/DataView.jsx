@@ -1,4 +1,4 @@
-﻿import { Download, Search, Upload } from "lucide-react";
+import { Download, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { calculateEntry } from "../lib/calculations";
 import { FOOD_CATEGORIES } from "../data/foods";
@@ -6,11 +6,15 @@ import {
   AppButton,
   AppCard,
   AppField,
+  AppInput,
+  AppListRow,
   AppMetaText,
+  AppNestedCard,
   AppPage,
+  AppRecipeOption,
+  AppSearchInput,
   AppSectionTitle,
-  AppToggleHeader,
-  appInputClassName
+  AppToggleHeader
 } from "./ui/AppUi";
 
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp", "%"];
@@ -500,46 +504,41 @@ export function DataView({
           />
 
           {isRecipeEditorOpen ? (
-            <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
+            <AppNestedCard className="mt-3" variant="surface">
             <div className="grid gap-3 sm:grid-cols-2">
               <AppField label="Recept neve">
-                <input className={appInputClassName} value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
+                <AppInput value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
               </AppField>
               <AppField label="Alapanyag keresése">
-                <div className="relative">
-                  <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                  <input
-                    className={`${appInputClassName} pl-10 pr-3`}
-                    type="search"
+                <AppSearchInput
+                      icon={<Search size={16} aria-hidden="true" />}
                     value={recipeDraft.ingredientSearch}
                     placeholder="Keresés alapanyag névre..."
                     onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))}
                   />
-                </div>
               </AppField>
               <AppField label="Mennyiség">
-                <input className={appInputClassName} inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
+                <AppInput inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
               </AppField>
             </div>
 
             {normalizedRecipeSearch ? (
               <div className="mt-4 grid max-h-[280px] gap-2 overflow-y-auto" aria-label="Recept alapanyag találatok">
                 {recipeIngredientMatches.map((food) => (
-                  <button
+                  <AppRecipeOption
                     key={food.id}
-                    className={`grid gap-1 rounded-[18px] border px-4 py-3 text-left transition-colors ${recipeDraft.ingredientFoodId === food.id ? "border-cyan-400/35 bg-cyan-400/10" : "border-slate-700/40 bg-[#0c131e] hover:bg-slate-900/60"}`}
-                    type="button"
+                    active={recipeDraft.ingredientFoodId === food.id}
                     onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: food.name }))}
                   >
                     <strong className="text-sm font-semibold text-slate-100">{food.name}</strong>
                     <AppMetaText>{Math.round(food.kcal)} kcal · {food.category}</AppMetaText>
-                  </button>
+                  </AppRecipeOption>
                 ))}
               </div>
             ) : (
-              <div className="mt-4 rounded-[18px] border border-dashed border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-400">
+              <AppNestedCard className="mt-4" variant="empty">
                 Kezdj el gépelni az alapanyag kereséséhez.
-              </div>
+              </AppNestedCard>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2.5">
@@ -564,15 +563,15 @@ export function DataView({
               </div>
             ) : null}
 
-            <div className="mt-4 grid gap-1 rounded-[18px] border border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-300">
+            <AppNestedCard className="mt-4 grid gap-1 text-sm text-slate-300" variant="compact">
               <strong className="text-sm font-semibold text-slate-100">Teljes recept összesítés</strong>
               <span>{Math.round(recipeTotals.kcal)} kcal</span>
               <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
               <small className="text-xs leading-5 text-slate-500">100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg.</small>
-            </div>
+            </AppNestedCard>
 
               <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveRecipe}>Mentés receptként</AppButton>
-            </div>
+            </AppNestedCard>
           ) : null}
         </AppCard>
       </div>
@@ -588,26 +587,21 @@ export function DataView({
         {isFoodDatabaseOpen ? (
           <>
             <AppField className="mt-3" label="Élelmiszer keresése">
-              <div className="relative">
-                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  className={`${appInputClassName} pl-10 pr-3`}
-                  type="search"
+              <AppSearchInput
+                    icon={<Search size={16} aria-hidden="true" />}
                   value={foodSearch}
                   placeholder="Keresés élelmiszer névre..."
                   onChange={(event) => setFoodSearch(event.target.value)}
                 />
-              </div>
             </AppField>
 
             {normalizedFoodSearch ? (
-              <div className="mt-3 overflow-hidden rounded-[22px] border border-slate-700/40 bg-[#0d1420]">
+              <AppNestedCard className="mt-3" variant="flush">
                 <div className="divide-y divide-slate-700/35">
                   {filteredFoods.map((food) => (
-                    <button
-                      className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors ${foodDraft.id === food.id ? "bg-cyan-400/8" : "bg-transparent hover:bg-slate-900/35"}`}
+                    <AppListRow
+                      active={foodDraft.id === food.id}
                       key={food.id}
-                      type="button"
                       onClick={() => {
                         if (food.category === "Főtt ételek") {
                           loadRecipeForEditing(food);
@@ -627,51 +621,48 @@ export function DataView({
                           <span>Ch {Math.round((food.carbs || 0) * 10) / 10} g</span>
                         </div>
                       </div>
-                    </button>
+                    </AppListRow>
                   ))}
                 </div>
-              </div>
+              </AppNestedCard>
             ) : (
-              <div className="mt-3 rounded-[18px] border border-dashed border-slate-700/40 bg-[#0c131e] px-4 py-3 text-sm text-slate-400">
+              <AppNestedCard className="mt-3" variant="empty">
                 Kezdj el gépelni az élelmiszer kereséséhez.
-              </div>
+              </AppNestedCard>
             )}
 
-            <button
-              className="mt-4 flex w-full items-center justify-between rounded-[20px] border border-white/6 bg-[#0d1420] px-4 py-3 text-left text-slate-50"
-              type="button"
-              onClick={() => setIsFoodEditorOpen((current) => !current)}
-              aria-expanded={isFoodEditorOpen}
-            >
-              <span className="min-w-0 text-sm font-semibold">{foodEditorTitle}</span>
-              <strong className="ml-4 shrink-0 text-cyan-300">{isFoodEditorOpen ? "▲" : "▶"}</strong>
-            </button>
+            <AppToggleHeader
+              className="mt-4"
+              title={foodEditorTitle}
+              isOpen={isFoodEditorOpen}
+              onToggle={() => setIsFoodEditorOpen((current) => !current)}
+            />
 
             {isFoodEditorOpen ? (
-              <div className="mt-3 rounded-[22px] border border-slate-700/40 bg-[#0f1623] p-4">
+              <AppNestedCard className="mt-3" variant="surface">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <AppField label="Név">
-                    <input className={appInputClassName} value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
+                    <AppInput value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} />
                   </AppField>
                   <AppField label="Kategória">
-                    <select className={appInputClassName} value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}>
+                    <AppInput as="select" value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: event.target.value })}>
                       {foodCategories.map((category) => <option key={category}>{category}</option>)}
-                    </select>
+                    </AppInput>
                   </AppField>
                   <AppField label="Egység">
-                    <select className={appInputClassName} value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
+                    <AppInput as="select" value={foodDraft.unit} onChange={(event) => setFoodDraft({ ...foodDraft, unit: event.target.value })}>
                       {UNITS.map((unit) => <option key={unit}>{unit}</option>)}
-                    </select>
+                    </AppInput>
                   </AppField>
                   {foodFieldConfig.map(({ key, label }) => (
                     <AppField key={key} label={label} tone={key === "fat" ? "fat" : ["protein", "carbs"].includes(key) ? "macro" : "default"}>
-                      <input className={appInputClassName} inputMode="decimal" type="number" value={foodDraft[key]} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })} />
+                      <AppInput inputMode="decimal" type="number" value={foodDraft[key]} onChange={(event) => setFoodDraft({ ...foodDraft, [key]: numberValue(event.target.value) })} />
                     </AppField>
                   ))}
                 </div>
 
                 <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>Élelmiszer mentése</AppButton>
-              </div>
+              </AppNestedCard>
             ) : null}
           </>
         ) : null}
@@ -689,8 +680,8 @@ export function DataView({
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {macroFieldConfig.map(({ key, label }) => (
               <AppField key={key} label={label} tone={key === "fat" ? "fat" : key === "kcal" ? "default" : "macro"}>
-                <input
-                  className={`${appInputClassName} text-base`}
+                <AppInput
+                  className="text-base"
                   inputMode="decimal"
                   type="number"
                   value={targetDrafts[key]}
@@ -713,7 +704,7 @@ export function DataView({
       <AppCard>
         <AppSectionTitle>Import / export / biztonsági mentés</AppSectionTitle>
         <div className="mt-3 grid gap-3">
-          <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
+          <AppNestedCard>
             <AppSectionTitle>Teljes adatmentés</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
               <AppButton className="w-full" variant="action" type="button" onClick={exportJson}>
@@ -724,9 +715,9 @@ export function DataView({
               </AppButton>
             </div>
             <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
-          </div>
+          </AppNestedCard>
 
-          <div className="rounded-[22px] border border-slate-700/40 bg-[#0d1420] p-4">
+          <AppNestedCard>
             <AppSectionTitle>Napi napló</AppSectionTitle>
             <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
               <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}>
@@ -737,7 +728,7 @@ export function DataView({
               </AppButton>
             </div>
             <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
-          </div>
+          </AppNestedCard>
         </div>
       </AppCard>
     </AppPage>

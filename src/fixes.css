@@ -69,8 +69,7 @@
   padding-top: 2px;
 }
 
-.page--stats,
-.page--data {
+.page--stats {
   display: grid;
   gap: 12px;
 }
