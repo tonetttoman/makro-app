@@ -1,18 +1,24 @@
 import { CalendarDays, PencilLine } from "lucide-react";
 import { useMemo, useState } from "react";
-import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals, movingAverage } from "../lib/calculations";
+import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
-import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle, AppTitle } from "./ui/AppUi";
+import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle } from "./ui/AppUi";
 
-function toPoints(values, max, height = 58) {
-  return values
-    .map((value, index) => {
-      const x = values.length === 1 ? 3 : 3 + (index / (values.length - 1)) * 94;
-      const y = height - 4 - (value / max) * (height - 10);
-      return `${x},${Math.max(4, Math.min(height - 4, y))}`;
-    })
-    .join(" ");
-}
+const TREND_SERIES = [
+  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]" },
+  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]" },
+  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]" },
+  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]" }
+];
+
+const CHART_HEIGHT = 220;
+const CHART_TOP = 12;
+const CHART_BOTTOM = 12;
+const CHART_LEFT = 12;
+const CHART_RIGHT = 96;
+const BAND_GAP = 8;
+const BAND_COUNT = 4;
+const BAND_HEIGHT = (CHART_HEIGHT - CHART_TOP - CHART_BOTTOM - BAND_GAP * (BAND_COUNT - 1)) / BAND_COUNT;
 
 function getDailyLogByDate(dailyLogs, dateKey) {
   return (Array.isArray(dailyLogs) ? dailyLogs : []).find((log) => String(log.date).trim().slice(0, 10) === dateKey);
@@ -30,10 +36,6 @@ function hasAnyMacroValue(totals) {
 function formatStat(value) {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
-
-function formatKcal(value) {
-  return `${Math.round(Number(value) || 0)} kcal`;
 }
 
 function formatDateRange(startKey, endKey) {
@@ -118,6 +120,84 @@ function sumRows(rows) {
     }),
     { kcal: 0, protein: 0, fat: 0, carbs: 0 }
   );
+}
+
+function calculateMovingAverageSeries(items, key, windowSize) {
+  return items.map((_, index) => {
+    const startIndex = Math.max(0, index - windowSize + 1);
+    const slice = items.slice(startIndex, index + 1);
+    const sum = slice.reduce((total, item) => total + (Number(item[key]) || 0), 0);
+    return slice.length ? sum / slice.length : 0;
+  });
+}
+
+function buildTrendChartData(rows, windowSize) {
+  const sortedRows = [...rows].sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+  const kcalSeries = calculateMovingAverageSeries(sortedRows, "kcal", windowSize);
+  const proteinSeries = calculateMovingAverageSeries(sortedRows, "protein", windowSize);
+  const fatSeries = calculateMovingAverageSeries(sortedRows, "fat", windowSize);
+  const carbsSeries = calculateMovingAverageSeries(sortedRows, "carbs", windowSize);
+
+  return sortedRows.map((row, index) => ({
+    dateKey: row.dateKey,
+    kcalAverage: kcalSeries[index],
+    proteinAverage: proteinSeries[index],
+    fatAverage: fatSeries[index],
+    carbsAverage: carbsSeries[index]
+  }));
+}
+
+function buildSmoothPath(points) {
+  if (!points.length) return "";
+  if (points.length === 1) {
+    const [point] = points;
+    return `M ${point.x} ${point.y} L ${point.x + 0.01} ${point.y}`;
+  }
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const previous = points[index - 1] || points[index];
+    const current = points[index];
+    const next = points[index + 1];
+    const afterNext = points[index + 2] || next;
+
+    const controlPoint1X = current.x + (next.x - previous.x) / 6;
+    const controlPoint1Y = current.y + (next.y - previous.y) / 6;
+    const controlPoint2X = next.x - (afterNext.x - current.x) / 6;
+    const controlPoint2Y = next.y - (afterNext.y - current.y) / 6;
+
+    path += ` C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${next.x} ${next.y}`;
+  }
+
+  return path;
+}
+
+function buildBandPoints(values, bandIndex) {
+  const bandTop = CHART_TOP + bandIndex * (BAND_HEIGHT + BAND_GAP);
+  const bandBottom = bandTop + BAND_HEIGHT;
+  const finiteValues = values.filter((value) => Number.isFinite(value));
+  const minValue = finiteValues.length ? Math.min(...finiteValues) : 0;
+  const maxValue = finiteValues.length ? Math.max(...finiteValues) : 0;
+  const spread = maxValue - minValue;
+  const centerY = bandTop + BAND_HEIGHT / 2;
+  const verticalPadding = 6;
+  const usableHeight = Math.max(10, BAND_HEIGHT - verticalPadding * 2);
+
+  return values.map((value, index) => {
+    const x = values.length === 1 ? (CHART_LEFT + CHART_RIGHT) / 2 : CHART_LEFT + (index / (values.length - 1)) * (CHART_RIGHT - CHART_LEFT);
+    let y = centerY;
+
+    if (spread > 0) {
+      const normalized = (value - minValue) / spread;
+      y = bandBottom - verticalPadding - normalized * usableHeight;
+    }
+
+    return {
+      x,
+      y: Math.max(bandTop + verticalPadding, Math.min(bandBottom - verticalPadding, y))
+    };
+  });
 }
 
 function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
@@ -230,77 +310,105 @@ function buildMonthGroups(rows) {
     .sort((a, b) => b.id.localeCompare(a.id));
 }
 
-function SummaryMetricLine({ label, children }) {
-  return (
-    <div className="mb-3 grid gap-1.5">
-      <AppMetaText className="text-[0.72rem] font-semibold uppercase tracking-[0.05em] text-slate-400">{label}</AppMetaText>
-      <div className="flex flex-wrap gap-3">{children}</div>
-    </div>
-  );
-}
+function TrendOverviewPanel({ rows, ratio, windowSize }) {
+  if (!rows.length) {
+    return (
+      <AppCard className="p-[18px_18px_16px]">
+        <AppMetaText className="block text-slate-400">Még nincs elég adat a trendhez.</AppMetaText>
+      </AppCard>
+    );
+  }
 
-function SummaryValue({ children }) {
-  return <AppSectionTitle className="text-[1.05rem] font-semibold text-slate-100">{children}</AppSectionTitle>;
-}
-
-function SummaryLines({ ratio, totals, totalsLabel, emptyText }) {
-  if (!totals) return <AppMetaText className="block text-slate-400">{emptyText}</AppMetaText>;
-
-  return (
-    <div className="mt-4 border-t border-white/5 pt-4">
-      <SummaryMetricLine label={totalsLabel}>
-        <SummaryValue>{formatKcal(totals.kcal)}</SummaryValue>
-        <SummaryValue>P {formatStat(totals.protein)}g</SummaryValue>
-        <SummaryValue>F {formatStat(totals.fat)}g</SummaryValue>
-        <SummaryValue>Ch {formatStat(totals.carbs)}g</SummaryValue>
-      </SummaryMetricLine>
-      <SummaryMetricLine label="Makróarány">
-        <SummaryValue>P {Math.round(ratio.protein)}%</SummaryValue>
-        <SummaryValue>F {Math.round(ratio.fat)}%</SummaryValue>
-        <SummaryValue>Ch {Math.round(ratio.carbs)}%</SummaryValue>
-      </SummaryMetricLine>
-    </div>
-  );
-}
-
-function MacroTrendChart({ rows, target }) {
-  const values = rows.map((row) => row.kcal);
-  const averageValues = movingAverage(values, 7);
-  const max = Math.max(target, ...values, ...averageValues, 1) * 1.08;
-  const targetY = 58 - 4 - (target / max) * 48;
-  const barWidth = Math.max(1.4, 84 / Math.max(values.length, 1));
-  const current = values[values.length - 1] || 0;
+  const chartData = buildTrendChartData(rows, windowSize);
+  const seriesBands = TREND_SERIES.map((series, index) => {
+    const values = chartData.map((item) => Number(item[series.key]) || 0);
+    const points = buildBandPoints(values, index);
+    return {
+      ...series,
+      latestValue: values[values.length - 1] || 0,
+      path: buildSmoothPath(points),
+      bandTop: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP),
+      bandBottom: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT,
+      labelY: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT * 0.42
+    };
+  });
 
   return (
-    <AppNestedCard className="my-3.5" variant="compact">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <AppMetaText className="block text-[0.75rem] font-semibold uppercase text-amber-300">Kalória trend</AppMetaText>
-          <AppSectionTitle className="mt-1 text-[1.3rem]">{formatKcal(current)} ma</AppSectionTitle>
-        </div>
-        <AppMetaText className="text-[0.85rem]">Cél: {target} kcal</AppMetaText>
-      </div>
-      <svg viewBox="0 0 100 64" preserveAspectRatio="none" className="h-[74px] w-full" aria-label="Napi kalória grafikon">
-        <line x1="2" x2="98" y1={targetY} y2={targetY} style={{ stroke: "rgba(245,176,65,0.3)", strokeWidth: 1 }} />
-        {values.map((value, index) => {
-          const x = 4 + (index / Math.max(values.length - 1, 1)) * 88;
-          const height = Math.max(1, (value / max) * 48);
+    <AppCard className="p-[18px_18px_16px]">
+      <div className="grid grid-cols-4 gap-x-3 gap-y-1">
+        {seriesBands.map((series) => (
+          <AppMetaText key={series.key} className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[0.7rem] text-slate-200">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${series.dotClass}`} aria-hidden="true" />
+            <span>{series.label} {Math.round(series.latestValue || 0)}</span>
+          </AppMetaText>
+        ))}
+
+        <span className="flex min-w-0 items-center gap-1.5" aria-hidden="true">
+          <span className="h-2 w-2 shrink-0 rounded-full bg-transparent" />
+        </span>
+        {seriesBands.slice(1).map((series) => {
+          const ratioValue = series.key === "proteinAverage" ? ratio.protein : series.key === "fatAverage" ? ratio.fat : ratio.carbs;
           return (
-            <rect
-              key={rows[index].dateKey}
-              x={x}
-              y={58 - height}
-              width={barWidth}
-              height={height}
-              rx="0.8"
-              style={{ fill: "rgba(255,255,255,0.08)" }}
-            />
+            <AppMetaText key={`${series.key}-ratio`} className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[0.68rem] text-slate-400">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${series.dotClass}`} aria-hidden="true" />
+              <span>{series.label} {Math.round(ratioValue)}%</span>
+            </AppMetaText>
           );
         })}
-        <polyline points={toPoints(values, max)} style={{ fill: "none", stroke: "#f5b041", strokeWidth: 1.8 }} />
-        <polyline points={toPoints(averageValues, max)} style={{ fill: "none", stroke: "#38bdf8", strokeWidth: 1.4, strokeDasharray: "2 2" }} />
-      </svg>
-    </AppNestedCard>
+      </div>
+
+      <div className="relative mt-4 h-[220px] w-full" aria-label="Mozgóátlag trend">
+        {seriesBands.map((series) => (
+          <span
+            key={`${series.key}-label`}
+            className="pointer-events-none absolute left-0 select-none text-[0.62rem] leading-none text-slate-500"
+            style={{ top: `${(series.labelY / CHART_HEIGHT) * 100}%`, color: series.color, opacity: 0.58 }}
+          >
+            {series.label}
+          </span>
+        ))}
+        <svg viewBox={`0 0 100 ${CHART_HEIGHT}`} preserveAspectRatio="none" className="h-full w-full">
+          {seriesBands.map((series, index) => (
+            <g key={series.key}>
+              <line
+                x1={CHART_LEFT}
+                x2={CHART_RIGHT}
+                y1={series.bandBottom}
+                y2={series.bandBottom}
+                stroke="rgba(148,163,184,0.11)"
+                strokeWidth="0.7"
+                vectorEffect="non-scaling-stroke"
+              />
+              {index < seriesBands.length - 1 ? (
+                <line
+                  x1={CHART_LEFT}
+                  x2={CHART_RIGHT}
+                  y1={series.bandBottom + BAND_GAP / 2}
+                  y2={series.bandBottom + BAND_GAP / 2}
+                  stroke="rgba(255,255,255,0.045)"
+                  strokeWidth="0.55"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ) : null}
+              <path
+                d={series.path}
+                fill="none"
+                stroke={series.color}
+                strokeWidth="1.15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                opacity="0.98"
+              />
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div className="mt-2 flex items-center justify-start">
+        <AppMetaText className="text-[0.68rem] text-slate-400">{windowSize} napos mozgóátlag</AppMetaText>
+      </div>
+    </AppCard>
   );
 }
 
@@ -361,7 +469,7 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
       {isOpen && (
         <AppNestedCard className="mt-2 grid gap-3" variant="compact">
           <AppMetaText className="block text-[0.8rem] text-slate-400">
-            Makróarány: P {Math.round(ratio.protein)}% · F {Math.round(ratio.fat)}% · Ch {Math.round(ratio.carbs)}%
+            P {Math.round(ratio.protein)}% · F {Math.round(ratio.fat)}% · Ch {Math.round(ratio.carbs)}%
           </AppMetaText>
 
           <AppButton className="w-full gap-1.5" variant="action" type="button" onClick={() => onLoadToToday?.(row.dateKey, row.entries)}>
@@ -402,10 +510,6 @@ function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoa
 
       {isOpen && (
         <div className="pl-2 pt-1">
-          <AppNestedCard className="grid gap-1 text-[0.8rem] text-slate-400" variant="compact">
-            <span>Átlag: {formatKcal(group.average.kcal)} · P {formatStat(group.average.protein)}g · F {formatStat(group.average.fat)}g · Ch {formatStat(group.average.carbs)}g</span>
-            <span>Makróarány: P {Math.round(group.ratio.protein)}% · F {Math.round(group.ratio.fat)}% · Ch {Math.round(group.ratio.carbs)}%</span>
-          </AppNestedCard>
           <div className="mt-3 border-t border-white/5 pt-1">
             {visibleRows.map((row) => (
               <DaySummaryRow
@@ -511,43 +615,13 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
       : activeMonthId
         ? monthGroups.find((month) => month.id === activeMonthId)
         : null;
-  const monthRangeLabel = baseKeys.length ? formatDateRange(baseKeys[0], baseKeys[baseKeys.length - 1]) : "";
 
-  let summaryTitle = title || "Havi összesítő";
-  let summaryRangeLabel = monthRangeLabel;
   let summaryRatio = ratio;
-  let summaryTotals = loggedRows.length ? average : null;
-  let summaryTotalsLabel = "Átlag";
-  let summaryEmptyText = "Ebben az időszakban még nincs mentett nap.";
+  if (activeMonth) summaryRatio = activeMonth.ratio;
+  if (activeWeek) summaryRatio = activeWeek.ratio;
+  if (activeDay) summaryRatio = calculateMacroRatio(activeDay);
 
-  if (activeMonth) {
-    summaryTitle = activeMonth.label;
-    summaryRangeLabel = "";
-    summaryRatio = activeMonth.ratio;
-    summaryTotals = activeMonth.loggedRows.length ? activeMonth.average : null;
-    summaryTotalsLabel = "Átlag";
-    summaryEmptyText = "Ebben a hónapban még nincs mentett nap.";
-  }
-
-  if (activeWeek) {
-    summaryTitle = activeWeek.label;
-    summaryRangeLabel = activeWeek.rangeLabel;
-    summaryRatio = activeWeek.ratio;
-    summaryTotals = activeWeek.loggedRows.length ? activeWeek.average : null;
-    summaryTotalsLabel = "Átlag";
-    summaryEmptyText = "Ebben a hétben még nincs mentett nap.";
-  }
-
-  if (activeDay) {
-    const dayRatio = calculateMacroRatio(activeDay);
-    const isSavedDay = activeDay.sourceType !== "empty";
-    summaryTitle = formatWeekdayName(activeDay.dateKey);
-    summaryRangeLabel = formatShortDate(activeDay.dateKey);
-    summaryRatio = dayRatio;
-    summaryTotals = isSavedDay ? activeDay : null;
-    summaryTotalsLabel = "Összesen";
-    summaryEmptyText = "Ehhez a naphoz még nincs mentett adat.";
-  }
+  const movingAverageWindow = activeWeek || activeDay ? 7 : 30;
 
   function toggleMonth(monthId) {
     setOpenMonths((current) => {
@@ -575,14 +649,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
 
   return (
     <AppPage className="pt-3">
-      <AppCard className="p-[22px_20px]">
-        <div className="mb-3.5 min-w-0">
-          <AppTitle className="my-1 text-[1.6rem] font-semibold tracking-normal">{summaryTitle}</AppTitle>
-          {summaryRangeLabel && <AppMetaText className="block text-[0.85rem] text-slate-400">{summaryRangeLabel}</AppMetaText>}
-        </div>
-        {!isMonthlyView && <MacroTrendChart rows={rows} target={targets.kcal} />}
-        <SummaryLines ratio={summaryRatio} totals={summaryTotals} totalsLabel={summaryTotalsLabel} emptyText={summaryEmptyText} />
-      </AppCard>
+      <TrendOverviewPanel rows={loggedRows} ratio={summaryRatio} windowSize={movingAverageWindow} />
 
       <AppCard aria-label={isMonthlyView ? "Havi hónapok" : "Heti összesítő"}>
         {isMonthlyView
