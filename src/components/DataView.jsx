@@ -288,7 +288,7 @@ export function DataView({
   }, [normalizedFoodSearch, sortedFoods]);
 
   const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Új vagy szerkesztett élelmiszer";
-  const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P${roundTargetNumber(targets?.protein)} · Zs${roundTargetNumber(targets?.fat)} · CH${roundTargetNumber(targets?.carbs)}`;
+  const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
     const candidates = sortFoodsByName((foods || []).filter((food) => !food.isRecipe));
