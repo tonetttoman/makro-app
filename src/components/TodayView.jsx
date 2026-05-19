@@ -368,7 +368,9 @@ export function TodayView({
         onToggleMenu={(next) => setIsTopMenuOpen((current) => (typeof next === "boolean" ? next : !current))}
         onSave={() => {
           onSave?.();
-          setIsTopMenuOpen(false);
+          if (workDate === todayKey) {
+            setIsTopMenuOpen(false);
+          }
         }}
         onWorkDateChange={(nextDate) => {
           onWorkDateChange?.(nextDate);

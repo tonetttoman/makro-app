@@ -58,6 +58,19 @@ function normalizeSearch(value) {
     .trim();
 }
 
+function getFoodSearchRank(foodName, query) {
+  const normalizedName = normalizeSearch(foodName);
+  if (!query || !normalizedName) return Number.POSITIVE_INFINITY;
+  if (normalizedName === query) return 0;
+  if (normalizedName.startsWith(query)) return 1;
+
+  const words = normalizedName.split(/[\s\-_/(),.]+/).filter(Boolean);
+  if (words.some((word) => word.startsWith(query))) return 2;
+  if (normalizedName.includes(query)) return 3;
+
+  return Number.POSITIVE_INFINITY;
+}
+
 function isRenderableFood(food) {
   return Boolean(
     food &&
@@ -172,8 +185,20 @@ export default function App() {
   const visibleFoods = useMemo(() => {
     const normalizedSearch = normalizeSearch(foodSearch);
     if (!normalizedSearch) return [];
-    const filteredFoods = foods.filter((food) => isRenderableFood(food) && normalizeSearch(food.name).includes(normalizedSearch));
-    return sortFoodsByName(filteredFoods);
+
+    return foods
+      .filter((food) => isRenderableFood(food))
+      .map((food) => ({
+        food,
+        rank: getFoodSearchRank(food.name, normalizedSearch)
+      }))
+      .filter(({ rank }) => Number.isFinite(rank))
+      .sort(
+        (left, right) =>
+          left.rank - right.rank ||
+          left.food.name.localeCompare(right.food.name, "hu", { sensitivity: "base" })
+      )
+      .map(({ food }) => food);
   }, [foodSearch, foods]);
 
   useEffect(() => {
