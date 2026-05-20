@@ -47,7 +47,11 @@ function slugify(value) {
 }
 
 function normalizeEntityName(value) {
-  return String(value || "").trim().toLocaleLowerCase("hu-HU");
+  return normalizeFoodName(value)
+    .replace(/\s+/g, " ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("hu-HU");
 }
 
 function numberValue(value, fallback = 0) {
@@ -468,9 +472,9 @@ export function DataView({
       window.alert("Adj meg nevet az élelmiszerhez.");
       return;
     }
-    const nextFood = {
+    const normalizedName = normalizeEntityName(name);
+    const nextFoodBase = {
       ...foodDraft,
-      id: foodDraft.id || `${slugify(name)}-${Date.now()}`,
       name,
       category: normalizeFoodCategory(foodDraft.category) || normalizeFoodCategory(foodCategories[0]) || normalizeFoodCategory(FOOD_CATEGORIES[0]),
       unit: foodDraft.unit || "g",
@@ -483,9 +487,32 @@ export function DataView({
       carbs: Math.max(0, numberValue(foodDraft.carbs))
     };
     setFoods((current) => {
-      const existingIndex = current.findIndex((food) => food.id === nextFood.id);
-      if (existingIndex === -1) return [...current, nextFood];
-      return current.map((food) => (food.id === nextFood.id ? nextFood : food));
+      const currentFood = foodDraft.id ? current.find((food) => food.id === foodDraft.id) : null;
+      const currentFoodName = currentFood ? normalizeEntityName(currentFood.name) : "";
+      const existingByName = current.find((food) => normalizeEntityName(food.name) === normalizedName);
+      const existingByOtherName = current.find((food) => food.id !== foodDraft.id && normalizeEntityName(food.name) === normalizedName);
+
+      if (!foodDraft.id) {
+        const targetFood = existingByName;
+        const nextFood = { ...nextFoodBase, id: targetFood?.id || `${slugify(name)}-${Date.now()}` };
+        if (targetFood) {
+          return current.map((food) => (food.id === targetFood.id ? nextFood : food));
+        }
+        return [...current, nextFood];
+      }
+
+      if (existingByOtherName) {
+        const nextFood = { ...nextFoodBase, id: existingByOtherName.id };
+        return current.map((food) => (food.id === existingByOtherName.id ? nextFood : food));
+      }
+
+      if (currentFood && currentFoodName === normalizedName) {
+        const nextFood = { ...nextFoodBase, id: foodDraft.id };
+        return current.map((food) => (food.id === foodDraft.id ? nextFood : food));
+      }
+
+      const nextFood = { ...nextFoodBase, id: `${slugify(name)}-${Date.now()}` };
+      return [...current, nextFood];
     });
   }
 

@@ -87,7 +87,14 @@ export function AppButton({ children, variant = "secondary", className = "", ...
   const variantClass = appButtonClassNames[variant] || appButtonClassNames.secondary;
 
   return (
-    <button className={cn(variantClass, className)} {...props}>
+    <button
+      className={cn(
+        variantClass,
+        "transition duration-150 active:scale-[0.99] active:bg-cyan-400/15 active:ring-1 active:ring-cyan-300/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
+        className
+      )}
+      {...props}
+    >
       {children}
     </button>
   );
