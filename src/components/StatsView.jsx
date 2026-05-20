@@ -327,6 +327,9 @@ function TrendOverviewPanel({ rows, ratio, windowSize }) {
       ...series,
       latestValue: values[values.length - 1] || 0,
       path: buildSmoothPath(points),
+      valueLabel: series.label === "kcal" ? String(Math.round(values[values.length - 1] || 0)) : `${series.label} ${Math.round(values[values.length - 1] || 0)}`,
+      valueLabelLeft: "88%",
+      valueLabelTop: `${((CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + 6) / CHART_HEIGHT) * 100}%`,
       bandTop: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP),
       bandBottom: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT,
       labelY: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT * 0.42
@@ -394,7 +397,7 @@ function TrendOverviewPanel({ rows, ratio, windowSize }) {
                 d={series.path}
                 fill="none"
                 stroke={series.color}
-                strokeWidth="1.15"
+                strokeWidth="1.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
@@ -403,6 +406,20 @@ function TrendOverviewPanel({ rows, ratio, windowSize }) {
             </g>
           ))}
         </svg>
+        {seriesBands.map((series) => (
+          <span
+            key={`${series.key}-latest`}
+            className="pointer-events-none absolute z-10 select-none whitespace-nowrap text-[0.64rem] font-medium leading-none"
+            style={{
+              left: series.valueLabelLeft,
+              top: series.valueLabelTop,
+              color: series.color,
+              opacity: 0.82
+            }}
+          >
+            {series.valueLabel}
+          </span>
+        ))}
       </div>
 
       <div className="mt-2 flex items-center justify-start">
