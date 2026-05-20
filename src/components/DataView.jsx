@@ -193,6 +193,11 @@ function sortFoodsByName(items) {
   return [...items].sort((a, b) => normalizeFoodName(a.name).localeCompare(normalizeFoodName(b.name), "hu", { sensitivity: "base" }));
 }
 
+function formatFoodMacro(value) {
+  const rounded = Math.round((numberValue(value) + Number.EPSILON) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
 function createBlankFood() {
   return { id: "", name: "", category: normalizeFoodCategory(FOOD_CATEGORIES[0]), unit: "g", baseAmount: 100, step: 10, defaultAmount: 100, kcal: "", protein: "", fat: "", carbs: "" };
 }
@@ -231,9 +236,11 @@ export function DataView({
   const dailyLogInputRef = useRef(null);
   const recipeCardRef = useRef(null);
   const [foodSearch, setFoodSearch] = useState("");
+  const [foodBrowserSearch, setFoodBrowserSearch] = useState("");
   const [foodDraft, setFoodDraft] = useState(createBlankFood());
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
+  const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe());
@@ -254,7 +261,9 @@ export function DataView({
   useEffect(() => {
     if (!isFoodDatabaseOpen) {
       setFoodSearch("");
+      setFoodBrowserSearch("");
       setFoodDraft(createBlankFood());
+      setIsFoodBrowserOpen(false);
       setIsFoodEditorOpen(false);
     }
   }, [isFoodDatabaseOpen]);
@@ -273,6 +282,7 @@ export function DataView({
 
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
   const normalizedFoodSearch = normalizeSearch(foodSearch);
+  const normalizedFoodBrowserSearch = normalizeSearch(foodBrowserSearch);
   const filteredFoods = useMemo(() => {
     if (!normalizedFoodSearch) return [];
     return sortedFoods
@@ -287,6 +297,20 @@ export function DataView({
       .slice(0, 16)
       .map(({ food }) => food);
   }, [normalizedFoodSearch, sortedFoods]);
+  const browserFoods = useMemo(() => {
+    if (!normalizedFoodBrowserSearch) return sortedFoods.slice(0, 50);
+    return sortedFoods
+      .map((food) => {
+        const normalizedName = normalizeSearch(normalizeFoodName(food.name));
+        const starts = normalizedName.startsWith(normalizedFoodBrowserSearch) ? 0 : 1;
+        const index = normalizedName.indexOf(normalizedFoodBrowserSearch);
+        return { food, starts, index };
+      })
+      .filter(({ index }) => index >= 0)
+      .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
+      .slice(0, 50)
+      .map(({ food }) => food);
+  }, [normalizedFoodBrowserSearch, sortedFoods]);
 
   const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Új vagy szerkesztett élelmiszer";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
@@ -598,6 +622,41 @@ export function DataView({
         <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
         {isFoodDatabaseOpen ? (
           <>
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <AppButton type="button" onClick={() => setIsFoodBrowserOpen((current) => !current)}>
+                {isFoodBrowserOpen ? "Adatbázis böngészése bezárása" : "Adatbázis böngészése"}
+              </AppButton>
+            </div>
+            {isFoodBrowserOpen ? (
+              <AppNestedCard className="mt-3" variant="surface">
+                <AppField label={"Keresés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodBrowserSearch} placeholder={"Keresés az adatbázisban..."} onChange={(event) => setFoodBrowserSearch(event.target.value)} />
+                </AppField>
+                <AppMetaText className="mt-3">{`${browserFoods.length} / ${sortedFoods.length} tétel`}</AppMetaText>
+                {browserFoods.length ? (
+                  <div className="mt-3 grid gap-2.5" aria-label={"Élelmiszer-adatbázis böngésző találatok"}>
+                    {browserFoods.map((food) => {
+                      const baseAmount = Math.max(1, numberValue(food.baseAmount, 100));
+                      const unit = food.unit || "g";
+                      return (
+                        <AppNestedCard className="grid gap-1.5" key={`browser-${food.id}`} variant="compact">
+                          <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
+                          <AppMetaText>{`${normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })} · ${baseAmount} ${unit}`}</AppMetaText>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-300">
+                            <span>{`${Math.round(numberValue(food.kcal))} kcal`}</span>
+                            <span>{`P ${formatFoodMacro(food.protein)} g`}</span>
+                            <span>{`F ${formatFoodMacro(food.fat)} g`}</span>
+                            <span>{`Ch ${formatFoodMacro(food.carbs)} g`}</span>
+                          </div>
+                        </AppNestedCard>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <AppNestedCard className="mt-3" variant="empty">{"Nincs találat."}</AppNestedCard>
+                )}
+              </AppNestedCard>
+            ) : null}
             <AppField className="mt-3" label={"Élelmiszer keresése"}>
               <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
             </AppField>
