@@ -241,6 +241,7 @@ export function DataView({
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
+  const [isFoodEditSearchOpen, setIsFoodEditSearchOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
   const [recipeDraft, setRecipeDraft] = useState(createBlankRecipe());
@@ -264,6 +265,7 @@ export function DataView({
       setFoodBrowserSearch("");
       setFoodDraft(createBlankFood());
       setIsFoodBrowserOpen(false);
+      setIsFoodEditSearchOpen(false);
       setIsFoodEditorOpen(false);
     }
   }, [isFoodDatabaseOpen]);
@@ -312,7 +314,7 @@ export function DataView({
       .map(({ food }) => food);
   }, [normalizedFoodBrowserSearch, sortedFoods]);
 
-  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Új vagy szerkesztett élelmiszer";
+  const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Élelmiszer hozzáadása";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
@@ -626,6 +628,18 @@ export function DataView({
               <AppButton type="button" onClick={() => setIsFoodBrowserOpen((current) => !current)}>
                 {isFoodBrowserOpen ? "Adatbázis böngészése bezárása" : "Adatbázis böngészése"}
               </AppButton>
+              <AppButton
+                type="button"
+                onClick={() => {
+                  setFoodDraft(createBlankFood());
+                  setIsFoodEditorOpen(true);
+                }}
+              >
+                {"Élelmiszer hozzáadása"}
+              </AppButton>
+              <AppButton type="button" onClick={() => setIsFoodEditSearchOpen((current) => !current)}>
+                {"Élelmiszer szerkesztése"}
+              </AppButton>
             </div>
             {isFoodBrowserOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
@@ -657,31 +671,35 @@ export function DataView({
                 )}
               </AppNestedCard>
             ) : null}
-            <AppField className="mt-3" label={"Élelmiszer keresése"}>
-              <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
-            </AppField>
-            {normalizedFoodSearch ? (
-              <AppNestedCard className="mt-3" variant="flush">
-                <div className="divide-y divide-slate-700/35">
-                  {filteredFoods.map((food) => (
-                    <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
-                      <div className="min-w-0 flex-1">
-                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
-                          <span>{Math.round(food.kcal)} kcal</span>
-                          <span>P {Math.round((food.protein || 0) * 10) / 10} g</span>
-                          <span>F {Math.round((food.fat || 0) * 10) / 10} g</span>
-                          <span>Ch {Math.round((food.carbs || 0) * 10) / 10} g</span>
-                        </div>
-                      </div>
-                    </AppListRow>
-                  ))}
-                </div>
-              </AppNestedCard>
+            {isFoodEditSearchOpen ? (
+              <>
+                <AppField className="mt-3" label={"Élelmiszer keresése"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
+                </AppField>
+                {normalizedFoodSearch ? (
+                  <AppNestedCard className="mt-3" variant="flush">
+                    <div className="divide-y divide-slate-700/35">
+                      {filteredFoods.map((food) => (
+                        <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
+                          <div className="min-w-0 flex-1">
+                            <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
+                              <span>{Math.round(food.kcal)} kcal</span>
+                              <span>P {Math.round((food.protein || 0) * 10) / 10} g</span>
+                              <span>F {Math.round((food.fat || 0) * 10) / 10} g</span>
+                              <span>Ch {Math.round((food.carbs || 0) * 10) / 10} g</span>
+                            </div>
+                          </div>
+                        </AppListRow>
+                      ))}
+                    </div>
+                  </AppNestedCard>
+                ) : null}
+              </>
             ) : null}
-            <AppToggleHeader className="mt-4" title={foodEditorTitle} summary={foodDraft.id ? "Meglévő étel szerkesztése" : "Új étel rögzítése"} isOpen={isFoodEditorOpen} onToggle={() => setIsFoodEditorOpen((current) => { const next = !current; if (!next) setFoodDraft(createBlankFood()); return next; })} />
             {isFoodEditorOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
+                <AppSectionTitle>{foodEditorTitle}</AppSectionTitle>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <AppField label={"Név"}><AppInput value={foodDraft.name} onChange={(event) => setFoodDraft({ ...foodDraft, name: event.target.value })} /></AppField>
                   <AppField label={"Kategória"}><AppInput as="select" value={foodDraft.category} onChange={(event) => setFoodDraft({ ...foodDraft, category: normalizeFoodCategory(event.target.value) })}>{Array.from(new Set(foodCategories.map((category) => normalizeFoodCategory(category)))).map((category) => <option key={category}>{category}</option>)}</AppInput></AppField>
@@ -692,7 +710,7 @@ export function DataView({
                     </AppField>
                   ))}
                 </div>
-                <AppButton className="mt-4 w-full" variant="primary" type="button" onClick={saveFood}>{"Élelmiszer mentése"}</AppButton>
+                <AppButton className="mt-4 w-full" variant="action" type="button" onClick={saveFood}>{"Élelmiszer mentése"}</AppButton>
                 {foodDraft.id ? <AppDangerButton className="mt-3 w-full" type="button" onClick={deleteFood}>{"Élelmiszer törlése"}</AppDangerButton> : null}
               </AppNestedCard>
             ) : null}
