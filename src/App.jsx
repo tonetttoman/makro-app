@@ -182,6 +182,34 @@ export default function App() {
     if (!ordered.includes("Főtt ételek")) ordered.push("Főtt ételek");
     return ordered;
   }, [foods]);
+  const foodUsageCounts = useMemo(() => {
+    const counts = new Map();
+
+    function addEntry(entry) {
+      const foodId =
+        (typeof entry?.foodId === "string" && entry.foodId.trim()) ||
+        (typeof entry?.food?.id === "string" && entry.food.id.trim()) ||
+        (typeof entry?.id === "string" && entry.id.trim()) ||
+        "";
+
+      if (!foodId) return;
+      counts.set(foodId, (counts.get(foodId) || 0) + 1);
+    }
+
+    Object.values(diary || {}).forEach((day) => {
+      const entries = Array.isArray(day?.entries) ? day.entries : [];
+      entries.forEach(addEntry);
+    });
+
+    (Array.isArray(dailyLogs) ? dailyLogs : Object.values(dailyLogs || {})).forEach((dayLog) => {
+      const entries = Array.isArray(dayLog?.entries) ? dayLog.entries : [];
+      entries.forEach(addEntry);
+    });
+
+    (Array.isArray(todayEntries) ? todayEntries : []).forEach(addEntry);
+
+    return counts;
+  }, [dailyLogs, diary, todayEntries]);
   const visibleFoods = useMemo(() => {
     const normalizedSearch = normalizeSearch(foodSearch);
     if (!normalizedSearch) return [];
@@ -196,10 +224,11 @@ export default function App() {
       .sort(
         (left, right) =>
           left.rank - right.rank ||
+          (foodUsageCounts.get(right.food.id) || 0) - (foodUsageCounts.get(left.food.id) || 0) ||
           left.food.name.localeCompare(right.food.name, "hu", { sensitivity: "base" })
       )
       .map(({ food }) => food);
-  }, [foodSearch, foods]);
+  }, [foodSearch, foodUsageCounts, foods]);
 
   useEffect(() => {
     if (!isQuickAddOpen && foodSearch) {
