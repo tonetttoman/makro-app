@@ -5,17 +5,18 @@ import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle } from "./ui/AppUi";
 
 const TREND_SERIES = [
-  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]" },
-  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]" },
-  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]" },
-  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]" }
+  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]", targetKey: "kcal" },
+  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]", targetKey: "protein" },
+  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]", targetKey: "fat" },
+  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]", targetKey: "carbs" }
 ];
 
 const CHART_HEIGHT = 220;
 const CHART_TOP = 12;
 const CHART_BOTTOM = 12;
 const CHART_LEFT = 12;
-const CHART_RIGHT = 96;
+const CHART_RIGHT = 84;
+const LABEL_LEFT = "87%";
 const BAND_GAP = 8;
 const BAND_COUNT = 4;
 const BAND_HEIGHT = (CHART_HEIGHT - CHART_TOP - CHART_BOTTOM - BAND_GAP * (BAND_COUNT - 1)) / BAND_COUNT;
@@ -173,33 +174,54 @@ function buildSmoothPath(points) {
   return path;
 }
 
-function buildBandPoints(values, bandIndex) {
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getTargetScale(targetValue) {
+  const numericTarget = Number(targetValue);
+  if (!Number.isFinite(numericTarget) || numericTarget <= 0) return null;
+
+  return {
+    min: numericTarget * 0.85,
+    max: numericTarget * 1.15,
+    target: numericTarget
+  };
+}
+
+function getFallbackScale(values) {
+  const finiteValues = values.filter((value) => Number.isFinite(Number(value))).map(Number);
+  if (!finiteValues.length) return { min: 0, max: 1, target: null };
+
+  const minValue = Math.min(...finiteValues);
+  const maxValue = Math.max(...finiteValues);
+  if (maxValue > minValue) return { min: minValue, max: maxValue, target: null };
+
+  const padding = Math.max(Math.abs(minValue) * 0.15, 1);
+  return { min: minValue - padding, max: minValue + padding, target: null };
+}
+
+function getBandY(value, bandIndex, scale) {
   const bandTop = CHART_TOP + bandIndex * (BAND_HEIGHT + BAND_GAP);
   const bandBottom = bandTop + BAND_HEIGHT;
-  const finiteValues = values.filter((value) => Number.isFinite(value));
-  const minValue = finiteValues.length ? Math.min(...finiteValues) : 0;
-  const maxValue = finiteValues.length ? Math.max(...finiteValues) : 0;
-  const spread = maxValue - minValue;
-  const centerY = bandTop + BAND_HEIGHT / 2;
   const verticalPadding = 6;
   const usableHeight = Math.max(10, BAND_HEIGHT - verticalPadding * 2);
+  const spread = Math.max(1, scale.max - scale.min);
+  const normalized = clamp((Number(value) - scale.min) / spread, 0, 1);
 
+  return bandBottom - verticalPadding - normalized * usableHeight;
+}
+
+function buildBandPoints(values, bandIndex, scale) {
   return values.map((value, index) => {
     const x = values.length === 1 ? (CHART_LEFT + CHART_RIGHT) / 2 : CHART_LEFT + (index / (values.length - 1)) * (CHART_RIGHT - CHART_LEFT);
-    let y = centerY;
-
-    if (spread > 0) {
-      const normalized = (value - minValue) / spread;
-      y = bandBottom - verticalPadding - normalized * usableHeight;
-    }
 
     return {
       x,
-      y: Math.max(bandTop + verticalPadding, Math.min(bandBottom - verticalPadding, y))
+      y: getBandY(value, bandIndex, scale)
     };
   });
 }
-
 function buildDayRow({ dateKey, diary, dailyLogs, foods }) {
   const entries = diary[dateKey]?.entries || [];
   const summary = getDailyLogByDate(dailyLogs, dateKey);
@@ -310,7 +332,7 @@ function buildMonthGroups(rows) {
     .sort((a, b) => b.id.localeCompare(a.id));
 }
 
-function TrendOverviewPanel({ rows, ratio, windowSize }) {
+function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
   if (!rows.length) {
     return (
       <AppCard className="p-[18px_18px_16px]">
@@ -322,14 +344,18 @@ function TrendOverviewPanel({ rows, ratio, windowSize }) {
   const chartData = buildTrendChartData(rows, windowSize);
   const seriesBands = TREND_SERIES.map((series, index) => {
     const values = chartData.map((item) => Number(item[series.key]) || 0);
-    const points = buildBandPoints(values, index);
+    const targetScale = getTargetScale(targets?.[series.targetKey]);
+    const scale = targetScale || getFallbackScale(values);
+    const points = buildBandPoints(values, index, scale);
+    const targetY = targetScale ? getBandY(targetScale.target, index, scale) : null;
     return {
       ...series,
       latestValue: values[values.length - 1] || 0,
       path: buildSmoothPath(points),
       valueLabel: series.label === "kcal" ? String(Math.round(values[values.length - 1] || 0)) : `${series.label} ${Math.round(values[values.length - 1] || 0)}`,
-      valueLabelLeft: "88%",
+      valueLabelLeft: LABEL_LEFT,
       valueLabelTop: `${((CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + 6) / CHART_HEIGHT) * 100}%`,
+      targetY,
       bandTop: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP),
       bandBottom: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT,
       labelY: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT * 0.42
@@ -382,6 +408,18 @@ function TrendOverviewPanel({ rows, ratio, windowSize }) {
                 strokeWidth="0.7"
                 vectorEffect="non-scaling-stroke"
               />
+              {series.targetY !== null ? (
+                <line
+                  x1={CHART_LEFT}
+                  x2={CHART_RIGHT}
+                  y1={series.targetY}
+                  y2={series.targetY}
+                  stroke="rgba(255,255,255,0.18)"
+                  strokeWidth="0.8"
+                  strokeDasharray="2 4"
+                  vectorEffect="non-scaling-stroke"
+                />
+              ) : null}
               {index < seriesBands.length - 1 ? (
                 <line
                   x1={CHART_LEFT}
@@ -666,7 +704,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
 
   return (
     <AppPage className="pt-3">
-      <TrendOverviewPanel rows={loggedRows} ratio={summaryRatio} windowSize={movingAverageWindow} />
+      <TrendOverviewPanel rows={loggedRows} ratio={summaryRatio} targets={targets} windowSize={movingAverageWindow} />
 
       <AppCard aria-label={isMonthlyView ? "Havi hónapok" : "Heti összesítő"}>
         {isMonthlyView
