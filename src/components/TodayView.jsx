@@ -322,7 +322,7 @@ export function TodayView({
 
       <AppButton className="mt-2.5 w-full min-h-[56px] gap-2.5 rounded-2xl border-cyan-400/20 text-[0.98rem] font-semibold" variant="action" type="button" onClick={() => onToggleQuickAdd?.()} aria-expanded={isQuickAddOpen}>
         <Plus size={24} aria-hidden="true" />
-        étel hozzáadása
+        Étel hozzáadása
       </AppButton>
 
       {isQuickAddOpen && (

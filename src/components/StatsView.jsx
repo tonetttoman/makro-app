@@ -111,6 +111,22 @@ function expandKeysToCalendarMonths(keys) {
   });
 }
 
+function collectDataKeys(diary, dailyLogs) {
+  const keys = new Set();
+
+  Object.keys(diary || {}).forEach((dateKey) => {
+    const normalizedKey = String(dateKey || "").trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedKey)) keys.add(normalizedKey);
+  });
+
+  (Array.isArray(dailyLogs) ? dailyLogs : []).forEach((log) => {
+    const normalizedKey = String(log?.date || "").trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedKey)) keys.add(normalizedKey);
+  });
+
+  return Array.from(keys).sort((a, b) => a.localeCompare(b));
+}
+
 function sumRows(rows) {
   return rows.reduce(
     (totals, row) => ({
@@ -301,7 +317,7 @@ function buildWeekGroups(rows, idPrefix = "") {
     .sort((a, b) => b.startKey.localeCompare(a.startKey));
 }
 
-function buildMonthGroups(rows) {
+function buildMonthGroups(rows, todayKey) {
   const byMonth = new Map();
 
   rows.forEach((row) => {
@@ -326,7 +342,7 @@ function buildMonthGroups(rows) {
         total,
         average,
         ratio,
-        weeks: buildWeekGroups(sortedRows, `${monthId}-`)
+        weeks: buildWeekGroups(sortedRows, `${monthId}-`).filter((week) => week.startKey <= todayKey)
       };
     })
     .sort((a, b) => b.id.localeCompare(a.id));
@@ -624,14 +640,19 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const [openWeeks, setOpenWeeks] = useState({});
   const [openDays, setOpenDays] = useState({});
   const isMonthlyView = days > 7;
-  const baseKeys = getRangeKeys(days);
+  const todayKey = toDateKey(new Date());
+  const baseKeys = useMemo(() => {
+    if (!isMonthlyView) return getRangeKeys(days);
+    const dataKeys = collectDataKeys(diary, dailyLogs);
+    return dataKeys.length ? dataKeys : getRangeKeys(days);
+  }, [days, diary, dailyLogs, isMonthlyView]);
   const keys = useMemo(() => (isMonthlyView ? expandKeysToCalendarMonths(baseKeys) : baseKeys), [baseKeys, isMonthlyView]);
-  const rows = keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods }));
+  const rows = useMemo(() => keys.map((dateKey) => buildDayRow({ dateKey, diary, dailyLogs, foods })), [dailyLogs, diary, foods, keys]);
   const loggedRows = rows.filter((row) => row.sourceType !== "empty");
   const average = averageTotals(loggedRows);
   const ratio = calculateMacroRatio(average);
   const weekGroups = useMemo(() => buildWeekGroups(rows), [rows]);
-  const monthGroups = useMemo(() => buildMonthGroups(rows), [rows]);
+  const monthGroups = useMemo(() => buildMonthGroups(rows, todayKey), [rows, todayKey]);
   const activeDayKey = Object.keys(openDays).find((dateKey) => openDays[dateKey]);
   const activeDay = activeDayKey ? rows.find((row) => row.dateKey === activeDayKey) : null;
   const activeWeekId = Object.keys(openWeeks).find((weekId) => openWeeks[weekId]);
