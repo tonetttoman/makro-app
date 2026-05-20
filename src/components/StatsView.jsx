@@ -435,8 +435,7 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
                   x2={CHART_RIGHT}
                   y1={series.targetY}
                   y2={series.targetY}
-                  stroke={series.color}
-                  strokeOpacity="0.62"
+                  stroke="rgba(255,255,255,0.75)"
                   strokeWidth="1.1"
                   strokeDasharray="2.5 3.5"
                   vectorEffect="non-scaling-stroke"
