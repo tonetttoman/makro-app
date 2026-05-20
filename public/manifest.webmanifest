@@ -1,12 +1,12 @@
 {
-  "name": "Étrend és Célanyag Napló",
-  "short_name": "Makró Napló",
-  "description": "Mobilbarát PWA étel-, makró- és később célanyag naplózáshoz.",
+  "name": "Étrend napló",
+  "short_name": "Étrend napló",
+  "description": "Mobilbarát PWA étrend- és makrónaplózáshoz.",
   "start_url": "/makro-app/",
   "scope": "/makro-app/",
   "display": "standalone",
-  "background_color": "#f7faf8",
-  "theme_color": "#f7faf8",
+  "background_color": "#0f1724",
+  "theme_color": "#0f1724",
   "orientation": "portrait",
   "icons": [
     {
