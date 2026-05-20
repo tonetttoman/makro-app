@@ -364,29 +364,7 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
 
   return (
     <AppCard className="p-[18px_18px_16px]">
-      <div className="grid grid-cols-4 gap-x-3 gap-y-1">
-        {seriesBands.map((series) => (
-          <AppMetaText key={series.key} className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[0.7rem] text-slate-200">
-            <span className={`h-2 w-2 shrink-0 rounded-full ${series.dotClass}`} aria-hidden="true" />
-            <span>{series.label} {Math.round(series.latestValue || 0)}</span>
-          </AppMetaText>
-        ))}
-
-        <span className="flex min-w-0 items-center gap-1.5" aria-hidden="true">
-          <span className="h-2 w-2 shrink-0 rounded-full bg-transparent" />
-        </span>
-        {seriesBands.slice(1).map((series) => {
-          const ratioValue = series.key === "proteinAverage" ? ratio.protein : series.key === "fatAverage" ? ratio.fat : ratio.carbs;
-          return (
-            <AppMetaText key={`${series.key}-ratio`} className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[0.68rem] text-slate-400">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${series.dotClass}`} aria-hidden="true" />
-              <span>{series.label} {Math.round(ratioValue)}%</span>
-            </AppMetaText>
-          );
-        })}
-      </div>
-
-      <div className="relative mt-4 h-[220px] w-full" aria-label="Mozgóátlag trend">
+      <div className="relative h-[220px] w-full" aria-label="Mozgóátlag trend">
         {seriesBands.map((series) => (
           <span
             key={`${series.key}-label`}
@@ -555,9 +533,9 @@ function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoa
           </span>
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
             <AppMetaText className="text-[0.82rem] text-slate-500">{group.rangeLabel}</AppMetaText>
-            <AppMetaText className="text-[0.82rem] text-slate-400">P {formatStat(group.total.protein)}g</AppMetaText>
-            <AppMetaText className="text-[0.82rem] text-slate-400">F {formatStat(group.total.fat)}g</AppMetaText>
-            <AppMetaText className="text-[0.82rem] text-slate-400">Ch {formatStat(group.total.carbs)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">P {formatStat(group.average.protein)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">F {formatStat(group.average.fat)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">Ch {formatStat(group.average.carbs)}g</AppMetaText>
             <AppMetaText className="text-[0.82rem] text-slate-500">· {group.loggedRows.length} nap</AppMetaText>
           </div>
         </span>
@@ -611,9 +589,9 @@ function MonthSummaryCard({
             <AppSectionTitle className="shrink-0 text-[1.02rem] font-semibold text-slate-100">{Math.round(Number(month.total.kcal) || 0)} kcal</AppSectionTitle>
           </span>
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-            <AppMetaText className="text-[0.82rem] text-slate-400">P {formatStat(month.total.protein)}g</AppMetaText>
-            <AppMetaText className="text-[0.82rem] text-slate-400">F {formatStat(month.total.fat)}g</AppMetaText>
-            <AppMetaText className="text-[0.82rem] text-slate-400">Ch {formatStat(month.total.carbs)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">P {formatStat(month.average.protein)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">F {formatStat(month.average.fat)}g</AppMetaText>
+            <AppMetaText className="text-[0.82rem] text-slate-400">Ch {formatStat(month.average.carbs)}g</AppMetaText>
             <AppMetaText className="text-[0.82rem] text-slate-500">· {month.loggedRows.length} nap</AppMetaText>
           </div>
         </span>

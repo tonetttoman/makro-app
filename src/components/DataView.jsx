@@ -240,6 +240,7 @@ export function DataView({
   const [editingRecipeId, setEditingRecipeId] = useState("");
   const [targetDrafts, setTargetDrafts] = useState(() => ({ kcal: String(roundTargetNumber(targets?.kcal)), protein: String(roundTargetNumber(targets?.protein)), fat: String(roundTargetNumber(targets?.fat)), carbs: String(roundTargetNumber(targets?.carbs)) }));
   const [activeTargetField, setActiveTargetField] = useState(null);
+  const [transferMessage, setTransferMessage] = useState(null);
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -351,6 +352,7 @@ export function DataView({
 
   function exportJson() {
     downloadJson("makro-app-backup.json", { foods, targets, diary, dailyLogs, exportedAt: new Date().toISOString() });
+    setTransferMessage({ type: "success", text: "Sikeres export: teljes adatmentés letöltve." });
   }
 
   async function importJson(file) {
@@ -358,11 +360,34 @@ export function DataView({
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed.foods)) setFoods(parsed.foods);
-      if (parsed.targets && typeof parsed.targets === "object") setTargets(parsed.targets);
-      if (parsed.diary && typeof parsed.diary === "object") setDiary(parsed.diary);
-      if (Array.isArray(parsed.dailyLogs)) setDailyLogs(parsed.dailyLogs);
+      const importedParts = [];
+
+      if (Array.isArray(parsed.foods)) {
+        const previousFoodCount = Array.isArray(foods) ? foods.length : 0;
+        setFoods(parsed.foods);
+        importedParts.push(`${parsed.foods.length} élelmiszer felülírva (korábban: ${previousFoodCount})`);
+      }
+      if (parsed.targets && typeof parsed.targets === "object") {
+        setTargets(parsed.targets);
+        importedParts.push("makró célok frissítve");
+      }
+      if (parsed.diary && typeof parsed.diary === "object") {
+        setDiary(parsed.diary);
+        importedParts.push("napi tételek visszaállítva");
+      }
+      if (Array.isArray(parsed.dailyLogs)) {
+        setDailyLogs(parsed.dailyLogs);
+        importedParts.push(`${parsed.dailyLogs.length} napi napló bejegyzés visszaállítva`);
+      }
+
+      if (!importedParts.length) {
+        setTransferMessage({ type: "error", text: "Import sikertelen: a fájl nem tartalmaz importálható adatot." });
+        return;
+      }
+
+      setTransferMessage({ type: "success", text: `Sikeres import: ${importedParts.join(", ")}.` });
     } catch {
+      setTransferMessage({ type: "error", text: "Import sikertelen: a JSON fájl nem olvasható vagy nem támogatott formátumú." });
       window.alert("A JSON import nem sikerült. Ellenőrizd a fájlt.");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -371,6 +396,7 @@ export function DataView({
 
   function exportDailyLogs() {
     downloadJson("makro-app-daily-logs.json", dailyLogs);
+    setTransferMessage({ type: "success", text: "Sikeres export: napi napló letöltve." });
   }
 
   async function importDailyLogs(file) {
@@ -378,16 +404,33 @@ export function DataView({
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw);
-      const imported = extractDailyLogs(parsed);
-      const merged = mergeDailyLogs(dailyLogs || [], imported || []);
+      const imported = extractDailyLogs(parsed).map(normalizeDailyLog).filter(Boolean);
+
+      if (!imported.length) {
+        setTransferMessage({ type: "error", text: "Napi napló import: nem találtam érvényes naplóbejegyzést." });
+        return;
+      }
+
+      const currentNormalized = (dailyLogs || []).map(normalizeDailyLog).filter(Boolean);
+      const currentDates = new Set(currentNormalized.map((log) => log.date));
+      const importedDates = new Set(imported.map((log) => log.date));
+      const overwrittenCount = Array.from(importedDates).filter((date) => currentDates.has(date)).length;
+      const importedNewCount = Array.from(importedDates).filter((date) => !currentDates.has(date)).length;
+      const keptCount = currentNormalized.filter((log) => !importedDates.has(log.date)).length;
+      const merged = mergeDailyLogs(currentNormalized, imported);
+
       setDailyLogs(merged);
+      setTransferMessage({
+        type: "success",
+        text: `Sikeres napi napló import: ${importedNewCount} új nap, ${overwrittenCount} nap felülírva, ${keptCount} meglévő nap megtartva. Összesen: ${merged.length} nap.`
+      });
     } catch {
+      setTransferMessage({ type: "error", text: "Napi napló import sikertelen: ellenőrizd a JSON fájlt." });
       window.alert("A napi napló import nem sikerült. Ellenőrizd a fájlt.");
     } finally {
       if (dailyLogInputRef.current) dailyLogInputRef.current.value = "";
     }
   }
-
   function startNewFood() {
     setFoodDraft(createBlankFood());
     setIsFoodEditorOpen(true);
@@ -613,6 +656,20 @@ export function DataView({
 
       <AppCard>
         <AppSectionTitle>{"Import / export / biztonsági mentés"}</AppSectionTitle>
+        {transferMessage ? (
+          <AppNestedCard
+            className={
+              transferMessage.type === "error"
+                ? "mt-3 border-red-400/20 bg-red-950/20"
+                : "mt-3 border-cyan-400/20 bg-cyan-950/10"
+            }
+            variant="compact"
+          >
+            <AppMetaText className={transferMessage.type === "error" ? "text-red-200" : "text-slate-300"}>
+              {transferMessage.text}
+            </AppMetaText>
+          </AppNestedCard>
+        ) : null}
         <div className="mt-3 grid gap-3">
           <AppNestedCard>
             <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
