@@ -348,6 +348,11 @@ function buildMonthGroups(rows, todayKey) {
     .sort((a, b) => b.id.localeCompare(a.id));
 }
 
+function shouldShowDayRow(row, todayKey) {
+  if (row.dateKey <= todayKey) return true;
+  return row.sourceType !== "empty";
+}
+
 function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
   if (!rows.length) {
     return (
@@ -532,9 +537,10 @@ function DaySummaryRow({ row, isOpen, onToggle, onLoadToToday, foods }) {
   );
 }
 
-function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoadToToday, foods }) {
-  const hasOpenDay = group.rows.some((row) => openDays[row.dateKey]);
-  const visibleRows = hasOpenDay ? group.rows.filter((row) => openDays[row.dateKey]) : group.rows;
+function WeekSummaryCard({ group, isOpen, openDays, onToggle, onToggleDay, onLoadToToday, foods, todayKey }) {
+  const dayRows = group.rows.filter((row) => shouldShowDayRow(row, todayKey));
+  const hasOpenDay = dayRows.some((row) => openDays[row.dateKey]);
+  const visibleRows = hasOpenDay ? dayRows.filter((row) => openDays[row.dateKey]) : dayRows;
 
   return (
     <div className="grid gap-2 border-t border-white/5 py-3.5 first:border-t-0">
@@ -582,6 +588,7 @@ function MonthSummaryCard({
   isOpen,
   openWeeks,
   openDays,
+  todayKey,
   onToggleMonth,
   onToggleWeek,
   onToggleDay,
@@ -622,6 +629,7 @@ function MonthSummaryCard({
                 group={week}
                 isOpen={Boolean(openWeeks[week.id])}
                 openDays={openDays}
+                todayKey={todayKey}
                 onToggle={() => onToggleWeek(week.id)}
                 onToggleDay={onToggleDay}
                 onLoadToToday={onLoadToToday}
@@ -639,8 +647,8 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const [openMonths, setOpenMonths] = useState({});
   const [openWeeks, setOpenWeeks] = useState({});
   const [openDays, setOpenDays] = useState({});
-  const isMonthlyView = days > 7;
   const todayKey = toDateKey(new Date());
+  const isMonthlyView = days > 7;
   const baseKeys = useMemo(() => {
     if (!isMonthlyView) return getRangeKeys(days);
     const dataKeys = collectDataKeys(diary, dailyLogs);
@@ -714,6 +722,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
                 isOpen={Boolean(openMonths[month.id])}
                 openWeeks={openWeeks}
                 openDays={openDays}
+                todayKey={todayKey}
                 onToggleMonth={() => toggleMonth(month.id)}
                 onToggleWeek={toggleWeek}
                 onToggleDay={toggleDay}
@@ -727,6 +736,7 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
                 group={group}
                 isOpen={Boolean(openWeeks[group.id])}
                 openDays={openDays}
+                todayKey={todayKey}
                 onToggle={() => toggleWeek(group.id)}
                 onToggleDay={toggleDay}
                 onLoadToToday={onLoadToToday}
@@ -737,3 +747,4 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
     </AppPage>
   );
 }
+
