@@ -308,7 +308,7 @@ function TodayEntryEditor({
       </div>
 
       {isRecipe && (
-        <AppNestedCard className="grid gap-2" variant="surface">
+        <div className="mt-1 grid gap-3 border-t border-white/10 pt-3">
           <div className="flex items-center justify-between gap-3">
             <AppSectionTitle className="text-[0.78rem] uppercase tracking-[0.16em] text-slate-400">Összetevők</AppSectionTitle>
             <AppButton className="h-8 min-h-0 px-3 text-xs" variant="secondary" type="button" onClick={() => setIsIngredientAddOpen((current) => !current)}>
@@ -318,7 +318,7 @@ function TodayEntryEditor({
           </div>
 
           {isIngredientAddOpen && (
-            <AppNestedCard className="grid gap-2" variant="compact">
+            <div className="mt-1 grid gap-3 border-t border-white/10 pt-3">
               <AppField label="Összetevő keresése">
                 <AppSearchInput
                   icon={null}
@@ -349,7 +349,7 @@ function TodayEntryEditor({
                 </div>
               )}
 
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                 <AppField className="p-2.5" label="Mennyiség">
                   <AppInput
                     inputMode="decimal"
@@ -359,11 +359,11 @@ function TodayEntryEditor({
                     onChange={(event) => setIngredientAmount(event.target.value)}
                   />
                 </AppField>
-                <AppButton className="h-[42px] min-h-0" variant="action" type="button" onClick={handleIngredientAdd}>
+                <AppButton className="min-h-[42px] w-full sm:w-auto" variant="action" type="button" onClick={handleIngredientAdd}>
                   Hozzáadás
                 </AppButton>
               </div>
-            </AppNestedCard>
+            </div>
           )}
 
           <div className="overflow-hidden rounded-2xl border border-slate-700/35 bg-[#0b111c]">
@@ -402,7 +402,7 @@ function TodayEntryEditor({
               })}
             </div>
           </div>
-        </AppNestedCard>
+        </div>
       )}
     </AppNestedCard>
   );
