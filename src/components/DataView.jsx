@@ -270,6 +270,7 @@ export function DataView({
   const [targetDrafts, setTargetDrafts] = useState(() => ({ kcal: String(roundTargetNumber(targets?.kcal)), protein: String(roundTargetNumber(targets?.protein)), fat: String(roundTargetNumber(targets?.fat)), carbs: String(roundTargetNumber(targets?.carbs)) }));
   const [activeTargetField, setActiveTargetField] = useState(null);
   const [transferMessage, setTransferMessage] = useState(null);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -776,39 +777,48 @@ export function DataView({
       </AppCard>
 
       <AppCard>
-        <AppSectionTitle>{"Import / export / biztonsági mentés"}</AppSectionTitle>
-        {transferMessage ? (
-          <AppNestedCard
-            className={
-              transferMessage.type === "error"
-                ? "mt-3 border-red-400/20 bg-red-950/20"
-                : "mt-3 border-cyan-400/20 bg-cyan-950/10"
-            }
-            variant="compact"
-          >
-            <AppMetaText className={transferMessage.type === "error" ? "text-red-200" : "text-slate-300"}>
-              {transferMessage.text}
-            </AppMetaText>
-          </AppNestedCard>
+        <AppToggleHeader
+          title={"Import / export / biztonsági mentés"}
+          summary={"Teljes adatmentés és napi napló import/export"}
+          isOpen={isBackupOpen}
+          onToggle={() => setIsBackupOpen((current) => !current)}
+        />
+        {isBackupOpen ? (
+          <>
+          {transferMessage ? (
+            <AppNestedCard
+              className={
+                transferMessage.type === "error"
+                  ? "mt-3 border-red-400/20 bg-red-950/20"
+                  : "mt-3 border-cyan-400/20 bg-cyan-950/10"
+              }
+              variant="compact"
+            >
+              <AppMetaText className={transferMessage.type === "error" ? "text-red-200" : "text-slate-300"}>
+                {transferMessage.text}
+              </AppMetaText>
+            </AppNestedCard>
+          ) : null}
+          <div className="mt-3 grid gap-3">
+            <AppNestedCard>
+              <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
+              </div>
+              <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
+              <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
+              </div>
+              <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
+            </AppNestedCard>
+          </div>
+          </>
         ) : null}
-        <div className="mt-3 grid gap-3">
-          <AppNestedCard>
-            <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
-              <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
-            </div>
-            <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
-          </AppNestedCard>
-          <AppNestedCard>
-            <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
-              <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
-            </div>
-            <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
-          </AppNestedCard>
-        </div>
       </AppCard>
     </AppPage>
   );
