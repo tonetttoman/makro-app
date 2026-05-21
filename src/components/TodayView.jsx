@@ -98,7 +98,24 @@ function TodaySummaryCard({ totals, targets }) {
   );
 }
 
-function TodayEntryEditor({ entry, food, onAmountChange, onRemove }) {
+function getRecipeIngredients(food) {
+  return Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
+}
+
+function getIngredientOverrideAmount(entry, ingredient, ingredientIndex) {
+  const overrides = Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides : [];
+  const byIndex = overrides.find((override) => Number(override?.ingredientIndex) === ingredientIndex);
+  const byFoodId = overrides.find((override) => override?.ingredientIndex === undefined && override?.foodId === ingredient?.foodId);
+  const rawAmount = byIndex?.amount ?? byFoodId?.amount ?? ingredient?.amount;
+  const amount = Number(rawAmount);
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0;
+}
+
+function TodayEntryEditor({ entry, food, foods, onAmountChange, onRecipeIngredientAmountChange, onRemove }) {
+  const [expandedIngredientIndex, setExpandedIngredientIndex] = useState(null);
+  const recipeIngredients = getRecipeIngredients(food);
+  const isRecipe = Boolean(food?.isRecipe) && recipeIngredients.length > 0;
+
   return (
     <AppNestedCard className="mt-3 grid gap-3" variant="compact">
       <div className="flex justify-end">
@@ -141,6 +158,102 @@ function TodayEntryEditor({ entry, food, onAmountChange, onRemove }) {
           <Plus size={14} />
         </AppButton>
       </div>
+
+      {isRecipe && (
+        <AppNestedCard className="grid gap-2" variant="surface">
+          <AppSectionTitle className="text-[0.78rem] uppercase tracking-[0.16em] text-slate-400">Összetevők</AppSectionTitle>
+          <div className="overflow-hidden rounded-2xl border border-slate-700/35 bg-[#0b111c]">
+            <div className="divide-y divide-slate-700/30">
+              {recipeIngredients.map((ingredient, ingredientIndex) => {
+                const ingredientFood = findFoodById(ingredient.foodId, foods);
+                if (!ingredientFood) return null;
+                const ingredientAmount = getIngredientOverrideAmount(entry, ingredient, ingredientIndex);
+                const ingredientValues = calculateEntry(ingredientFood, ingredientAmount);
+                const isIngredientExpanded = expandedIngredientIndex === ingredientIndex;
+
+                return (
+                  <div key={`${entry.entryId}-ingredient-${ingredientIndex}-${ingredient.foodId}`}>
+                    <div className="flex items-start gap-2 px-3 py-2.5">
+                      <div className="min-w-0 flex-1">
+                        <AppSectionTitle className="truncate text-[0.86rem] font-semibold leading-tight text-slate-100">{ingredientFood.name}</AppSectionTitle>
+                        <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-1" aria-label="Összetevő makrók">
+                          <AppMetaText className="inline-flex items-baseline gap-1 whitespace-nowrap text-[0.72rem]">
+                            <small className="text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-slate-500">P</small>
+                            {Math.round(ingredientValues.protein * 10) / 10} g
+                          </AppMetaText>
+                          <AppMetaText className="inline-flex items-baseline gap-1 whitespace-nowrap text-[0.72rem]">
+                            <small className="text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-slate-500">F</small>
+                            {Math.round(ingredientValues.fat * 10) / 10} g
+                          </AppMetaText>
+                          <AppMetaText className="inline-flex items-baseline gap-1 whitespace-nowrap text-[0.72rem]">
+                            <small className="text-[0.58rem] font-semibold uppercase tracking-[0.08em] text-slate-500">Ch</small>
+                            {Math.round(ingredientValues.carbs * 10) / 10} g
+                          </AppMetaText>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 text-right">
+                        <AppSectionTitle className="text-[0.86rem] font-semibold leading-none text-slate-100">{formatKcal(ingredientValues.kcal)}</AppSectionTitle>
+                        <AppMetaText className="mt-1 block text-[0.7rem] font-medium text-slate-400">{formatAmount(ingredientAmount, ingredientFood.unit)}</AppMetaText>
+                      </div>
+
+                      <AppButton
+                        className="h-7 min-h-0 w-7 shrink-0 rounded-full px-0"
+                        variant="secondary"
+                        type="button"
+                        onClick={() => setExpandedIngredientIndex((current) => (current === ingredientIndex ? null : ingredientIndex))}
+                        aria-expanded={isIngredientExpanded}
+                        aria-label="Összetevő szerkesztése"
+                      >
+                        <EllipsisVertical size={13} aria-hidden="true" />
+                      </AppButton>
+                    </div>
+
+                    {isIngredientExpanded && (
+                      <div className="px-3 pb-3">
+                        <div className="grid grid-cols-[36px_minmax(0,1fr)_auto_36px] items-end gap-2">
+                          <AppButton
+                            className="h-9 min-h-0 px-0"
+                            variant="secondary"
+                            type="button"
+                            onClick={() => onRecipeIngredientAmountChange(entry.entryId, ingredientIndex, ingredient.foodId, Math.max(0, ingredientAmount - ingredientFood.step))}
+                            aria-label="Összetevő mennyiség csökkentése"
+                          >
+                            <Minus size={13} />
+                          </AppButton>
+
+                          <AppField className="p-2.5" label="Mennyiség">
+                            <AppInput
+                              inputMode="decimal"
+                              min="0"
+                              step={ingredientFood.step}
+                              type="number"
+                              value={ingredientAmount}
+                              onChange={(event) => onRecipeIngredientAmountChange(entry.entryId, ingredientIndex, ingredient.foodId, Number(event.target.value))}
+                            />
+                          </AppField>
+
+                          <AppMetaText className="pb-2.5 text-xs font-semibold text-slate-300">{ingredientFood.unit}</AppMetaText>
+
+                          <AppButton
+                            className="h-9 min-h-0 px-0"
+                            variant="secondary"
+                            type="button"
+                            onClick={() => onRecipeIngredientAmountChange(entry.entryId, ingredientIndex, ingredient.foodId, ingredientAmount + ingredientFood.step)}
+                            aria-label="Összetevő mennyiség növelése"
+                          >
+                            <Plus size={13} />
+                          </AppButton>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </AppNestedCard>
+      )}
     </AppNestedCard>
   );
 }
@@ -157,6 +270,7 @@ function TodayEntriesList({
   onWorkDateChange,
   onReturnToToday,
   onAmountChange,
+  onRecipeIngredientAmountChange,
   onRemove
 }) {
   const [expandedEntryId, setExpandedEntryId] = useState(null);
@@ -229,7 +343,7 @@ function TodayEntriesList({
               const food = findFoodById(entry.foodId, foods);
               if (!food) return null;
 
-              const values = calculateEntry(food, entry.amount);
+              const values = calculateEntry(food, entry.amount, { entry, foods });
               const isExpanded = expandedEntryId === entry.entryId;
 
               return (
@@ -276,7 +390,7 @@ function TodayEntriesList({
 
                   {isExpanded && (
                     <div className="px-4 pb-3">
-                      <TodayEntryEditor entry={entry} food={food} onAmountChange={onAmountChange} onRemove={onRemove} />
+                      <TodayEntryEditor entry={entry} food={food} foods={foods} onAmountChange={onAmountChange} onRecipeIngredientAmountChange={onRecipeIngredientAmountChange} onRemove={onRemove} />
                     </div>
                   )}
                 </article>
@@ -307,6 +421,7 @@ export function TodayView({
   onWorkDateChange,
   onReturnToToday,
   onAmountChange,
+  onRecipeIngredientAmountChange,
   onRemove
 }) {
   const [isTopMenuOpen, setIsTopMenuOpen] = useState(workDate !== todayKey);
@@ -381,6 +496,7 @@ export function TodayView({
           setIsTopMenuOpen(false);
         }}
         onAmountChange={onAmountChange}
+        onRecipeIngredientAmountChange={onRecipeIngredientAmountChange}
         onRemove={onRemove}
       />
     </main>

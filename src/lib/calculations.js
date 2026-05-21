@@ -30,7 +30,7 @@ export function getNormalizedBaseAmount(food) {
   return Number.isFinite(fallback) && fallback > 0 ? fallback : 100;
 }
 
-export function calculateEntry(food, amount) {
+function calculatePlainEntry(food, amount) {
   const baseAmount = getNormalizedBaseAmount(food);
   const amountValue = Number(amount) || 0;
   const factor = amountValue / baseAmount;
@@ -42,12 +42,61 @@ export function calculateEntry(food, amount) {
   };
 }
 
+function getRecipeOverrideAmount(entry, ingredient, ingredientIndex) {
+  const overrides = Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides : [];
+  const byIndex = overrides.find((override) => Number(override?.ingredientIndex) === ingredientIndex);
+  const byFoodId = overrides.find((override) => override?.ingredientIndex === undefined && override?.foodId === ingredient?.foodId);
+  const rawAmount = byIndex?.amount ?? byFoodId?.amount ?? ingredient?.amount;
+  const amount = Number(rawAmount);
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0;
+}
+
+function calculateRecipeOverrideEntry(food, amount, entry, foods) {
+  const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
+  if (!ingredients.length) return calculatePlainEntry(food, amount);
+
+  const baseTotals = ingredients.reduce(
+    (totals, ingredient, ingredientIndex) => {
+      const ingredientFood = findFoodById(ingredient.foodId, foods);
+      if (!ingredientFood) return totals;
+      const ingredientAmount = getRecipeOverrideAmount(entry, ingredient, ingredientIndex);
+      const values = calculatePlainEntry(ingredientFood, ingredientAmount);
+      return {
+        kcal: totals.kcal + values.kcal,
+        protein: totals.protein + values.protein,
+        fat: totals.fat + values.fat,
+        carbs: totals.carbs + values.carbs
+      };
+    },
+    { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+  );
+
+  const factor = (Number(amount) || 0) / getNormalizedBaseAmount(food);
+  return {
+    kcal: baseTotals.kcal * factor,
+    protein: baseTotals.protein * factor,
+    fat: baseTotals.fat * factor,
+    carbs: baseTotals.carbs * factor
+  };
+}
+
+export function calculateEntry(food, amount, options = {}) {
+  const entry = options.entry;
+  const hasRecipeOverrides = Array.isArray(entry?.recipeOverrides) && entry.recipeOverrides.length > 0;
+
+  if (hasRecipeOverrides) {
+    return calculateRecipeOverrideEntry(food, amount, entry, options.foods || FOODS);
+  }
+
+  return calculatePlainEntry(food, amount);
+}
+
 export function calculateTotals(entries, foods = FOODS) {
   return entries.reduce(
     (totals, entry) => {
       const food = findFoodById(entry.foodId, foods);
       if (!food) return totals;
-      const values = calculateEntry(food, entry.amount);
+      const values = calculateEntry(food, entry.amount, { entry, foods });
       return {
         kcal: totals.kcal + values.kcal,
         protein: totals.protein + values.protein,

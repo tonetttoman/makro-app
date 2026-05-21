@@ -304,6 +304,21 @@ export default function App() {
     );
   }
 
+  function handleRecipeIngredientAmountChange(entryId, ingredientIndex, foodId, amount) {
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    persistEntriesForDate(
+      workDate,
+      todayEntries.map((entry) => {
+        if (entry.entryId !== entryId) return entry;
+        const currentOverrides = Array.isArray(entry.recipeOverrides) ? entry.recipeOverrides : [];
+        const nextOverrides = currentOverrides
+          .filter((override) => Number(override?.ingredientIndex) !== ingredientIndex)
+          .concat({ ingredientIndex, foodId, amount: safeAmount });
+        return { ...entry, recipeOverrides: nextOverrides, locked: false };
+      })
+    );
+  }
+
   function handleRemove(entryId) {
     persistEntriesForDate(workDate, todayEntries.filter((entry) => entry.entryId !== entryId));
   }
@@ -367,6 +382,7 @@ export default function App() {
           onWorkDateChange={handleWorkDateChange}
           onReturnToToday={handleReturnToToday}
           onAmountChange={handleAmountChange}
+          onRecipeIngredientAmountChange={handleRecipeIngredientAmountChange}
           onRemove={handleRemove}
           quickAddFoods={visibleFoods}
         />
