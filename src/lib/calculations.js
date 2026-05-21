@@ -43,7 +43,7 @@ function calculatePlainEntry(food, amount) {
 }
 
 function getRecipeOverrideAmount(entry, ingredient, ingredientIndex) {
-  const overrides = Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides : [];
+  const overrides = Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides.filter((override) => override?.type !== "added") : [];
   const byIndex = overrides.find((override) => Number(override?.ingredientIndex) === ingredientIndex);
   const byFoodId = overrides.find((override) => override?.ingredientIndex === undefined && override?.foodId === ingredient?.foodId);
   const rawAmount = byIndex?.amount ?? byFoodId?.amount ?? ingredient?.amount;
@@ -51,11 +51,15 @@ function getRecipeOverrideAmount(entry, ingredient, ingredientIndex) {
   return Number.isFinite(amount) ? Math.max(0, amount) : 0;
 }
 
+function getRecipeAddedIngredients(entry) {
+  return Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides.filter((override) => override?.type === "added") : [];
+}
+
 function calculateRecipeOverrideEntry(food, amount, entry, foods) {
   const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
   if (!ingredients.length) return calculatePlainEntry(food, amount);
 
-  const baseTotals = ingredients.reduce(
+  const recipeTotals = ingredients.reduce(
     (totals, ingredient, ingredientIndex) => {
       const ingredientFood = findFoodById(ingredient.foodId, foods);
       if (!ingredientFood) return totals;
@@ -70,6 +74,18 @@ function calculateRecipeOverrideEntry(food, amount, entry, foods) {
     },
     { kcal: 0, protein: 0, fat: 0, carbs: 0 }
   );
+
+  const baseTotals = getRecipeAddedIngredients(entry).reduce((totals, addedIngredient) => {
+    const addedFood = findFoodById(addedIngredient.foodId, foods);
+    if (!addedFood) return totals;
+    const values = calculatePlainEntry(addedFood, addedIngredient.amount);
+    return {
+      kcal: totals.kcal + values.kcal,
+      protein: totals.protein + values.protein,
+      fat: totals.fat + values.fat,
+      carbs: totals.carbs + values.carbs
+    };
+  }, recipeTotals);
 
   const factor = (Number(amount) || 0) / getNormalizedBaseAmount(food);
   return {
