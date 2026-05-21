@@ -17,13 +17,28 @@ export function findFoodById(foodId, foods = FOODS) {
 }
 
 
+export function getNormalizedBaseAmount(food) {
+  const unit = String(food?.unit || "").trim().toLowerCase();
+
+  if (unit === "g" || unit === "ml" || unit === "%") return 100;
+
+  if (["db", "adag", "kapszula", "tabletta", "csepp"].includes(unit)) {
+    return 1;
+  }
+
+  const fallback = Number(food?.baseAmount);
+  return Number.isFinite(fallback) && fallback > 0 ? fallback : 100;
+}
+
 export function calculateEntry(food, amount) {
-  const factor = amount / food.baseAmount;
+  const baseAmount = getNormalizedBaseAmount(food);
+  const amountValue = Number(amount) || 0;
+  const factor = amountValue / baseAmount;
   return {
-    kcal: food.kcal * factor,
-    protein: food.protein * factor,
-    fat: food.fat * factor,
-    carbs: food.carbs * factor
+    kcal: Number(food?.kcal || 0) * factor,
+    protein: Number(food?.protein || 0) * factor,
+    fat: Number(food?.fat || 0) * factor,
+    carbs: Number(food?.carbs || 0) * factor
   };
 }
 
