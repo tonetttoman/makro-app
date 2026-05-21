@@ -60,6 +60,23 @@ function numberValue(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function normalizeImportedTargets(importedTargets, currentTargets) {
+  if (!importedTargets || typeof importedTargets !== "object") return currentTargets;
+
+  const nextTargets = { ...currentTargets };
+
+  ["kcal", "protein", "fat", "carbs"].forEach((key) => {
+    const rawValue = importedTargets[key];
+    if (rawValue === null || rawValue === undefined || rawValue === "") return;
+    const value = Number(String(rawValue).replace(",", "."));
+    if (Number.isFinite(value) && value >= 0) {
+      nextTargets[key] = value;
+    }
+  });
+
+  return nextTargets;
+}
+
 function roundTargetNumber(value) {
   return Math.max(0, Math.round(Number(value) || 0));
 }
@@ -398,7 +415,7 @@ export function DataView({
         importedParts.push(`${parsed.foods.length} élelmiszer felülírva (korábban: ${previousFoodCount})`);
       }
       if (parsed.targets && typeof parsed.targets === "object") {
-        setTargets(parsed.targets);
+        setTargets((currentTargets) => normalizeImportedTargets(parsed.targets, currentTargets));
         importedParts.push("makró célok frissítve");
       }
       if (parsed.diary && typeof parsed.diary === "object") {
