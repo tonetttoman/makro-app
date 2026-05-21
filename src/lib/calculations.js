@@ -55,6 +55,32 @@ function getRecipeAddedIngredients(entry) {
   return Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides.filter((override) => override?.type === "added") : [];
 }
 
+export function hasRecipeEntryOverrides(entry, food) {
+  const overrides = Array.isArray(entry?.recipeOverrides) ? entry.recipeOverrides : [];
+  if (!overrides.length) return false;
+
+  const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
+
+  return overrides.some((override) => {
+    if (override?.type === "added") {
+      const amount = Number(override.amount);
+      return Boolean(override.foodId) && Number.isFinite(amount) && amount > 0;
+    }
+
+    const amount = Number(override?.amount);
+    if (!Number.isFinite(amount)) return false;
+
+    const ingredientIndex = Number(override?.ingredientIndex);
+    const ingredient = Number.isInteger(ingredientIndex)
+      ? ingredients[ingredientIndex]
+      : ingredients.find((item) => item?.foodId === override?.foodId);
+
+    if (!ingredient) return true;
+
+    return Math.abs(amount - (Number(ingredient.amount) || 0)) > 0.0001;
+  });
+}
+
 function calculateRecipeOverrideEntry(food, amount, entry, foods) {
   const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
   if (!ingredients.length) return calculatePlainEntry(food, amount);
@@ -107,12 +133,22 @@ export function calculateEntry(food, amount, options = {}) {
   return calculatePlainEntry(food, amount);
 }
 
+export function calculateDiaryEntry(entry, foods = FOODS) {
+  const food = findFoodById(entry?.foodId, foods);
+  if (!food) return null;
+
+  return {
+    food,
+    values: calculateEntry(food, entry.amount, { entry, foods })
+  };
+}
+
 export function calculateTotals(entries, foods = FOODS) {
   return entries.reduce(
     (totals, entry) => {
-      const food = findFoodById(entry.foodId, foods);
-      if (!food) return totals;
-      const values = calculateEntry(food, entry.amount, { entry, foods });
+      const calculated = calculateDiaryEntry(entry, foods);
+      if (!calculated) return totals;
+      const { values } = calculated;
       return {
         kcal: totals.kcal + values.kcal,
         protein: totals.protein + values.protein,

@@ -1,6 +1,6 @@
 import { CalendarDays, PencilLine } from "lucide-react";
 import { useMemo, useState } from "react";
-import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
+import { averageTotals, calculateDiaryEntry, calculateMacroRatio, calculateTotals, hasRecipeEntryOverrides } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle } from "./ui/AppUi";
 
@@ -506,19 +506,26 @@ function EntryPreview({ entries, foods }) {
   return (
     <div className="mt-2.5 grid gap-2 border-t border-white/5 pt-2.5">
       {entries.map((entry) => {
-        const food = foods.find((item) => item.id === entry.foodId);
-        if (!food) return null;
-        const values = calculateEntry(food, Number(entry.amount) || 0);
+        const calculated = calculateDiaryEntry(entry, foods);
+        if (!calculated) return null;
+        const { food, values } = calculated;
+        const isModifiedRecipe = hasRecipeEntryOverrides(entry, food);
         return (
           <div className="flex items-center justify-between gap-3 py-1 text-[0.85rem]" key={entry.entryId}>
             <div className="min-w-0">
-              <AppSectionTitle className="truncate text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <AppSectionTitle className="truncate text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
+                {isModifiedRecipe ? <span className="shrink-0 text-[0.72rem] font-bold text-red-400" aria-label={"M\u00f3dos\u00edtott recept"}>!</span> : null}
+              </div>
               <AppMetaText className="text-[0.75rem] text-slate-400">
-                P {formatStat(values.protein)}g · F {formatStat(values.fat)}g · Ch {formatStat(values.carbs)}g
+                P {formatStat(values.protein)}g {" \u00b7 "} F {formatStat(values.fat)}g {" \u00b7 "} Ch {formatStat(values.carbs)}g
+                {isModifiedRecipe ? <span className="text-red-300">{" \u00b7 mod."}</span> : null}
               </AppMetaText>
             </div>
             <div className="shrink-0 text-right">
-              <AppSectionTitle className="block text-[0.92rem] font-semibold text-slate-100">{Math.round(values.kcal)} kcal</AppSectionTitle>
+              <AppSectionTitle className="block text-[0.92rem] font-semibold text-slate-100">
+                {Math.round(values.kcal)} kcal {isModifiedRecipe ? <span className="text-red-400">!</span> : null}
+              </AppSectionTitle>
               <AppMetaText className="text-[0.75rem] text-slate-400">
                 {formatStat(entry.amount)} {food.unit}
               </AppMetaText>
