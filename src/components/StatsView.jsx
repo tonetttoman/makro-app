@@ -5,10 +5,10 @@ import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle } from "./ui/AppUi";
 
 const TREND_SERIES = [
-  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]", targetKey: "kcal" },
-  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]", targetKey: "protein" },
-  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]", targetKey: "fat" },
-  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]", targetKey: "carbs" }
+  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]", targetKey: "kcal", minRange: 350 },
+  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]", targetKey: "protein", minRange: 40 },
+  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]", targetKey: "fat", minRange: 25 },
+  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]", targetKey: "carbs", minRange: 25 }
 ];
 
 const CHART_HEIGHT = 220;
@@ -198,34 +198,40 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function getSeriesScale({ averageValues, rawValues, targetValue }) {
-  const finiteValues = [...averageValues, ...rawValues]
-    .filter((value) => Number.isFinite(Number(value)))
-    .map(Number);
+function getDynamicDomain(values, targetValue, minRange, paddingRatio = 0.05) {
+  const numericValues = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+  const numericTarget = Number(targetValue);
+  const target = Number.isFinite(numericTarget) ? numericTarget : null;
+  const allValues = target !== null ? [...numericValues, target] : numericValues;
+
+  if (!allValues.length) {
+    return [0, Math.max(1, minRange)];
+  }
+
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  const rawRange = maxValue - minValue;
+  const effectiveRange = Math.max(rawRange, minRange, 1);
+  const padding = Math.max(effectiveRange * paddingRatio, minRange * paddingRatio, 1);
+  const center = (minValue + maxValue) / 2;
+  const minDomain = Math.max(0, Math.floor(center - effectiveRange / 2 - padding));
+  const maxDomain = Math.ceil(center + effectiveRange / 2 + padding);
+
+  if (maxDomain > minDomain) return [minDomain, maxDomain];
+
+  return [Math.max(0, minDomain - 1), maxDomain + 1];
+}
+
+function getSeriesScale({ averageValues, targetValue, minRange }) {
+  const [min, max] = getDynamicDomain(averageValues, targetValue, minRange);
   const numericTarget = Number(targetValue);
 
-  if (Number.isFinite(numericTarget) && numericTarget >= 0) {
-    finiteValues.push(numericTarget);
-  }
-
-  if (!finiteValues.length) return { min: 0, max: 1, target: null };
-
-  const minValue = Math.min(...finiteValues);
-  const maxValue = Math.max(...finiteValues);
-  if (maxValue > minValue) {
-    const padding = Math.max((maxValue - minValue) * 0.15, 1);
-    return {
-      min: Math.max(0, minValue - padding),
-      max: maxValue + padding,
-      target: Number.isFinite(numericTarget) && numericTarget >= 0 ? numericTarget : null
-    };
-  }
-
-  const padding = Math.max(Math.abs(minValue) * 0.15, 1);
   return {
-    min: Math.max(0, minValue - padding),
-    max: minValue + padding,
-    target: Number.isFinite(numericTarget) && numericTarget >= 0 ? numericTarget : null
+    min,
+    max,
+    target: Number.isFinite(numericTarget) ? numericTarget : null
   };
 }
 
@@ -381,8 +387,8 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
     const rawValues = chartData.map((item) => Number(item[rawValueKey]) || 0);
     const scale = getSeriesScale({
       averageValues: values,
-      rawValues,
-      targetValue: targets?.[series.targetKey]
+      targetValue: targets?.[series.targetKey],
+      minRange: series.minRange
     });
     const points = buildBandPoints(values, index, scale);
     const rawPoints = rawValues.length ? buildBandPoints(rawValues, index, scale) : [];
