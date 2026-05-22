@@ -1,14 +1,14 @@
 import { CalendarDays, PencilLine } from "lucide-react";
 import { useMemo, useState } from "react";
-import { averageTotals, calculateEntry, calculateMacroRatio, calculateTotals } from "../lib/calculations";
+import { averageTotals, calculateDiaryEntry, calculateMacroRatio, calculateTotals, hasRecipeEntryOverrides } from "../lib/calculations";
 import { formatShortDate, getRangeKeys, toDateKey } from "../lib/dates";
 import { AppButton, AppCard, AppMetaText, AppNestedCard, AppPage, AppSectionTitle } from "./ui/AppUi";
 
 const TREND_SERIES = [
-  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]", targetKey: "kcal" },
-  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]", targetKey: "protein" },
-  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]", targetKey: "fat" },
-  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]", targetKey: "carbs" }
+  { key: "kcalAverage", label: "kcal", color: "#0ea5e9", dotClass: "bg-[#0ea5e9]", targetKey: "kcal", minRange: 350 },
+  { key: "proteinAverage", label: "P", color: "#22d3ee", dotClass: "bg-[#22d3ee]", targetKey: "protein", minRange: 40 },
+  { key: "fatAverage", label: "F", color: "#fde047", dotClass: "bg-[#fde047]", targetKey: "fat", minRange: 25 },
+  { key: "carbsAverage", label: "Ch", color: "#c084fc", dotClass: "bg-[#c084fc]", targetKey: "carbs", minRange: 25 }
 ];
 
 const CHART_HEIGHT = 220;
@@ -157,6 +157,10 @@ function buildTrendChartData(rows, windowSize) {
 
   return sortedRows.map((row, index) => ({
     dateKey: row.dateKey,
+    kcal: Number(row.kcal) || 0,
+    protein: Number(row.protein) || 0,
+    fat: Number(row.fat) || 0,
+    carbs: Number(row.carbs) || 0,
     kcalAverage: kcalSeries[index],
     proteinAverage: proteinSeries[index],
     fatAverage: fatSeries[index],
@@ -194,27 +198,41 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-function getTargetScale(targetValue) {
+function getDynamicDomain(values, targetValue, minRange, paddingRatio = 0.05) {
+  const numericValues = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
   const numericTarget = Number(targetValue);
-  if (!Number.isFinite(numericTarget) || numericTarget <= 0) return null;
+  const target = Number.isFinite(numericTarget) ? numericTarget : null;
+  const allValues = target !== null ? [...numericValues, target] : numericValues;
 
-  return {
-    min: numericTarget * 0.85,
-    max: numericTarget * 1.15,
-    target: numericTarget
-  };
+  if (!allValues.length) {
+    return [0, Math.max(1, minRange)];
+  }
+
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  const rawRange = maxValue - minValue;
+  const effectiveRange = Math.max(rawRange, minRange, 1);
+  const padding = Math.max(effectiveRange * paddingRatio, minRange * paddingRatio, 1);
+  const center = (minValue + maxValue) / 2;
+  const minDomain = Math.max(0, Math.floor(center - effectiveRange / 2 - padding));
+  const maxDomain = Math.ceil(center + effectiveRange / 2 + padding);
+
+  if (maxDomain > minDomain) return [minDomain, maxDomain];
+
+  return [Math.max(0, minDomain - 1), maxDomain + 1];
 }
 
-function getFallbackScale(values) {
-  const finiteValues = values.filter((value) => Number.isFinite(Number(value))).map(Number);
-  if (!finiteValues.length) return { min: 0, max: 1, target: null };
+function getSeriesScale({ averageValues, targetValue, minRange }) {
+  const [min, max] = getDynamicDomain(averageValues, targetValue, minRange);
+  const numericTarget = Number(targetValue);
 
-  const minValue = Math.min(...finiteValues);
-  const maxValue = Math.max(...finiteValues);
-  if (maxValue > minValue) return { min: minValue, max: maxValue, target: null };
-
-  const padding = Math.max(Math.abs(minValue) * 0.15, 1);
-  return { min: minValue - padding, max: minValue + padding, target: null };
+  return {
+    min,
+    max,
+    target: Number.isFinite(numericTarget) ? numericTarget : null
+  };
 }
 
 function getBandY(value, bandIndex, scale) {
@@ -365,21 +383,31 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
   const chartData = buildTrendChartData(rows, windowSize);
   const seriesBands = TREND_SERIES.map((series, index) => {
     const values = chartData.map((item) => Number(item[series.key]) || 0);
-    const targetScale = getTargetScale(targets?.[series.targetKey]);
-    const scale = targetScale || getFallbackScale(values);
+    const rawValueKey = series.targetKey;
+    const rawValues = chartData.map((item) => Number(item[rawValueKey]) || 0);
+    const scale = getSeriesScale({
+      averageValues: values,
+      targetValue: targets?.[series.targetKey],
+      minRange: series.minRange
+    });
     const points = buildBandPoints(values, index, scale);
-    const targetY = targetScale ? getBandY(targetScale.target, index, scale) : null;
+    const rawPoints = rawValues.length ? buildBandPoints(rawValues, index, scale) : [];
+    const targetY = scale.target !== null ? getBandY(scale.target, index, scale) : null;
+    const bandTop = CHART_TOP + index * (BAND_HEIGHT + BAND_GAP);
+    const bandBottom = bandTop + BAND_HEIGHT;
     return {
       ...series,
       latestValue: values[values.length - 1] || 0,
       path: buildSmoothPath(points),
+      rawPath: rawPoints.length ? buildSmoothPath(rawPoints) : "",
+      rawOpacity: series.key === "kcalAverage" || series.key === "fatAverage" ? 0.84 : 0.76,
       valueLabel: series.label === "kcal" ? String(Math.round(values[values.length - 1] || 0)) : `${series.label} ${Math.round(values[values.length - 1] || 0)}`,
       valueLabelLeft: LABEL_LEFT,
       valueLabelTop: `${((CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + 6) / CHART_HEIGHT) * 100}%`,
       targetY,
-      bandTop: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP),
-      bandBottom: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT,
-      labelY: CHART_TOP + index * (BAND_HEIGHT + BAND_GAP) + BAND_HEIGHT * 0.42
+      bandTop,
+      bandBottom,
+      labelY: bandTop + BAND_HEIGHT * 0.42
     };
   });
 
@@ -390,7 +418,7 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
           <span
             key={`${series.key}-label`}
             className="pointer-events-none absolute left-0 select-none text-[0.62rem] leading-none text-slate-500"
-            style={{ top: `${(series.labelY / CHART_HEIGHT) * 100}%`, color: series.color, opacity: 0.58 }}
+            style={{ top: `${(series.labelY / CHART_HEIGHT) * 100}%`, color: series.color, opacity: 0.72 }}
           >
             {series.label}
           </span>
@@ -413,9 +441,9 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
                   x2={CHART_RIGHT}
                   y1={series.targetY}
                   y2={series.targetY}
-                  stroke="rgba(255,255,255,0.18)"
-                  strokeWidth="0.8"
-                  strokeDasharray="2 4"
+                  stroke="rgba(255,255,255,0.75)"
+                  strokeWidth="1.1"
+                  strokeDasharray="2.5 3.5"
                   vectorEffect="non-scaling-stroke"
                 />
               ) : null}
@@ -430,15 +458,27 @@ function TrendOverviewPanel({ rows, ratio, targets, windowSize }) {
                   vectorEffect="non-scaling-stroke"
                 />
               ) : null}
+              {series.rawPath ? (
+                <path
+                  d={series.rawPath}
+                  fill="none"
+                  stroke={series.color}
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  opacity={series.rawOpacity}
+                />
+              ) : null}
               <path
                 d={series.path}
                 fill="none"
                 stroke={series.color}
-                strokeWidth="1.4"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
-                opacity="0.98"
+                opacity="1"
               />
             </g>
           ))}
@@ -472,19 +512,26 @@ function EntryPreview({ entries, foods }) {
   return (
     <div className="mt-2.5 grid gap-2 border-t border-white/5 pt-2.5">
       {entries.map((entry) => {
-        const food = foods.find((item) => item.id === entry.foodId);
-        if (!food) return null;
-        const values = calculateEntry(food, Number(entry.amount) || 0);
+        const calculated = calculateDiaryEntry(entry, foods);
+        if (!calculated) return null;
+        const { food, values } = calculated;
+        const isModifiedRecipe = hasRecipeEntryOverrides(entry, food);
         return (
           <div className="flex items-center justify-between gap-3 py-1 text-[0.85rem]" key={entry.entryId}>
             <div className="min-w-0">
-              <AppSectionTitle className="truncate text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <AppSectionTitle className="truncate text-[0.92rem] font-semibold text-slate-100">{food.name}</AppSectionTitle>
+                {isModifiedRecipe ? <span className="shrink-0 text-[0.72rem] font-bold text-red-400" aria-label={"M\u00f3dos\u00edtott recept"}>!</span> : null}
+              </div>
               <AppMetaText className="text-[0.75rem] text-slate-400">
-                P {formatStat(values.protein)}g · F {formatStat(values.fat)}g · Ch {formatStat(values.carbs)}g
+                P {formatStat(values.protein)}g {" \u00b7 "} F {formatStat(values.fat)}g {" \u00b7 "} Ch {formatStat(values.carbs)}g
+                {isModifiedRecipe ? <span className="text-red-300">{" \u00b7 mod."}</span> : null}
               </AppMetaText>
             </div>
             <div className="shrink-0 text-right">
-              <AppSectionTitle className="block text-[0.92rem] font-semibold text-slate-100">{Math.round(values.kcal)} kcal</AppSectionTitle>
+              <AppSectionTitle className="block text-[0.92rem] font-semibold text-slate-100">
+                {Math.round(values.kcal)} kcal {isModifiedRecipe ? <span className="text-red-400">!</span> : null}
+              </AppSectionTitle>
               <AppMetaText className="text-[0.75rem] text-slate-400">
                 {formatStat(entry.amount)} {food.unit}
               </AppMetaText>
@@ -661,6 +708,8 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   const ratio = calculateMacroRatio(average);
   const weekGroups = useMemo(() => buildWeekGroups(rows), [rows]);
   const monthGroups = useMemo(() => buildMonthGroups(rows, todayKey), [rows, todayKey]);
+  const hasOpenDay = Object.values(openDays).some(Boolean);
+  const hasOpenWeek = Object.values(openWeeks).some(Boolean);
   const activeDayKey = Object.keys(openDays).find((dateKey) => openDays[dateKey]);
   const activeDay = activeDayKey ? rows.find((row) => row.dateKey === activeDayKey) : null;
   const activeWeekId = Object.keys(openWeeks).find((weekId) => openWeeks[weekId]);
@@ -683,7 +732,8 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
   if (activeWeek) summaryRatio = activeWeek.ratio;
   if (activeDay) summaryRatio = calculateMacroRatio(activeDay);
 
-  const movingAverageWindow = activeWeek || activeDay ? 7 : 30;
+  const movingAverageWindow = hasOpenDay ? 7 : hasOpenWeek ? 14 : 30;
+  const trendRows = useMemo(() => loggedRows.slice(-movingAverageWindow), [loggedRows, movingAverageWindow]);
 
   function toggleMonth(monthId) {
     setOpenMonths((current) => {
@@ -709,9 +759,9 @@ export function StatsView({ diary, dailyLogs, foods, targets, days, title, onLoa
     });
   }
 
-  return (
-    <AppPage className="pt-3">
-      <TrendOverviewPanel rows={loggedRows} ratio={summaryRatio} targets={targets} windowSize={movingAverageWindow} />
+    return (
+      <AppPage className="pt-3">
+      <TrendOverviewPanel rows={trendRows} ratio={summaryRatio} targets={targets} windowSize={movingAverageWindow} />
 
       <AppCard aria-label={isMonthlyView ? "Havi hónapok" : "Heti összesítő"}>
         {isMonthlyView

@@ -304,6 +304,71 @@ export default function App() {
     );
   }
 
+  function handleRecipeIngredientAmountChange(entryId, ingredientIndex, foodId, amount) {
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    persistEntriesForDate(
+      workDate,
+      todayEntries.map((entry) => {
+        if (entry.entryId !== entryId) return entry;
+        const currentOverrides = Array.isArray(entry.recipeOverrides) ? entry.recipeOverrides : [];
+        const nextOverrides = currentOverrides
+          .filter((override) => override?.type === "added" || Number(override?.ingredientIndex) !== ingredientIndex)
+          .concat({ type: "override", ingredientIndex, foodId, amount: safeAmount });
+        return { ...entry, recipeOverrides: nextOverrides, locked: false };
+      })
+    );
+  }
+
+  function handleRecipeIngredientAdd(entryId, foodId, amount) {
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    if (!foodId || safeAmount <= 0) return;
+    persistEntriesForDate(
+      workDate,
+      todayEntries.map((entry) => {
+        if (entry.entryId !== entryId) return entry;
+        const currentOverrides = Array.isArray(entry.recipeOverrides) ? entry.recipeOverrides : [];
+        return {
+          ...entry,
+          recipeOverrides: [...currentOverrides, { type: "added", overrideId: createUniqueId(foodId), foodId, amount: safeAmount }],
+          locked: false
+        };
+      })
+    );
+  }
+
+  function handleRecipeAddedIngredientAmountChange(entryId, overrideId, amount) {
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    persistEntriesForDate(
+      workDate,
+      todayEntries.map((entry) => {
+        if (entry.entryId !== entryId) return entry;
+        const currentOverrides = Array.isArray(entry.recipeOverrides) ? entry.recipeOverrides : [];
+        return {
+          ...entry,
+          recipeOverrides: currentOverrides.map((override) =>
+            override?.type === "added" && override.overrideId === overrideId ? { ...override, amount: safeAmount } : override
+          ),
+          locked: false
+        };
+      })
+    );
+  }
+
+  function handleRecipeAddedIngredientRemove(entryId, overrideId) {
+    persistEntriesForDate(
+      workDate,
+      todayEntries.map((entry) => {
+        if (entry.entryId !== entryId) return entry;
+        const currentOverrides = Array.isArray(entry.recipeOverrides) ? entry.recipeOverrides : [];
+        return {
+          ...entry,
+          recipeOverrides: currentOverrides.filter((override) => !(override?.type === "added" && override.overrideId === overrideId)),
+          locked: false
+        };
+      })
+    );
+  }
+
   function handleRemove(entryId) {
     persistEntriesForDate(workDate, todayEntries.filter((entry) => entry.entryId !== entryId));
   }
@@ -367,6 +432,10 @@ export default function App() {
           onWorkDateChange={handleWorkDateChange}
           onReturnToToday={handleReturnToToday}
           onAmountChange={handleAmountChange}
+          onRecipeIngredientAmountChange={handleRecipeIngredientAmountChange}
+          onRecipeIngredientAdd={handleRecipeIngredientAdd}
+          onRecipeAddedIngredientAmountChange={handleRecipeAddedIngredientAmountChange}
+          onRecipeAddedIngredientRemove={handleRecipeAddedIngredientRemove}
           onRemove={handleRemove}
           quickAddFoods={visibleFoods}
         />

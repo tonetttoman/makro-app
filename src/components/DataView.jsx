@@ -60,6 +60,23 @@ function numberValue(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function normalizeImportedTargets(importedTargets, currentTargets) {
+  if (!importedTargets || typeof importedTargets !== "object") return currentTargets;
+
+  const nextTargets = { ...currentTargets };
+
+  ["kcal", "protein", "fat", "carbs"].forEach((key) => {
+    const rawValue = importedTargets[key];
+    if (rawValue === null || rawValue === undefined || rawValue === "") return;
+    const value = Number(String(rawValue).replace(",", "."));
+    if (Number.isFinite(value) && value >= 0) {
+      nextTargets[key] = value;
+    }
+  });
+
+  return nextTargets;
+}
+
 function roundTargetNumber(value) {
   return Math.max(0, Math.round(Number(value) || 0));
 }
@@ -253,6 +270,7 @@ export function DataView({
   const [targetDrafts, setTargetDrafts] = useState(() => ({ kcal: String(roundTargetNumber(targets?.kcal)), protein: String(roundTargetNumber(targets?.protein)), fat: String(roundTargetNumber(targets?.fat)), carbs: String(roundTargetNumber(targets?.carbs)) }));
   const [activeTargetField, setActiveTargetField] = useState(null);
   const [transferMessage, setTransferMessage] = useState(null);
+  const [isBackupOpen, setIsBackupOpen] = useState(false);
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -398,7 +416,7 @@ export function DataView({
         importedParts.push(`${parsed.foods.length} élelmiszer felülírva (korábban: ${previousFoodCount})`);
       }
       if (parsed.targets && typeof parsed.targets === "object") {
-        setTargets(parsed.targets);
+        setTargets((currentTargets) => normalizeImportedTargets(parsed.targets, currentTargets));
         importedParts.push("makró célok frissítve");
       }
       if (parsed.diary && typeof parsed.diary === "object") {
@@ -554,7 +572,7 @@ export function DataView({
     const normalizedName = normalizeEntityName(name);
     const existingRecipeByName = foods.find((food) => isRecipeFood(food) && normalizeEntityName(food.name) === normalizedName);
     const targetRecipeId = existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
-    const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 10, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
+    const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 100, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
     setFoods((current) => [...current.filter((food) => !(isRecipeFood(food) && (food.id === editingRecipeId || food.id === existingRecipeByName?.id))), nextRecipe]);
     setEditingRecipeId("");
     setRecipeDraft(createBlankRecipe());
@@ -759,39 +777,48 @@ export function DataView({
       </AppCard>
 
       <AppCard>
-        <AppSectionTitle>{"Import / export / biztonsági mentés"}</AppSectionTitle>
-        {transferMessage ? (
-          <AppNestedCard
-            className={
-              transferMessage.type === "error"
-                ? "mt-3 border-red-400/20 bg-red-950/20"
-                : "mt-3 border-cyan-400/20 bg-cyan-950/10"
-            }
-            variant="compact"
-          >
-            <AppMetaText className={transferMessage.type === "error" ? "text-red-200" : "text-slate-300"}>
-              {transferMessage.text}
-            </AppMetaText>
-          </AppNestedCard>
+        <AppToggleHeader
+          title={"Import / export / biztonsági mentés"}
+          summary={"Teljes adatmentés és napi napló import/export"}
+          isOpen={isBackupOpen}
+          onToggle={() => setIsBackupOpen((current) => !current)}
+        />
+        {isBackupOpen ? (
+          <>
+          {transferMessage ? (
+            <AppNestedCard
+              className={
+                transferMessage.type === "error"
+                  ? "mt-3 border-red-400/20 bg-red-950/20"
+                  : "mt-3 border-cyan-400/20 bg-cyan-950/10"
+              }
+              variant="compact"
+            >
+              <AppMetaText className={transferMessage.type === "error" ? "text-red-200" : "text-slate-300"}>
+                {transferMessage.text}
+              </AppMetaText>
+            </AppNestedCard>
+          ) : null}
+          <div className="mt-3 grid gap-3">
+            <AppNestedCard>
+              <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
+              </div>
+              <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
+              <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
+              </div>
+              <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
+            </AppNestedCard>
+          </div>
+          </>
         ) : null}
-        <div className="mt-3 grid gap-3">
-          <AppNestedCard>
-            <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
-              <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
-            </div>
-            <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
-          </AppNestedCard>
-          <AppNestedCard>
-            <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
-            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-              <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
-              <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
-            </div>
-            <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
-          </AppNestedCard>
-        </div>
       </AppCard>
     </AppPage>
   );

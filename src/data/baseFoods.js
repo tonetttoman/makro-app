@@ -1024,7 +1024,7 @@ export const BASE_FOODS = [
     "kcal": 57,
     "protein": 0.7,
     "fat": 0.3,
-    "carbs": 14.5
+    "carbs": 12.4
   },
   {
     "id": "raw-fruit-20",
@@ -1548,16 +1548,16 @@ export const BASE_FOODS = [
   },
   {
     "id": "staple-whole-egg",
-    "name": "Tojás",
-    "category": "Alapanyag",
-    "unit": "g",
-    "baseAmount": 100,
-    "defaultAmount": 100,
-    "step": 50,
-    "kcal": 143,
-    "protein": 12.6,
-    "fat": 9.5,
-    "carbs": 0.7
+    "name": "Tojás L",
+    "category": "Tojás",
+    "unit": "db",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 86,
+    "protein": 7.6,
+    "fat": 5.7,
+    "carbs": 0.4
   },
   {
     "id": "staple-egg-white",
@@ -1630,9 +1630,9 @@ export const BASE_FOODS = [
     "category": "Alapanyag",
     "unit": "g",
     "baseAmount": 100,
-    "defaultAmount": 10,
+    "defaultAmount": 5,
     "step": 5,
-    "kcal": 884,
+    "kcal": 880,
     "protein": 0,
     "fat": 100,
     "carbs": 0
@@ -1697,7 +1697,7 @@ export const BASE_FOODS = [
     "baseAmount": 100,
     "defaultAmount": 100,
     "step": 50,
-    "kcal": 144,
+    "kcal": 143.888889,
     "protein": 16,
     "fat": 8,
     "carbs": 2
@@ -1736,7 +1736,7 @@ export const BASE_FOODS = [
     "baseAmount": 100,
     "defaultAmount": 30,
     "step": 5,
-    "kcal": 372,
+    "kcal": 370,
     "protein": 84,
     "fat": 1.5,
     "carbs": 4.5
@@ -1758,12 +1758,12 @@ export const BASE_FOODS = [
     "id": "dairy-pilos-milk-15",
     "name": "Pilos 1,5% tej",
     "category": "Alapanyag",
-    "unit": "g",
+    "unit": "ml",
     "baseAmount": 100,
     "defaultAmount": 200,
     "step": 50,
     "kcal": 44,
-    "protein": 3.2,
+    "protein": 3,
     "fat": 1.5,
     "carbs": 4.7
   },
@@ -1818,12 +1818,402 @@ export const BASE_FOODS = [
     "protein": 0.3,
     "fat": 1,
     "carbs": 0.1
+  },
+  {
+    "id": "import-vanavita-bio-tokmag",
+    "name": "VanaVita bio Kakaópor",
+    "category": "Alapanyag",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 20,
+    "step": 10,
+    "kcal": 334,
+    "protein": 27.2,
+    "fat": 11,
+    "carbs": 15.3
+  },
+  {
+    "id": "import-gal-halolaj",
+    "name": "GAL halolaj",
+    "category": "Alapanyag",
+    "unit": "ml",
+    "baseAmount": 100,
+    "defaultAmount": 8,
+    "step": 1,
+    "kcal": 825,
+    "protein": 0,
+    "fat": 92.5,
+    "carbs": 0
+  },
+  {
+    "id": "import-sult-csirkemell",
+    "name": "Csirkemell",
+    "category": "Hús",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 165,
+    "protein": 31,
+    "fat": 3.6,
+    "carbs": 0
+  },
+  {
+    "id": "import-aquadelle-alhering",
+    "name": "Aquadelle / Alhering",
+    "category": "Hús",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 80,
+    "protein": 17,
+    "fat": 0.722222,
+    "carbs": 1.222222
+  },
+  {
+    "id": "import-medvehagymas-brokkoli-karfiol-koret",
+    "name": "Medvehagymás brokkoli-karfiol köret",
+    "category": "Főtt ételek",
+    "unit": "adag",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 179,
+    "protein": 8,
+    "fat": 10.1,
+    "carbs": 16.5
+  },
+  {
+    "id": "import-hekk",
+    "name": "Hekk",
+    "category": "Hús",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 90,
+    "protein": 18,
+    "fat": 1.5,
+    "carbs": 0
+  },
+  {
+    "id": "import-trend-plus-ch-csokkentett-brotter",
+    "name": "Trend+ ch csökkentett brotter",
+    "category": "Gabona",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 302,
+    "protein": 24.2,
+    "fat": 17.5,
+    "carbs": 5.6
+  },
+  {
+    "id": "import-hazank-kincsei-csipos-savanyusag",
+    "name": "Hazánk Kincsei csípős savanyúság",
+    "category": "Zöldség",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 21,
+    "protein": 0.8,
+    "fat": 0,
+    "carbs": 2.8
+  },
+  {
+    "id": "import-lidl-hirtenkase",
+    "name": "Lidl Hirtenkäse",
+    "category": "Tejtermék",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 280,
+    "protein": 17,
+    "fat": 23,
+    "carbs": 1
+  },
+  {
+    "id": "vanavita-bio-tokmag-1779342048424",
+    "name": "VanaVita bio Tökmag",
+    "category": "Alapanyag",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 20,
+    "step": 10,
+    "kcal": 559,
+    "protein": 30.02,
+    "fat": 49.1,
+    "carbs": 4.7
+  },
+  {
+    "id": "import-alap-shake",
+    "name": "Alap Shake",
+    "category": "Főtt ételek",
+    "unit": "%",
+    "baseAmount": 100,
+    "defaultAmount": 10,
+    "step": 5,
+    "kcal": 254,
+    "protein": 49.2,
+    "fat": 2.8,
+    "carbs": 3.9,
+    "isRecipe": true,
+    "recipe": {
+      "ingredients": [
+        {
+          "foodId": "supplement-gymbeam-pure-iso-whey-chocolate",
+          "amount": 30
+        },
+        {
+          "foodId": "import-vanavita-bio-tokmag",
+          "amount": 20
+        },
+        {
+          "foodId": "supplement-denes-natura-soy-isolate",
+          "amount": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "orolt-paprika-1779358641615",
+    "name": "Őrölt Paprika",
+    "category": "Alapanyag",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 10,
+    "step": 10,
+    "kcal": 282,
+    "protein": 14.1,
+    "fat": 12.8,
+    "carbs": 19.1
+  },
+  {
+    "id": "recipe-sertesporkolt-1779355939432",
+    "name": "Sertéspőrkőlt",
+    "category": "Főtt ételek",
+    "unit": "%",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 5,
+    "kcal": 4316,
+    "protein": 418.3,
+    "fat": 273.1,
+    "carbs": 50.3,
+    "isRecipe": true,
+    "recipe": {
+      "ingredients": [
+        {
+          "foodId": "raw-veg-11",
+          "amount": 500
+        },
+        {
+          "foodId": "staple-olive-oil",
+          "amount": 100
+        },
+        {
+          "foodId": "raw-pork-leg",
+          "amount": 2000
+        },
+        {
+          "foodId": "orolt-paprika-1779358641615",
+          "amount": 20
+        }
+      ]
+    }
+  },
+  {
+    "id": "recipe-marhaporkolt-1779425691281",
+    "name": "Marhapörkölt",
+    "category": "Főtt ételek",
+    "unit": "%",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 5,
+    "kcal": 1918,
+    "protein": 222.7,
+    "fat": 101.6,
+    "carbs": 29.8,
+    "isRecipe": true,
+    "recipe": {
+      "ingredients": [
+        {
+          "foodId": "raw-beef-shank",
+          "amount": 1000
+        },
+        {
+          "foodId": "raw-veg-11",
+          "amount": 300
+        },
+        {
+          "foodId": "orolt-paprika-1779358641615",
+          "amount": 10
+        },
+        {
+          "foodId": "staple-pork-lard",
+          "amount": 50
+        }
+      ]
+    }
+  },
+  {
+    "id": "irsai-oliver-1779425935600",
+    "name": "Irsai Olivér",
+    "category": "Alapanyag",
+    "unit": "ml",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 100,
+    "kcal": 75,
+    "protein": 0,
+    "fat": 0,
+    "carbs": 1.5
+  },
+  {
+    "id": "baresa-passzirozott-paradicsom-1779426283608",
+    "name": "Baresa Passzírozott paradicsom",
+    "category": "Alapanyag",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 100,
+    "kcal": 28,
+    "protein": 1.3,
+    "fat": 0.2,
+    "carbs": 4.9
+  },
+  {
+    "id": "dairy-pilos-trappista-sajt",
+    "name": "Pilos Trappista sajt",
+    "category": "Tejtermék",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 50,
+    "step": 10,
+    "kcal": 329,
+    "protein": 24,
+    "fat": 26,
+    "carbs": 0.5
+  },
+  {
+    "id": "dairy-szarvasi-pizza-mozzarella",
+    "name": "Szarvasi Pizza Mozzarella",
+    "category": "Tejtermék",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 50,
+    "step": 10,
+    "kcal": 298,
+    "protein": 23,
+    "fat": 22,
+    "carbs": 1
+  },
+  {
+    "id": "fish-apritott-tonhal-sos-leben",
+    "name": "Aprított tonhal sós lében",
+    "category": "Hús",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 101,
+    "protein": 24,
+    "fat": 0.5,
+    "carbs": 0
+  },
+  {
+    "id": "staple-lidl-konzerv-vorosbab",
+    "name": "Lidl Konzerv vörösbab",
+    "category": "Alapanyag",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 81,
+    "protein": 5.2,
+    "fat": 0.4,
+    "carbs": 10.5
+  },
+  {
+    "id": "staple-durum-szarazteszta",
+    "name": "Durum száraztészta",
+    "category": "Gabona",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 100,
+    "step": 50,
+    "kcal": 355,
+    "protein": 12.5,
+    "fat": 1.5,
+    "carbs": 71
+  },
+  {
+    "id": "staple-levesbetet-teszta",
+    "name": "Levesbetét tészta",
+    "category": "Gabona",
+    "unit": "g",
+    "baseAmount": 100,
+    "defaultAmount": 50,
+    "step": 10,
+    "kcal": 371,
+    "protein": 13,
+    "fat": 3.2,
+    "carbs": 71
+  },
+  {
+    "id": "dairy-pilos-natur-turo-rudi-30g",
+    "name": "Pilos natúr túró rudi",
+    "category": "Tejtermék",
+    "unit": "db",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 106,
+    "protein": 2.9,
+    "fat": 5.1,
+    "carbs": 11.7
+  },
+  {
+    "id": "dairy-pottyos-natur-orias-turo-rudi-51g",
+    "name": "Pöttyös natúr ÓRIÁS túró rudi",
+    "category": "Tejtermék",
+    "unit": "db",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 185.6,
+    "protein": 4.9,
+    "fat": 9.5,
+    "carbs": 20.1
+  },
+  {
+    "id": "dairy-pilos-gyumolcsos-ivojoghurt",
+    "name": "Pilos gyümölcsös ivójoghurt",
+    "category": "Tejtermék",
+    "unit": "ml",
+    "baseAmount": 100,
+    "defaultAmount": 250,
+    "step": 50,
+    "kcal": 73,
+    "protein": 2.5,
+    "fat": 1.4,
+    "carbs": 12.5
+  },
+  {
+    "id": "sajtos-parna-1779431286748",
+    "name": "Sajtos Párna",
+    "category": "Alapanyag",
+    "unit": "db",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 377,
+    "protein": 9,
+    "fat": 20.5,
+    "carbs": 36.7
   }
-];
-
-export const FOOD_CATEGORIES = [
-  "Hús",
-  "Zöldség",
-  "Gyümölcs",
-  "Alapanyag"
 ];
