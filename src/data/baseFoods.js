@@ -2202,5 +2202,18 @@ export const BASE_FOODS = [
     "protein": 2.5,
     "fat": 1.4,
     "carbs": 12.5
+  },
+  {
+    "id": "sajtos-parna-1779431286748",
+    "name": "Sajtos Párna",
+    "category": "Alapanyag",
+    "unit": "db",
+    "baseAmount": 1,
+    "defaultAmount": 1,
+    "step": 1,
+    "kcal": 377,
+    "protein": 9,
+    "fat": 20.5,
+    "carbs": 36.7
   }
 ];
