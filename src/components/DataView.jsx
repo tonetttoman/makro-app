@@ -639,6 +639,8 @@ export function DataView({
       const nextFood = { ...nextFoodBase, id: `${slugify(name)}-${Date.now()}` };
       return [...current, nextFood];
     });
+    setFoodDraft(createBlankFood());
+    setIsFoodEditorOpen(false);
   }
 
   function deleteFood() {
