@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FOOD_CATEGORIES } from "../data/foods";
 import { calculateEntry } from "../lib/calculations";
 import { toDateKey } from "../lib/dates";
+import { normalizeSearch } from "../lib/foodSearch";
 import {
   AppButton,
   AppCard,
@@ -118,10 +119,6 @@ function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCa
     carbs: nextCarbs,
     kcal: calculateKcalFromMacros(nextProtein, nextFat, nextCarbs)
   };
-}
-
-function normalizeSearch(value) {
-  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
 function repairHungarianMojibake(value) {

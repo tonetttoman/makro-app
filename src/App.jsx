@@ -6,6 +6,7 @@ import { TodayView } from "./components/TodayView";
 import { FOOD_CATEGORIES } from "./data/foods";
 import { DEFAULT_TARGETS, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
+import { getFoodSearchRank, isRenderableFood, normalizeSearch } from "./lib/foodSearch";
 import {
   DIARY_KEY,
   DAILY_LOGS_KEY,
@@ -65,44 +66,6 @@ function getWorkspaceForDate(diary, dailyLogs, date) {
     entries,
     importedTotals: entries.length ? null : getImportedTotalsForDate(dailyLogs, date)
   };
-}
-
-function sortFoodsByName(items) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
-}
-
-function normalizeSearch(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function getFoodSearchRank(foodName, query) {
-  const normalizedName = normalizeSearch(foodName);
-  if (!query || !normalizedName) return Number.POSITIVE_INFINITY;
-  if (normalizedName === query) return 0;
-  if (normalizedName.startsWith(query)) return 1;
-
-  const words = normalizedName.split(/[\s\-_/(),.]+/).filter(Boolean);
-  if (words.some((word) => word.startsWith(query))) return 2;
-  if (normalizedName.includes(query)) return 3;
-
-  return Number.POSITIVE_INFINITY;
-}
-
-function isRenderableFood(food) {
-  return Boolean(
-    food &&
-      typeof food.id === "string" &&
-      food.id.trim() &&
-      typeof food.name === "string" &&
-      food.name.trim() &&
-      typeof food.category === "string" &&
-      food.category.trim() &&
-      Number(food.step) > 0
-  );
 }
 
 function createUniqueId(prefix) {
