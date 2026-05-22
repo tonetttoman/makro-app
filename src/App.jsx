@@ -3,7 +3,7 @@ import { BottomNav } from "./components/BottomNav";
 import { DataView } from "./components/DataView";
 import { StatsView } from "./components/StatsView";
 import { TodayView } from "./components/TodayView";
-import { FOOD_CATEGORIES, FOODS } from "./data/foods";
+import { FOOD_CATEGORIES } from "./data/foods";
 import { DEFAULT_TARGETS, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
 import {
@@ -176,7 +176,7 @@ export default function App() {
     };
   }
 
-  const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
+  const [foods, setFoods] = useLocalStorage(FOODS_KEY, []);
   const [diary, setDiary] = useLocalStorage(DIARY_KEY, {});
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
