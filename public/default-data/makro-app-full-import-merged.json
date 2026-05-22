@@ -1577,14 +1577,14 @@
       "id": "staple-egg-yolk",
       "name": "Tojássárgája",
       "category": "Alapanyag",
-      "unit": "g",
-      "baseAmount": 100,
-      "defaultAmount": 50,
-      "step": 20,
-      "kcal": 322,
-      "protein": 15.9,
-      "fat": 26.5,
-      "carbs": 3.6
+      "unit": "db",
+      "baseAmount": 1,
+      "defaultAmount": 1,
+      "step": 1,
+      "kcal": 71,
+      "protein": 3.5,
+      "fat": 5.8,
+      "carbs": 0.8
     },
     {
       "id": "staple-yogurt-plain",
@@ -1994,40 +1994,6 @@
       "carbs": 19.1
     },
     {
-      "id": "recipe-sertesporkolt-1779355939432",
-      "name": "Sertéspőrkőlt",
-      "category": "Főtt ételek",
-      "unit": "%",
-      "baseAmount": 100,
-      "defaultAmount": 100,
-      "step": 5,
-      "kcal": 4316,
-      "protein": 418.3,
-      "fat": 273.1,
-      "carbs": 50.3,
-      "isRecipe": true,
-      "recipe": {
-        "ingredients": [
-          {
-            "foodId": "raw-veg-11",
-            "amount": 500
-          },
-          {
-            "foodId": "staple-olive-oil",
-            "amount": 100
-          },
-          {
-            "foodId": "raw-pork-leg",
-            "amount": 2000
-          },
-          {
-            "foodId": "orolt-paprika-1779358641615",
-            "amount": 20
-          }
-        ]
-      }
-    },
-    {
       "id": "recipe-marhaporkolt-1779425691281",
       "name": "Marhapörkölt",
       "category": "Főtt ételek",
@@ -2247,6 +2213,481 @@
           {
             "foodId": "staple-sunflower-oil",
             "amount": 75
+          }
+        ]
+      }
+    },
+    {
+      "id": "petrezselyem-1779483847909",
+      "name": "Petrezselyem",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 10,
+      "kcal": 36,
+      "protein": 3,
+      "fat": 0.9,
+      "carbs": 6.3
+    },
+    {
+      "id": "recipe-paradicsom-leves-1779483645511",
+      "name": "Paradicsom leves",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 376,
+      "protein": 16.6,
+      "fat": 2.9,
+      "carbs": 67.4,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "baresa-passzirozott-paradicsom-1779426283608",
+            "amount": 1000
+          },
+          {
+            "foodId": "staple-levesbetet-teszta",
+            "amount": 25
+          },
+          {
+            "foodId": "petrezselyem-1779483847909",
+            "amount": 10
+          }
+        ]
+      }
+    },
+    {
+      "id": "pilos-12-os-tejfol-1779484330023",
+      "name": "Pilos 12%-os Tejföl",
+      "category": "Tejtermék",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 142,
+      "protein": 3.1,
+      "fat": 12,
+      "carbs": 4
+    },
+    {
+      "id": "recipe-rakott-zoldbab-1779484172907",
+      "name": "Rakott zöldbab",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 4840,
+      "protein": 269.8,
+      "fat": 186.3,
+      "carbs": 509.3,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "raw-veg-46",
+            "amount": 1000
+          },
+          {
+            "foodId": "staple-white-rice",
+            "amount": 500
+          },
+          {
+            "foodId": "raw-turkey-ground-lean",
+            "amount": 1000
+          },
+          {
+            "foodId": "staple-olive-oil",
+            "amount": 50
+          },
+          {
+            "foodId": "raw-veg-11",
+            "amount": 250
+          },
+          {
+            "foodId": "pilos-12-os-tejfol-1779484330023",
+            "amount": 500
+          }
+        ]
+      }
+    },
+    {
+      "id": "recipe-sertesporkolt-1779355939432",
+      "name": "Sertéspörkölt",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 2158,
+      "protein": 209.2,
+      "fat": 136.5,
+      "carbs": 25.2,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "raw-veg-11",
+            "amount": 250
+          },
+          {
+            "foodId": "staple-olive-oil",
+            "amount": 50
+          },
+          {
+            "foodId": "raw-pork-leg",
+            "amount": 1000
+          },
+          {
+            "foodId": "orolt-paprika-1779358641615",
+            "amount": 10
+          }
+        ]
+      }
+    },
+    {
+      "id": "gyoker-1779485396514",
+      "name": "Gyökér",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 32,
+      "protein": 2,
+      "fat": 0.3,
+      "carbs": 5
+    },
+    {
+      "id": "recipe-ragu-leves-1779485361022",
+      "name": "Ragu leves",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 2441,
+      "protein": 138,
+      "fat": 117.4,
+      "carbs": 213.1,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "raw-veg-7",
+            "amount": 300
+          },
+          {
+            "foodId": "gyoker-1779485396514",
+            "amount": 150
+          },
+          {
+            "foodId": "raw-veg-50",
+            "amount": 150
+          },
+          {
+            "foodId": "raw-veg-11",
+            "amount": 150
+          },
+          {
+            "foodId": "raw-chicken-thigh",
+            "amount": 500
+          },
+          {
+            "foodId": "staple-levesbetet-teszta",
+            "amount": 100
+          },
+          {
+            "foodId": "pilos-12-os-tejfol-1779484330023",
+            "amount": 300
+          },
+          {
+            "foodId": "staple-olive-oil",
+            "amount": 50
+          },
+          {
+            "foodId": "staple-wheat-flour",
+            "amount": 70
+          }
+        ]
+      }
+    },
+    {
+      "id": "francia-salata-alap-1779485760977",
+      "name": "Francia saláta alap",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 100,
+      "defaultAmount": 100,
+      "kcal": 67,
+      "protein": 2,
+      "fat": 0.2,
+      "carbs": 11.2
+    },
+    {
+      "id": "mustar-1779486167724",
+      "name": "Mustár",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 117,
+      "protein": 4.5,
+      "fat": 5,
+      "carbs": 10
+    },
+    {
+      "id": "recipe-majonez-1779486188228",
+      "name": "Majonéz",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 2817,
+      "protein": 7.9,
+      "fat": 312.6,
+      "carbs": 3.6,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "staple-egg-yolk",
+            "amount": 2
+          },
+          {
+            "foodId": "staple-sunflower-oil",
+            "amount": 300
+          },
+          {
+            "foodId": "mustar-1779486167724",
+            "amount": 20
+          }
+        ]
+      }
+    },
+    {
+      "id": "recipe-tartar-martas-1779486445888",
+      "name": "Tartármártás",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 3172,
+      "protein": 15.7,
+      "fat": 342.6,
+      "carbs": 13.6,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "staple-egg-yolk",
+            "amount": 2
+          },
+          {
+            "foodId": "staple-sunflower-oil",
+            "amount": 300
+          },
+          {
+            "foodId": "mustar-1779486167724",
+            "amount": 20
+          },
+          {
+            "foodId": "pilos-12-os-tejfol-1779484330023",
+            "amount": 250
+          }
+        ]
+      }
+    },
+    {
+      "id": "staggioni-pizza-liszt-1779486761937",
+      "name": "Staggioni Pizza liszt",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 313,
+      "protein": 13,
+      "fat": 1,
+      "carbs": 70
+    },
+    {
+      "id": "mutti-polpa-paradicsom-1779486806659",
+      "name": "Mutti Polpa paradicsom",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 26,
+      "protein": 1.2,
+      "fat": 0.2,
+      "carbs": 3.9
+    },
+    {
+      "id": "caputo-szaritott-eleszto-1779486908651",
+      "name": "Caputo Szárított élesztő",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 1,
+      "defaultAmount": 5,
+      "kcal": 325,
+      "protein": 40,
+      "fat": 7,
+      "carbs": 15
+    },
+    {
+      "id": "recipe-pizza-teszta-1779486950856",
+      "name": "Pizza tészta",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 3150,
+      "protein": 132.4,
+      "fat": 10.4,
+      "carbs": 700.9,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "staggioni-pizza-liszt-1779486761937",
+            "amount": 1000
+          },
+          {
+            "foodId": "caputo-szaritott-eleszto-1779486908651",
+            "amount": 6
+          }
+        ]
+      }
+    },
+    {
+      "id": "recipe-pizza-napoletana-margherita-1779487118584",
+      "name": "Pizza Napoletana (diétás)",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 771,
+      "protein": 46.3,
+      "fat": 22.3,
+      "carbs": 104.3,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "recipe-pizza-teszta-1779486950856",
+            "amount": 14
+          },
+          {
+            "foodId": "mutti-polpa-paradicsom-1779486806659",
+            "amount": 125
+          },
+          {
+            "foodId": "dairy-szarvasi-pizza-mozzarella",
+            "amount": 75
+          },
+          {
+            "foodId": "staple-olive-oil",
+            "amount": 3
+          },
+          {
+            "foodId": "meat-pikok-turkey-ham",
+            "amount": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "recipe-pizza-napoletana-margherita-1779487653512",
+      "name": "Pizza Napoletana Margherita",
+      "category": "Főtt ételek",
+      "unit": "%",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 5,
+      "kcal": 984,
+      "protein": 52.8,
+      "fat": 34.5,
+      "carbs": 125.3,
+      "isRecipe": true,
+      "recipe": {
+        "ingredients": [
+          {
+            "foodId": "recipe-pizza-teszta-1779486950856",
+            "amount": 17
+          },
+          {
+            "foodId": "mutti-polpa-paradicsom-1779486806659",
+            "amount": 125
+          },
+          {
+            "foodId": "dairy-szarvasi-pizza-mozzarella",
+            "amount": 125
+          },
+          {
+            "foodId": "staple-olive-oil",
+            "amount": 5
+          }
+        ]
+      }
+    },
+    {
+      "id": "csemege-uborka-1779488184218",
+      "name": "Csemege Uborka",
+      "category": "Alapanyag",
+      "unit": "g",
+      "baseAmount": 100,
+      "step": 10,
+      "defaultAmount": 100,
+      "kcal": 35,
+      "protein": 0.2,
+      "fat": 0.5,
+      "carbs": 7.5
+    },
+    {
+      "id": "recipe-francia-salata-1779485787420",
+      "name": "Francia saláta",
+      "category": "Főtt ételek",
+      "unit": "g",
+      "baseAmount": 100,
+      "defaultAmount": 100,
+      "step": 50,
+      "kcal": 200.4,
+      "protein": 1.8,
+      "fat": 17.3,
+      "carbs": 8.4,
+      "isRecipe": true,
+      "recipe": {
+        "mode": "weight",
+        "netWeight": 2000,
+        "ingredients": [
+          {
+            "foodId": "francia-salata-alap-1779485760977",
+            "amount": 1000
+          },
+          {
+            "foodId": "recipe-tartar-martas-1779486445888",
+            "amount": 100
+          },
+          {
+            "foodId": "raw-fruit-1",
+            "amount": 250
+          },
+          {
+            "foodId": "csemege-uborka-1779488184218",
+            "amount": 100
           }
         ]
       }
@@ -2723,6 +3164,21 @@
           "amount": 20,
           "locked": true,
           "createdAt": "2026-05-22T19:35:17.789Z"
+        },
+        {
+          "entryId": "recipe-paradicsom-leves-1779483645511-20ab355a-ad05-4a5a-b351-de8854ab81c3",
+          "foodId": "recipe-paradicsom-leves-1779483645511",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-22T21:04:53.895Z",
+          "recipeOverrides": [
+            {
+              "type": "override",
+              "ingredientIndex": 1,
+              "foodId": "staple-levesbetet-teszta",
+              "amount": 25
+            }
+          ]
         }
       ]
     },
@@ -3329,14 +3785,9 @@
       "protein": 174.654,
       "fat": 40.3,
       "carbs": 42.04,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 56.822255985477,
-        "fat": 29.500372516422,
-        "carbs": 13.677371498102
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-13",
@@ -3344,14 +3795,9 @@
       "protein": 172.954,
       "fat": 47.45,
       "carbs": 12.62,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 59.162643313139,
-        "fat": 36.52041382953,
-        "carbs": 4.316942857331
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-14",
@@ -3359,59 +3805,39 @@
       "protein": 178.604,
       "fat": 56.72,
       "carbs": 27.34,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 53.544147449965,
-        "fat": 38.259524409109,
-        "carbs": 8.196328140926
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-15",
-      "kcal": 1301.0,
+      "kcal": 1301,
       "protein": 166.404,
       "fat": 55.36,
       "carbs": 21.64,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 53.231564535323,
-        "fat": 39.84593927141,
-        "carbs": 6.922496193267
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-16",
-      "kcal": 1342.0,
+      "kcal": 1342,
       "protein": 254.8,
-      "fat": 25.0,
-      "carbs": 6.0,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
+      "fat": 25,
+      "carbs": 6,
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 80.365872890711,
-        "fat": 17.741681122851,
-        "carbs": 1.892445986437
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-17",
-      "kcal": 1363.0,
+      "kcal": 1363,
       "protein": 149.4,
       "fat": 65.67,
       "carbs": 32.7,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 45.292285305018,
-        "fat": 44.794343011755,
-        "carbs": 9.913371683227
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-18",
@@ -3437,45 +3863,40 @@
       "protein": 161.4,
       "fat": 55.76,
       "carbs": 24.9,
-      "note": "részletes tétellistából újraszámolva",
-      "source": "detailed_diary_entries_backfill",
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 51.770592763664,
-        "fat": 40.242494226328,
-        "carbs": 7.986913010008
-      }
+      "note": "részletes tétellistából újraszámolva",
+      "source": "detailed_diary_entries_backfill"
     },
     {
       "date": "2026-05-21",
-      "kcal": 2166.4500000000003,
-      "protein": 172.194,
-      "fat": 34.03,
-      "carbs": 30.55,
+      "kcal": 2241.7200000000003,
+      "protein": 175.504,
+      "fat": 34.608000000000004,
+      "carbs": 44.025999999999996,
       "alcoholKcal": 0,
       "note": "mentett napi tételek",
       "source": "confirmed_daily_entries",
       "macroRatio": {
-        "protein": 61.64944873376142,
-        "fat": 27.4129421810416,
-        "carbs": 10.937609085196994
+        "protein": 59.01317426478994,
+        "fat": 26.1830947081016,
+        "carbs": 14.803731027108451
       }
     },
     {
       "date": "2026-05-22",
-      "kcal": 2361.5499999999997,
-      "protein": 201.21900000000002,
-      "fat": 96.35000000000001,
-      "carbs": 163.865,
+      "kcal": 2361.475,
+      "protein": 201.20650000000003,
+      "fat": 96.3375,
+      "carbs": 163.8525,
       "alcoholKcal": 0,
-      "macroRatio": {
-        "protein": 34.58134656878709,
-        "fat": 37.25693731347901,
-        "carbs": 28.1617161177339
-      },
       "note": "mentett napi tételek",
-      "source": "confirmed_daily_entries"
+      "source": "confirmed_daily_entries",
+      "macroRatio": {
+        "protein": 34.58235570507721,
+        "fat": 37.25550520813303,
+        "carbs": 28.16213908678975
+      }
     }
   ],
-  "exportedAt": "2026-05-22T20:06:49Z"
+  "exportedAt": "2026-05-22T22:41:12.584Z"
 }
