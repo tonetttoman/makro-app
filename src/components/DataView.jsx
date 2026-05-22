@@ -284,6 +284,29 @@ function normalizeIngredientDrafts(ingredients) {
   return (ingredients || []).map((ingredient) => ({ foodId: ingredient.foodId, amount: ingredient.amount === 0 || ingredient.amount === "0" ? "" : String(ingredient.amount ?? "") }));
 }
 
+function normalizeRecipeNameForCompare(value) {
+  return String(value || "").trim().toLocaleLowerCase("hu-HU");
+}
+
+function normalizeRecipeIngredientsForCompare(ingredients = []) {
+  return (Array.isArray(ingredients) ? ingredients : [])
+    .map((ingredient) => ({
+      foodId: String(ingredient?.foodId || ""),
+      amount: Number(ingredient?.amount) || 0
+    }))
+    .filter((ingredient) => ingredient.foodId && ingredient.amount > 0)
+    .sort((a, b) => a.foodId.localeCompare(b.foodId, "hu", { sensitivity: "base" }) || a.amount - b.amount);
+}
+
+function areRecipeIngredientsEqual(a = [], b = []) {
+  const normalizedA = normalizeRecipeIngredientsForCompare(a);
+  const normalizedB = normalizeRecipeIngredientsForCompare(b);
+
+  if (normalizedA.length !== normalizedB.length) return false;
+
+  return normalizedA.every((item, index) => item.foodId === normalizedB[index].foodId && Math.abs(item.amount - normalizedB[index].amount) < 0.0001);
+}
+
 function downloadJson(filename, payload) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -743,8 +766,15 @@ export function DataView({
       return;
     }
     const normalizedName = normalizeEntityName(name);
-    const existingRecipeByName = foods.find((food) => isRecipeFood(food) && normalizeEntityName(food.name) === normalizedName);
-    const targetRecipeId = existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
+    const existingRecipe = editingRecipeId ? foods.find((food) => food.id === editingRecipeId) : null;
+    const isEditingExistingRecipe = Boolean(existingRecipe);
+    const nameChanged = isEditingExistingRecipe && normalizeRecipeNameForCompare(existingRecipe?.name) !== normalizeRecipeNameForCompare(name);
+    const ingredientsChanged = isEditingExistingRecipe && !areRecipeIngredientsEqual(existingRecipe?.recipe?.ingredients, recipeDraft.ingredients);
+    const shouldCreateRecipeCopy = isEditingExistingRecipe && nameChanged && ingredientsChanged;
+    const existingRecipeByName = foods.find((food) => isRecipeFood(food) && food.id !== editingRecipeId && normalizeEntityName(food.name) === normalizedName);
+    const targetRecipeId = shouldCreateRecipeCopy
+      ? `recipe-${slugify(name)}-${Date.now()}`
+      : existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
     const hasCircularReference = recipeDraft.ingredients.some((ingredient) => {
       if (ingredient.foodId === targetRecipeId) return true;
       const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
@@ -755,10 +785,20 @@ export function DataView({
       return;
     }
     const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 100, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
-    setFoods((current) => [...current.filter((food) => !(isRecipeFood(food) && (food.id === editingRecipeId || food.id === existingRecipeByName?.id))), nextRecipe]);
+    setFoods((current) => [
+      ...current.filter((food) => {
+        if (!isRecipeFood(food)) return true;
+        if (shouldCreateRecipeCopy) return true;
+        return !(food.id === editingRecipeId || food.id === existingRecipeByName?.id);
+      }),
+      nextRecipe
+    ]);
     setEditingRecipeId("");
     setRecipeDraft(createBlankRecipe());
     setIsRecipeEditorOpen(false);
+    if (shouldCreateRecipeCopy) {
+      setTransferMessage({ type: "success", text: "Új recept létrehozva az eredeti megtartásával." });
+    }
   }
 
   function deleteRecipe() {
