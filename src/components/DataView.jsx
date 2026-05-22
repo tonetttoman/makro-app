@@ -204,6 +204,29 @@ function mergeDailyLogs(currentLogs, importedLogs) {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function mergeDiary(currentDiary = {}, importedDiary = {}) {
+  if (!importedDiary || typeof importedDiary !== "object" || Array.isArray(importedDiary)) {
+    return currentDiary || {};
+  }
+
+  const normalizedImportedDiary = Object.entries(importedDiary).reduce((acc, [dateKey, day]) => {
+    const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate)) return acc;
+
+    acc[safeDate] = {
+      date: safeDate,
+      entries: Array.isArray(day?.entries) ? day.entries : []
+    };
+
+    return acc;
+  }, {});
+
+  return {
+    ...(currentDiary || {}),
+    ...normalizedImportedDiary
+  };
+}
+
 function mergeFoodsForFullImport(importedFoods = [], currentFoods = []) {
   const merged = [];
   const seenIds = new Set();
@@ -472,8 +495,12 @@ export function DataView({
   }
 
   function exportDailyLogs() {
-    downloadJson("makro-app-daily-logs.json", dailyLogs);
-    setTransferMessage({ type: "success", text: "Sikeres export: napi napló letöltve." });
+    downloadJson("makro-app-daily-logs.json", {
+      dailyLogs,
+      diary,
+      exportedAt: new Date().toISOString()
+    });
+    setTransferMessage({ type: "success", text: "Sikeres export: napi napló letöltve tételes bontással." });
   }
 
   async function importDailyLogs(file) {
@@ -482,24 +509,39 @@ export function DataView({
       const raw = await file.text();
       const parsed = JSON.parse(raw);
       const imported = extractDailyLogs(parsed).map(normalizeDailyLog).filter(Boolean);
+      const importedDiary = parsed?.diary && typeof parsed.diary === "object" && !Array.isArray(parsed.diary) ? parsed.diary : null;
 
-      if (!imported.length) {
+      if (!imported.length && !importedDiary) {
         setTransferMessage({ type: "error", text: "Napi napló import: nem találtam érvényes naplóbejegyzést." });
         return;
       }
 
-      const currentNormalized = (dailyLogs || []).map(normalizeDailyLog).filter(Boolean);
-      const currentDates = new Set(currentNormalized.map((log) => log.date));
-      const importedDates = new Set(imported.map((log) => log.date));
-      const overwrittenCount = Array.from(importedDates).filter((date) => currentDates.has(date)).length;
-      const importedNewCount = Array.from(importedDates).filter((date) => !currentDates.has(date)).length;
-      const keptCount = currentNormalized.filter((log) => !importedDates.has(log.date)).length;
-      const merged = mergeDailyLogs(currentNormalized, imported);
+      let nextDailyLogs = dailyLogs || [];
+      let nextDiary = diary || {};
 
-      setDailyLogs(merged);
+      if (imported.length) {
+        const currentNormalized = (dailyLogs || []).map(normalizeDailyLog).filter(Boolean);
+        nextDailyLogs = mergeDailyLogs(currentNormalized, imported);
+        setDailyLogs(nextDailyLogs);
+      }
+
+      let importedDiaryCount = 0;
+      if (importedDiary) {
+        importedDiaryCount = Object.entries(importedDiary).reduce((count, [dateKey, day]) => {
+          const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
+          return /^\d{4}-\d{2}-\d{2}$/.test(safeDate) ? count + 1 : count;
+        }, 0);
+        nextDiary = mergeDiary(diary, importedDiary);
+        setDiary(nextDiary);
+      }
+
+      onSyncWorkspaceFromData?.(nextDiary || {}, nextDailyLogs || [], undefined);
+
       setTransferMessage({
         type: "success",
-        text: `Sikeres napi napló import: ${importedNewCount} új nap, ${overwrittenCount} nap felülírva, ${keptCount} meglévő nap megtartva. Összesen: ${merged.length} nap.`
+        text: importedDiary
+          ? `Sikeres napi napló import: ${imported.length} nap összesítő és ${importedDiaryCount} tételes nap importálva.`
+          : `Sikeres napi napló import: ${imported.length} nap összesítő importálva.`
       });
     } catch {
       setTransferMessage({ type: "error", text: "Napi napló import sikertelen: ellenőrizd a JSON fájlt." });
