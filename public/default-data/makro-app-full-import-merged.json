@@ -1956,7 +1956,7 @@
       "category": "Főtt ételek",
       "unit": "%",
       "baseAmount": 100,
-      "defaultAmount": 10,
+      "defaultAmount": 100,
       "step": 5,
       "kcal": 254,
       "protein": 49.2,
@@ -2259,6 +2259,426 @@
     "kcal": 1360
   },
   "diary": {
+    "2026-05-12": {
+      "date": "2026-05-12",
+      "entries": [
+        {
+          "entryId": "import-2026-05-12-01-import-alap-shake",
+          "foodId": "import-alap-shake",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-02-import-vanavita-bio-tokmag",
+          "foodId": "vanavita-bio-tokmag-1779342048424",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-03-import-gal-halolaj",
+          "foodId": "import-gal-halolaj",
+          "amount": 8,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-04-supplement-gymbeam-true-whey-banana",
+          "foodId": "supplement-gymbeam-true-whey-banana",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-05-supplement-gymbeam-soy-iso-whey-banana",
+          "foodId": "supplement-gymbeam-soy-iso-whey-banana",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-06-raw-pork-loin",
+          "foodId": "raw-pork-loin",
+          "amount": 350,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-07-raw-veg-6",
+          "foodId": "raw-veg-6",
+          "amount": 200,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-08-raw-veg-87",
+          "foodId": "raw-veg-87",
+          "amount": 150,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-09-raw-veg-7",
+          "foodId": "raw-veg-7",
+          "amount": 50,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-12-10-raw-veg-30",
+          "foodId": "raw-veg-30",
+          "amount": 150,
+          "locked": true,
+          "createdAt": "2026-05-12T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-13": {
+      "date": "2026-05-13",
+      "entries": [
+        {
+          "entryId": "import-2026-05-13-01-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-02-import-alap-shake",
+          "foodId": "import-alap-shake",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-03-import-sult-csirkemell",
+          "foodId": "import-sult-csirkemell",
+          "amount": 200,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-04-staple-whole-egg",
+          "foodId": "staple-whole-egg",
+          "amount": 3,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-05-import-vanavita-bio-tokmag",
+          "foodId": "vanavita-bio-tokmag-1779342048424",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-06-import-aquadelle-alhering",
+          "foodId": "import-aquadelle-alhering",
+          "amount": 180,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-07-raw-veg-3",
+          "foodId": "raw-veg-3",
+          "amount": 90,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-08-raw-veg-33",
+          "foodId": "raw-veg-33",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-13-09-staple-olive-oil",
+          "foodId": "staple-olive-oil",
+          "amount": 5,
+          "locked": true,
+          "createdAt": "2026-05-13T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-14": {
+      "date": "2026-05-14",
+      "entries": [
+        {
+          "entryId": "import-2026-05-14-01-import-medvehagymas-brokkoli-karfiol-koret",
+          "foodId": "import-medvehagymas-brokkoli-karfiol-koret",
+          "amount": 1,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-02-import-hekk",
+          "foodId": "import-hekk",
+          "amount": 500,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-03-import-vanavita-bio-tokmag",
+          "foodId": "vanavita-bio-tokmag-1779342048424",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-04-import-alap-shake",
+          "foodId": "import-alap-shake",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-05-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-06-staple-olive-oil",
+          "foodId": "staple-olive-oil",
+          "amount": 5,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-14-07-import-trend-plus-ch-csokkentett-brotter",
+          "foodId": "import-trend-plus-ch-csokkentett-brotter",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-14T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-15": {
+      "date": "2026-05-15",
+      "entries": [
+        {
+          "entryId": "import-2026-05-15-01-import-alap-shake",
+          "foodId": "import-alap-shake",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-02-import-vanavita-bio-tokmag",
+          "foodId": "vanavita-bio-tokmag-1779342048424",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-03-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-04-import-sult-csirkemell",
+          "foodId": "import-sult-csirkemell",
+          "amount": 180,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-05-staple-tofu-plain",
+          "foodId": "staple-tofu-plain",
+          "amount": 180,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-06-raw-veg-16",
+          "foodId": "raw-veg-16",
+          "amount": 120,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-15-07-import-trend-plus-ch-csokkentett-brotter",
+          "foodId": "import-trend-plus-ch-csokkentett-brotter",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-15T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-16": {
+      "date": "2026-05-16",
+      "entries": [
+        {
+          "entryId": "import-2026-05-16-01-import-hekk",
+          "foodId": "import-hekk",
+          "amount": 1400,
+          "locked": true,
+          "createdAt": "2026-05-16T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-16-02-import-hazank-kincsei-csipos-savanyusag",
+          "foodId": "import-hazank-kincsei-csipos-savanyusag",
+          "amount": 200,
+          "locked": true,
+          "createdAt": "2026-05-16T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-16-03-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-16T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-17": {
+      "date": "2026-05-17",
+      "entries": [
+        {
+          "entryId": "import-2026-05-17-01-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-02-import-trend-plus-ch-csokkentett-brotter",
+          "foodId": "import-trend-plus-ch-csokkentett-brotter",
+          "amount": 150,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-03-staple-tofu-plain",
+          "foodId": "staple-tofu-plain",
+          "amount": 90,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-04-meat-pikok-turkey-ham",
+          "foodId": "meat-pikok-turkey-ham",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-05-supplement-gymbeam-true-whey-banana",
+          "foodId": "supplement-gymbeam-true-whey-banana",
+          "amount": 30,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-06-supplement-gymbeam-soy-iso-whey-banana",
+          "foodId": "supplement-gymbeam-soy-iso-whey-banana",
+          "amount": 30,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-07-import-lidl-hirtenkase",
+          "foodId": "import-lidl-hirtenkase",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-08-raw-fruit-19",
+          "foodId": "raw-fruit-19",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-17-09-dairy-pilos-lowfat-cottage-cheese",
+          "foodId": "dairy-pilos-lowfat-cottage-cheese",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-17T12:00:00.000Z"
+        }
+      ]
+    },
+    "2026-05-20": {
+      "date": "2026-05-20",
+      "entries": [
+        {
+          "entryId": "import-2026-05-20-01-supplement-gymbeam-omega3-forte",
+          "foodId": "supplement-gymbeam-omega3-forte",
+          "amount": 4,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-02-supplement-gymbeam-pure-iso-whey-chocolate",
+          "foodId": "supplement-gymbeam-pure-iso-whey-chocolate",
+          "amount": 30,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-03-supplement-gymbeam-soy-iso-whey-banana",
+          "foodId": "supplement-gymbeam-soy-iso-whey-banana",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-04-supplement-denes-natura-soy-isolate",
+          "foodId": "supplement-denes-natura-soy-isolate",
+          "amount": 20,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-05-raw-fruit-19",
+          "foodId": "raw-fruit-19",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-06-dairy-pilos-lowfat-cottage-cheese",
+          "foodId": "dairy-pilos-lowfat-cottage-cheese",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-07-meat-pikok-turkey-ham",
+          "foodId": "meat-pikok-turkey-ham",
+          "amount": 100,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-08-staple-whole-egg",
+          "foodId": "staple-whole-egg",
+          "amount": 5,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-09-staple-tofu-plain",
+          "foodId": "staple-tofu-plain",
+          "amount": 180,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        },
+        {
+          "entryId": "import-2026-05-20-10-staple-olive-oil",
+          "foodId": "staple-olive-oil",
+          "amount": 5,
+          "locked": true,
+          "createdAt": "2026-05-20T12:00:00.000Z"
+        }
+      ]
+    },
     "2026-05-21": {
       "date": "2026-05-21",
       "entries": [
@@ -2905,57 +3325,93 @@
     },
     {
       "date": "2026-05-12",
-      "kcal": 1216,
-      "protein": 171.8,
-      "fat": 41,
-      "carbs": 46.4,
+      "kcal": 1217.3,
+      "protein": 174.654,
+      "fat": 40.3,
+      "carbs": 42.04,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 56.822255985477,
+        "fat": 29.500372516422,
+        "carbs": 13.677371498102
+      }
     },
     {
       "date": "2026-05-13",
-      "kcal": 1200,
-      "protein": 170.1,
-      "fat": 48.1,
-      "carbs": 17,
+      "kcal": 1200.3,
+      "protein": 172.954,
+      "fat": 47.45,
+      "carbs": 12.62,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 59.162643313139,
+        "fat": 36.52041382953,
+        "carbs": 4.316942857331
+      }
     },
     {
       "date": "2026-05-14",
-      "kcal": 1380,
-      "protein": 175.7,
-      "fat": 57.4,
-      "carbs": 31.7,
+      "kcal": 1380.8,
+      "protein": 178.604,
+      "fat": 56.72,
+      "carbs": 27.34,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 53.544147449965,
+        "fat": 38.259524409109,
+        "carbs": 8.196328140926
+      }
     },
     {
       "date": "2026-05-15",
-      "kcal": 1300,
-      "protein": 163.5,
-      "fat": 56,
-      "carbs": 26,
+      "kcal": 1301.0,
+      "protein": 166.404,
+      "fat": 55.36,
+      "carbs": 21.64,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 53.231564535323,
+        "fat": 39.84593927141,
+        "carbs": 6.922496193267
+      }
     },
     {
       "date": "2026-05-16",
-      "kcal": 1342,
+      "kcal": 1342.0,
       "protein": 254.8,
-      "fat": 25,
-      "carbs": 6,
+      "fat": 25.0,
+      "carbs": 6.0,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 80.365872890711,
+        "fat": 17.741681122851,
+        "carbs": 1.892445986437
+      }
     },
     {
       "date": "2026-05-17",
-      "kcal": 1363,
+      "kcal": 1363.0,
       "protein": 149.4,
-      "fat": 65.7,
+      "fat": 65.67,
       "carbs": 32.7,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 45.292285305018,
+        "fat": 44.794343011755,
+        "carbs": 9.913371683227
+      }
     },
     {
       "date": "2026-05-18",
@@ -2977,12 +3433,18 @@
     },
     {
       "date": "2026-05-20",
-      "kcal": 1266,
+      "kcal": 1265.6,
       "protein": 161.4,
-      "fat": 55.8,
+      "fat": 55.76,
       "carbs": 24.9,
       "note": "részletes tétellistából újraszámolva",
-      "source": "chatgpt_detailed_import_adjusted"
+      "source": "detailed_diary_entries_backfill",
+      "alcoholKcal": 0,
+      "macroRatio": {
+        "protein": 51.770592763664,
+        "fat": 40.242494226328,
+        "carbs": 7.986913010008
+      }
     },
     {
       "date": "2026-05-21",
