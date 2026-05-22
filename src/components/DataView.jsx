@@ -726,7 +726,7 @@ export function DataView({
                   {recipeIngredientMatches.map((food) => (
                     <AppRecipeOption key={food.id} active={recipeDraft.ingredientFoodId === food.id} onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: normalizeFoodName(food.name) }))}>
                       <strong className="text-sm font-semibold text-slate-100">{normalizeFoodName(food.name)}</strong>
-                      <AppMetaText>{Math.round(food.kcal)} kcal · {normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })}</AppMetaText>
+                      <AppMetaText>{`${Math.round(food.kcal)} kcal · P ${formatFoodMacro(food.protein)} g · Zs ${formatFoodMacro(food.fat)} g · Ch ${formatFoodMacro(food.carbs)} g`}</AppMetaText>
                     </AppRecipeOption>
                   ))}
                 </div>
