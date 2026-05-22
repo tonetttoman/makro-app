@@ -2,6 +2,7 @@ import { Download, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FOOD_CATEGORIES } from "../data/foods";
 import { calculateEntry } from "../lib/calculations";
+import { toDateKey } from "../lib/dates";
 import {
   AppButton,
   AppCard,
@@ -203,6 +204,20 @@ function mergeDailyLogs(currentLogs, importedLogs) {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function mergeFoodsForFullImport(importedFoods = [], currentFoods = []) {
+  const merged = [];
+  const seenIds = new Set();
+
+  [...importedFoods, ...currentFoods].forEach((food) => {
+    const foodId = typeof food?.id === "string" ? food.id.trim() : "";
+    if (!foodId || seenIds.has(foodId)) return;
+    merged.push(food);
+    seenIds.add(foodId);
+  });
+
+  return merged;
+}
+
 function extractDailyLogs(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.dailyLogs)) return data.dailyLogs;
@@ -251,7 +266,8 @@ export function DataView({
   diary,
   setDiary,
   dailyLogs,
-  setDailyLogs
+  setDailyLogs,
+  onSyncWorkspaceFromData
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
@@ -409,28 +425,41 @@ export function DataView({
       const raw = await file.text();
       const parsed = JSON.parse(raw);
       const importedParts = [];
+      let nextDiary = diary;
+      let nextDailyLogs = dailyLogs;
+      let shouldSyncWorkspace = false;
 
       if (Array.isArray(parsed.foods)) {
-        const previousFoodCount = Array.isArray(foods) ? foods.length : 0;
-        setFoods(parsed.foods);
-        importedParts.push(`${parsed.foods.length} élelmiszer felülírva (korábban: ${previousFoodCount})`);
+        const importedFoods = parsed.foods.filter((food) => typeof food?.id === "string" && food.id.trim());
+        const mergedFoods = mergeFoodsForFullImport(importedFoods, Array.isArray(foods) ? foods : []);
+        const preservedCurrentCount = Math.max(0, mergedFoods.length - importedFoods.length);
+        setFoods(mergedFoods);
+        importedParts.push(`${importedFoods.length} importált élelmiszer betöltve, ${preservedCurrentCount} jelenlegi egyedi tétel megtartva. Összesen: ${mergedFoods.length}.`);
       }
       if (parsed.targets && typeof parsed.targets === "object") {
         setTargets((currentTargets) => normalizeImportedTargets(parsed.targets, currentTargets));
         importedParts.push("makró célok frissítve");
       }
       if (parsed.diary && typeof parsed.diary === "object") {
-        setDiary(parsed.diary);
+        nextDiary = parsed.diary;
+        setDiary(nextDiary);
+        shouldSyncWorkspace = true;
         importedParts.push("napi tételek visszaállítva");
       }
       if (Array.isArray(parsed.dailyLogs)) {
-        setDailyLogs(parsed.dailyLogs);
-        importedParts.push(`${parsed.dailyLogs.length} napi napló bejegyzés visszaállítva`);
+        nextDailyLogs = parsed.dailyLogs.map(normalizeDailyLog).filter(Boolean);
+        setDailyLogs(nextDailyLogs);
+        shouldSyncWorkspace = true;
+        importedParts.push(`${nextDailyLogs.length} napi napló bejegyzés visszaállítva`);
       }
 
       if (!importedParts.length) {
         setTransferMessage({ type: "error", text: "Import sikertelen: a fájl nem tartalmaz importálható adatot." });
         return;
+      }
+
+      if (shouldSyncWorkspace) {
+        onSyncWorkspaceFromData?.(nextDiary || {}, nextDailyLogs || [], undefined);
       }
 
       setTransferMessage({ type: "success", text: `Sikeres import: ${importedParts.join(", ")}.` });
@@ -479,6 +508,20 @@ export function DataView({
       if (dailyLogInputRef.current) dailyLogInputRef.current.value = "";
     }
   }
+
+  function wipeDailyLog() {
+    const confirmed = window.confirm(
+      "Biztosan törlöd a teljes napi naplót? Az ételek, receptek és makró célok megmaradnak, de minden naplózott nap törlődik."
+    );
+
+    if (!confirmed) return;
+
+    setDiary({});
+    setDailyLogs([]);
+    onSyncWorkspaceFromData?.({}, [], toDateKey());
+    setTransferMessage({ type: "success", text: "Napi napló törölve." });
+  }
+
   function startNewFood() {
     setFoodDraft(createBlankFood());
     setIsFoodEditorOpen(true);
@@ -815,6 +858,12 @@ export function DataView({
                 <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
               </div>
               <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
+              <AppSectionTitle>{"Napi napló törlése"}</AppSectionTitle>
+              <div className="mt-4">
+                <AppDangerButton className="w-full" type="button" onClick={wipeDailyLog}>{"Napi napló törlése"}</AppDangerButton>
+              </div>
             </AppNestedCard>
           </div>
           </>

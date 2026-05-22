@@ -383,6 +383,10 @@ export default function App() {
     setWorkspace(getWorkspaceForDate(diary, dailyLogs, todayKey));
   }
 
+  function syncWorkspaceFromData(nextDiary, nextDailyLogs, nextDate = workDate || todayKey) {
+    setWorkspace(getWorkspaceForDate(nextDiary || {}, nextDailyLogs || [], nextDate || todayKey));
+  }
+
 
   function handleConfirmDailyLog() {
     persistEntriesForDate(workDate, todayEntries);
@@ -464,6 +468,7 @@ export default function App() {
           setDiary={setDiary}
           dailyLogs={dailyLogs}
           setDailyLogs={setDailyLogs}
+          onSyncWorkspaceFromData={syncWorkspaceFromData}
         />
       )}
 
