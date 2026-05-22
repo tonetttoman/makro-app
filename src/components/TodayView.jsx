@@ -372,7 +372,7 @@ function TodayEntryEditor({
                 const ingredientFood = findFoodById(ingredient.foodId, foods);
                 if (!ingredientFood) return null;
                 const ingredientAmount = getIngredientOverrideAmount(entry, ingredient, ingredientIndex);
-                const ingredientValues = calculateEntry(ingredientFood, ingredientAmount);
+                const ingredientValues = calculateEntry(ingredientFood, ingredientAmount, { foods });
                 return renderIngredientRow({
                   key: "original-" + ingredientIndex + "-" + ingredient.foodId,
                   ingredientFood,
@@ -387,7 +387,7 @@ function TodayEntryEditor({
                 const addedFood = findFoodById(addedIngredient.foodId, foods);
                 if (!addedFood) return null;
                 const addedAmount = Number(addedIngredient.amount) || 0;
-                const addedValues = calculateEntry(addedFood, addedAmount);
+                const addedValues = calculateEntry(addedFood, addedAmount, { foods });
                 const overrideId = addedIngredient.overrideId || "added-" + addedIndex + "-" + addedIngredient.foodId;
                 return renderIngredientRow({
                   key: "added-" + overrideId,

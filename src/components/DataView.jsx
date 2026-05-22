@@ -171,6 +171,21 @@ function isRecipeFood(food) {
   return Boolean(food?.isRecipe) || normalizeFoodCategory(food?.category, { isRecipe: food?.isRecipe }) === RECIPE_CATEGORY;
 }
 
+function recipeContainsRecipe(foodId, targetRecipeId, foods, visited = new Set()) {
+  if (!foodId || !targetRecipeId) return false;
+  if (foodId === targetRecipeId) return true;
+  if (visited.has(foodId)) return false;
+
+  visited.add(foodId);
+
+  const food = foods.find((item) => item.id === foodId);
+  if (!food?.isRecipe || !Array.isArray(food.recipe?.ingredients)) {
+    return false;
+  }
+
+  return food.recipe.ingredients.some((ingredient) => recipeContainsRecipe(ingredient.foodId, targetRecipeId, foods, new Set(visited)));
+}
+
 function getFoodDraftFieldValue(key, value) {
   if (!["kcal", "protein", "fat", "carbs"].includes(key)) return value;
   return value === 0 || value === "0" || value === "" || value === null || value === undefined ? "" : value;
@@ -401,7 +416,12 @@ export function DataView({
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
-    const candidates = sortFoodsByName((foods || []).filter((food) => !food.isRecipe));
+    const candidates = sortFoodsByName((foods || []).filter((food) => {
+      if (!editingRecipeId) return true;
+      if (food?.id === editingRecipeId) return false;
+      if (!food?.isRecipe) return true;
+      return !recipeContainsRecipe(food.id, editingRecipeId, foods || []);
+    }));
     if (!normalizedRecipeSearch) return [];
     return candidates
       .map((food) => {
@@ -414,14 +434,14 @@ export function DataView({
       .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
       .slice(0, 10)
       .map(({ food }) => food);
-  }, [foods, normalizedRecipeSearch]);
+  }, [editingRecipeId, foods, normalizedRecipeSearch]);
 
   const recipeTotals = useMemo(() => {
     return recipeDraft.ingredients.reduce(
       (totals, ingredient) => {
         const food = foods.find((item) => item.id === ingredient.foodId);
         if (!food) return totals;
-        const entry = calculateEntry(food, numberValue(ingredient.amount));
+        const entry = calculateEntry(food, numberValue(ingredient.amount), { foods });
         return {
           kcal: totals.kcal + entry.kcal,
           protein: totals.protein + entry.protein,
@@ -696,6 +716,11 @@ export function DataView({
       window.alert("Válassz alapanyagot és adj meg pozitív mennyiséget.");
       return;
     }
+    const ingredientFood = foods.find((food) => food.id === recipeDraft.ingredientFoodId);
+    if (editingRecipeId && ingredientFood?.isRecipe && recipeContainsRecipe(ingredientFood.id, editingRecipeId, foods)) {
+      window.alert("Ez a recept nem adható hozzá, mert körkörös recept-hivatkozást okozna.");
+      return;
+    }
     setRecipeDraft((current) => ({ ...current, ingredients: [...current.ingredients, { foodId: current.ingredientFoodId, amount: String(amount) }], ingredientAmount: "", ingredientFoodId: "", ingredientSearch: "" }));
   }
 
@@ -720,6 +745,15 @@ export function DataView({
     const normalizedName = normalizeEntityName(name);
     const existingRecipeByName = foods.find((food) => isRecipeFood(food) && normalizeEntityName(food.name) === normalizedName);
     const targetRecipeId = existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
+    const hasCircularReference = recipeDraft.ingredients.some((ingredient) => {
+      if (ingredient.foodId === targetRecipeId) return true;
+      const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
+      return ingredientFood?.isRecipe ? recipeContainsRecipe(ingredientFood.id, targetRecipeId, foods) : false;
+    });
+    if (hasCircularReference) {
+      window.alert("Ez a recept nem adható hozzá, mert körkörös recept-hivatkozást okozna.");
+      return;
+    }
     const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 100, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
     setFoods((current) => [...current.filter((food) => !(isRecipeFood(food) && (food.id === editingRecipeId || food.id === existingRecipeByName?.id))), nextRecipe]);
     setEditingRecipeId("");

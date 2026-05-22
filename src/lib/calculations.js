@@ -30,6 +30,14 @@ export function getNormalizedBaseAmount(food) {
   return Number.isFinite(fallback) && fallback > 0 ? fallback : 100;
 }
 
+function isRecipeFood(food) {
+  return Boolean(food?.isRecipe) || Array.isArray(food?.recipe?.ingredients);
+}
+
+function createZeroTotals() {
+  return { kcal: 0, protein: 0, fat: 0, carbs: 0 };
+}
+
 function calculatePlainEntry(food, amount) {
   const baseAmount = getNormalizedBaseAmount(food);
   const amountValue = Number(amount) || 0;
@@ -39,6 +47,40 @@ function calculatePlainEntry(food, amount) {
     protein: Number(food?.protein || 0) * factor,
     fat: Number(food?.fat || 0) * factor,
     carbs: Number(food?.carbs || 0) * factor
+  };
+}
+
+function calculateRecipeEntry(food, amount, foods, visited) {
+  const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
+  if (!ingredients.length) return calculatePlainEntry(food, amount);
+
+  const foodId = food?.id;
+  if (foodId && visited.has(foodId)) return createZeroTotals();
+
+  const nextVisited = new Set(visited);
+  if (foodId) nextVisited.add(foodId);
+
+  const recipeTotals = ingredients.reduce(
+    (totals, ingredient) => {
+      const ingredientFood = findFoodById(ingredient.foodId, foods);
+      if (!ingredientFood) return totals;
+      const values = calculateEntry(ingredientFood, ingredient.amount, { foods, visited: nextVisited });
+      return {
+        kcal: totals.kcal + values.kcal,
+        protein: totals.protein + values.protein,
+        fat: totals.fat + values.fat,
+        carbs: totals.carbs + values.carbs
+      };
+    },
+    createZeroTotals()
+  );
+
+  const factor = (Number(amount) || 0) / getNormalizedBaseAmount(food);
+  return {
+    kcal: recipeTotals.kcal * factor,
+    protein: recipeTotals.protein * factor,
+    fat: recipeTotals.fat * factor,
+    carbs: recipeTotals.carbs * factor
   };
 }
 
@@ -81,16 +123,22 @@ export function hasRecipeEntryOverrides(entry, food) {
   });
 }
 
-function calculateRecipeOverrideEntry(food, amount, entry, foods) {
+function calculateRecipeOverrideEntry(food, amount, entry, foods, visited) {
   const ingredients = Array.isArray(food?.recipe?.ingredients) ? food.recipe.ingredients : [];
   if (!ingredients.length) return calculatePlainEntry(food, amount);
+
+  const foodId = food?.id;
+  if (foodId && visited.has(foodId)) return createZeroTotals();
+
+  const nextVisited = new Set(visited);
+  if (foodId) nextVisited.add(foodId);
 
   const recipeTotals = ingredients.reduce(
     (totals, ingredient, ingredientIndex) => {
       const ingredientFood = findFoodById(ingredient.foodId, foods);
       if (!ingredientFood) return totals;
       const ingredientAmount = getRecipeOverrideAmount(entry, ingredient, ingredientIndex);
-      const values = calculatePlainEntry(ingredientFood, ingredientAmount);
+      const values = calculateEntry(ingredientFood, ingredientAmount, { foods, visited: nextVisited });
       return {
         kcal: totals.kcal + values.kcal,
         protein: totals.protein + values.protein,
@@ -104,7 +152,7 @@ function calculateRecipeOverrideEntry(food, amount, entry, foods) {
   const baseTotals = getRecipeAddedIngredients(entry).reduce((totals, addedIngredient) => {
     const addedFood = findFoodById(addedIngredient.foodId, foods);
     if (!addedFood) return totals;
-    const values = calculatePlainEntry(addedFood, addedIngredient.amount);
+    const values = calculateEntry(addedFood, addedIngredient.amount, { foods, visited: nextVisited });
     return {
       kcal: totals.kcal + values.kcal,
       protein: totals.protein + values.protein,
@@ -124,10 +172,16 @@ function calculateRecipeOverrideEntry(food, amount, entry, foods) {
 
 export function calculateEntry(food, amount, options = {}) {
   const entry = options.entry;
+  const foods = options.foods || FOODS;
+  const visited = options.visited || new Set();
   const hasRecipeOverrides = Array.isArray(entry?.recipeOverrides) && entry.recipeOverrides.length > 0;
 
   if (hasRecipeOverrides) {
-    return calculateRecipeOverrideEntry(food, amount, entry, options.foods || FOODS);
+    return calculateRecipeOverrideEntry(food, amount, entry, foods, visited);
+  }
+
+  if (isRecipeFood(food)) {
+    return calculateRecipeEntry(food, amount, foods, visited);
   }
 
   return calculatePlainEntry(food, amount);
