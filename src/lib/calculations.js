@@ -38,6 +38,14 @@ function createZeroTotals() {
   return { kcal: 0, protein: 0, fat: 0, carbs: 0 };
 }
 
+function getRecipeServingBaseAmount(food) {
+  if (food?.recipe?.mode === "weight") {
+    const netWeight = Number(food?.recipe?.netWeight);
+    if (Number.isFinite(netWeight) && netWeight > 0) return netWeight;
+  }
+  return getNormalizedBaseAmount(food);
+}
+
 function calculatePlainEntry(food, amount) {
   const baseAmount = getNormalizedBaseAmount(food);
   const amountValue = Number(amount) || 0;
@@ -75,7 +83,7 @@ function calculateRecipeEntry(food, amount, foods, visited) {
     createZeroTotals()
   );
 
-  const factor = (Number(amount) || 0) / getNormalizedBaseAmount(food);
+  const factor = (Number(amount) || 0) / getRecipeServingBaseAmount(food);
   return {
     kcal: recipeTotals.kcal * factor,
     protein: recipeTotals.protein * factor,
@@ -161,7 +169,7 @@ function calculateRecipeOverrideEntry(food, amount, entry, foods, visited) {
     };
   }, recipeTotals);
 
-  const factor = (Number(amount) || 0) / getNormalizedBaseAmount(food);
+  const factor = (Number(amount) || 0) / getRecipeServingBaseAmount(food);
   return {
     kcal: baseTotals.kcal * factor,
     protein: baseTotals.protein * factor,

@@ -277,7 +277,7 @@ function createBlankFood() {
 }
 
 function createBlankRecipe() {
-  return { name: "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: [] };
+  return { name: "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: [], recipeMode: "percent", netWeight: "" };
 }
 
 function normalizeIngredientDrafts(ingredients) {
@@ -305,6 +305,12 @@ function areRecipeIngredientsEqual(a = [], b = []) {
   if (normalizedA.length !== normalizedB.length) return false;
 
   return normalizedA.every((item, index) => item.foodId === normalizedB[index].foodId && Math.abs(item.amount - normalizedB[index].amount) < 0.0001);
+}
+
+function getRecipeModeFromFood(food) {
+  if (food?.recipe?.mode === "weight") return "weight";
+  if (food?.unit === "g" && Number(food?.recipe?.netWeight) > 0) return "weight";
+  return "percent";
 }
 
 function downloadJson(filename, payload) {
@@ -475,6 +481,17 @@ export function DataView({
       { kcal: 0, protein: 0, fat: 0, carbs: 0 }
     );
   }, [foods, recipeDraft.ingredients]);
+  const recipeNetWeightValue = numberValue(recipeDraft.netWeight);
+  const recipePer100Totals = useMemo(() => {
+    if (recipeDraft.recipeMode !== "weight" || recipeNetWeightValue <= 0) return null;
+    const factor = 100 / recipeNetWeightValue;
+    return {
+      kcal: recipeTotals.kcal * factor,
+      protein: recipeTotals.protein * factor,
+      fat: recipeTotals.fat * factor,
+      carbs: recipeTotals.carbs * factor
+    };
+  }, [recipeDraft.recipeMode, recipeNetWeightValue, recipeTotals]);
 
   function syncTargetDrafts(nextTargets) {
     setTargetDrafts({ kcal: String(roundTargetNumber(nextTargets.kcal)), protein: String(roundTargetNumber(nextTargets.protein)), fat: String(roundTargetNumber(nextTargets.fat)), carbs: String(roundTargetNumber(nextTargets.carbs)) });
@@ -765,6 +782,10 @@ export function DataView({
       window.alert("Adj hozzá legalább egy alapanyagot a recepthez.");
       return;
     }
+    if (recipeDraft.recipeMode === "weight" && recipeNetWeightValue <= 0) {
+      window.alert("Súly alapú receptnél add meg a teljes nettó receptsúlyt.");
+      return;
+    }
     const normalizedName = normalizeEntityName(name);
     const existingRecipe = editingRecipeId ? foods.find((food) => food.id === editingRecipeId) : null;
     const isEditingExistingRecipe = Boolean(existingRecipe);
@@ -784,7 +805,26 @@ export function DataView({
       window.alert("Ez a recept nem adható hozzá, mert körkörös recept-hivatkozást okozna.");
       return;
     }
-    const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 100, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
+    const isWeightMode = recipeDraft.recipeMode === "weight";
+    const nextRecipe = {
+      id: targetRecipeId,
+      name,
+      category: RECIPE_CATEGORY,
+      unit: isWeightMode ? "g" : "%",
+      baseAmount: 100,
+      defaultAmount: 100,
+      step: isWeightMode ? 50 : 5,
+      kcal: isWeightMode ? Math.round((recipeTotals.kcal / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.kcal),
+      protein: isWeightMode ? Math.round((recipeTotals.protein / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.protein * 10) / 10,
+      fat: isWeightMode ? Math.round((recipeTotals.fat / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.fat * 10) / 10,
+      carbs: isWeightMode ? Math.round((recipeTotals.carbs / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.carbs * 10) / 10,
+      isRecipe: true,
+      recipe: {
+        mode: isWeightMode ? "weight" : "percent",
+        ...(isWeightMode ? { netWeight: recipeNetWeightValue } : {}),
+        ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) }))
+      }
+    };
     setFoods((current) => [
       ...current.filter((food) => {
         if (!isRecipeFood(food)) return true;
@@ -815,7 +855,16 @@ export function DataView({
     setIsRecipeEditorOpen(true);
     setIsFoodEditorOpen(false);
     setIsFoodDatabaseOpen(false);
-    setRecipeDraft({ name: normalizeFoodName(food?.name) || "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: normalizeIngredientDrafts(food?.recipe?.ingredients || []) });
+    setRecipeDraft({
+      name: normalizeFoodName(food?.name) || "",
+      category: RECIPE_CATEGORY,
+      ingredientSearch: "",
+      ingredientFoodId: "",
+      ingredientAmount: "",
+      ingredients: normalizeIngredientDrafts(food?.recipe?.ingredients || []),
+      recipeMode: getRecipeModeFromFood(food),
+      netWeight: getRecipeModeFromFood(food) === "weight" ? String(numberValue(food?.recipe?.netWeight, "")) : ""
+    });
     requestAnimationFrame(() => {
       recipeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -875,8 +924,30 @@ export function DataView({
                 <strong className="text-sm font-semibold text-slate-100">{"Teljes recept összesítés"}</strong>
                 <span>{Math.round(recipeTotals.kcal)} kcal</span>
                 <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
-                <small className="text-xs leading-5 text-slate-500">{"100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg."}</small>
+                {recipeDraft.recipeMode === "weight" && recipePer100Totals ? (
+                  <>
+                    <span className="pt-1 text-slate-200">{`Teljes nettó súly: ${recipeNetWeightValue} g`}</span>
+                    <strong className="pt-1 text-sm font-semibold text-slate-100">{"100 g-ra számolva"}</strong>
+                    <span>{Math.round(recipePer100Totals.kcal * 10) / 10} kcal</span>
+                    <span>P {Math.round(recipePer100Totals.protein * 10) / 10} g · F {Math.round(recipePer100Totals.fat * 10) / 10} g · Ch {Math.round(recipePer100Totals.carbs * 10) / 10} g</span>
+                  </>
+                ) : (
+                  <small className="text-xs leading-5 text-slate-500">{"100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg."}</small>
+                )}
               </AppNestedCard>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <AppField label={"Adagolási mód"}>
+                  <AppInput as="select" value={recipeDraft.recipeMode} onChange={(event) => setRecipeDraft((current) => ({ ...current, recipeMode: event.target.value, netWeight: event.target.value === "weight" ? current.netWeight : "" }))}>
+                    <option value="percent">{"Százalék alapú, 100%"}</option>
+                    <option value="weight">{"Súly alapú, 100 g"}</option>
+                  </AppInput>
+                </AppField>
+                {recipeDraft.recipeMode === "weight" ? (
+                  <AppField label={"Teljes nettó receptsúly"}>
+                    <AppInput inputMode="decimal" type="number" min="0" placeholder="pl. 850" value={recipeDraft.netWeight} onChange={(event) => setRecipeDraft((current) => ({ ...current, netWeight: event.target.value }))} />
+                  </AppField>
+                ) : null}
+              </div>
               <AppField className="mt-4" label={"Recept neve"}>
                 <AppInput value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
               </AppField>
