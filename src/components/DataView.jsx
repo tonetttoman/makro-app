@@ -301,6 +301,7 @@ export function DataView({
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
+  const [isRecipeBrowserOpen, setIsRecipeBrowserOpen] = useState(false);
   const [isFoodEditSearchOpen, setIsFoodEditSearchOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
@@ -310,6 +311,7 @@ export function DataView({
   const [activeTargetField, setActiveTargetField] = useState(null);
   const [transferMessage, setTransferMessage] = useState(null);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [recipeBrowserSearch, setRecipeBrowserSearch] = useState("");
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -324,8 +326,10 @@ export function DataView({
     if (!isFoodDatabaseOpen) {
       setFoodSearch("");
       setFoodBrowserSearch("");
+      setRecipeBrowserSearch("");
       setFoodDraft(createBlankFood());
       setIsFoodBrowserOpen(false);
+      setIsRecipeBrowserOpen(false);
       setIsFoodEditSearchOpen(false);
       setIsFoodEditorOpen(false);
     }
@@ -346,6 +350,7 @@ export function DataView({
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
   const normalizedFoodSearch = normalizeSearch(foodSearch);
   const normalizedFoodBrowserSearch = normalizeSearch(foodBrowserSearch);
+  const normalizedRecipeBrowserSearch = normalizeSearch(recipeBrowserSearch);
   const filteredFoods = useMemo(() => {
     if (!normalizedFoodSearch) return [];
     return sortedFoods
@@ -374,6 +379,23 @@ export function DataView({
       .slice(0, 50)
       .map(({ food }) => food);
   }, [normalizedFoodBrowserSearch, sortedFoods]);
+  const browserRecipes = useMemo(() => {
+    const recipes = sortFoodsByName((foods || []).filter((food) => food?.isRecipe === true));
+
+    if (!normalizedRecipeBrowserSearch) return recipes.slice(0, 50);
+
+    return recipes
+      .map((food) => {
+        const normalizedName = normalizeSearch(normalizeFoodName(food.name));
+        const starts = normalizedName.startsWith(normalizedRecipeBrowserSearch) ? 0 : 1;
+        const index = normalizedName.indexOf(normalizedRecipeBrowserSearch);
+        return { food, starts, index };
+      })
+      .filter(({ index }) => index >= 0)
+      .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
+      .slice(0, 50)
+      .map(({ food }) => food);
+  }, [foods, normalizedRecipeBrowserSearch]);
 
   const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Élelmiszer hozzáadása";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
@@ -758,6 +780,9 @@ export function DataView({
               <AppButton type="button" onClick={() => setIsFoodBrowserOpen((current) => !current)}>
                 {isFoodBrowserOpen ? "Adatbázis böngészése bezárása" : "Adatbázis böngészése"}
               </AppButton>
+              <AppButton type="button" onClick={() => setIsRecipeBrowserOpen((current) => !current)}>
+                {isRecipeBrowserOpen ? "Receptek böngészése bezárása" : "Receptek böngészése"}
+              </AppButton>
               <AppButton
                 type="button"
                 onClick={() => {
@@ -798,6 +823,37 @@ export function DataView({
                   </div>
                 ) : (
                   <AppNestedCard className="mt-3" variant="empty">{"Nincs találat."}</AppNestedCard>
+                )}
+              </AppNestedCard>
+            ) : null}
+            {isRecipeBrowserOpen ? (
+              <AppNestedCard className="mt-3" variant="surface">
+                <AppField label={"Keresés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keresés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
+                </AppField>
+                <AppMetaText className="mt-3">{`${browserRecipes.length} / ${sortedFoods.filter((food) => food?.isRecipe === true).length} recept`}</AppMetaText>
+                {browserRecipes.length ? (
+                  <div className="mt-3 grid gap-2.5" aria-label={"Recept böngésző találatok"}>
+                    {browserRecipes.map((food) => (
+                      <AppNestedCard className="grid gap-2" key={`recipe-browser-${food.id}`} variant="compact">
+                        <div className="grid gap-1.5">
+                          <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
+                          <AppMetaText>{normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })}</AppMetaText>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-300">
+                            <span>{`${Math.round(numberValue(food.kcal))} kcal`}</span>
+                            <span>{`P ${formatFoodMacro(food.protein)} g`}</span>
+                            <span>{`F ${formatFoodMacro(food.fat)} g`}</span>
+                            <span>{`Ch ${formatFoodMacro(food.carbs)} g`}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-start">
+                          <AppButton type="button" onClick={() => loadRecipeForEditing(food)}>{"Szerkesztés"}</AppButton>
+                        </div>
+                      </AppNestedCard>
+                    ))}
+                  </div>
+                ) : (
+                  <AppNestedCard className="mt-3" variant="empty">{normalizedRecipeBrowserSearch ? "Nincs recept találat." : "Nincs mentett recept."}</AppNestedCard>
                 )}
               </AppNestedCard>
             ) : null}
