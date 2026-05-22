@@ -3,7 +3,7 @@ import { BottomNav } from "./components/BottomNav";
 import { DataView } from "./components/DataView";
 import { StatsView } from "./components/StatsView";
 import { TodayView } from "./components/TodayView";
-import { FOOD_CATEGORIES, FOODS } from "./data/foods";
+import { FOOD_CATEGORIES } from "./data/foods";
 import { DEFAULT_TARGETS, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
 import {
@@ -14,6 +14,27 @@ import {
   WORKSPACE_KEY
 } from "./lib/storage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+
+function parseStoredJson(rawValue) {
+  if (!rawValue) return null;
+  try {
+    return JSON.parse(rawValue);
+  } catch {
+    return null;
+  }
+}
+
+function hasMeaningfulStoredData(snapshot) {
+  const storedFoods = parseStoredJson(snapshot?.foodsRaw);
+  const storedDiary = parseStoredJson(snapshot?.diaryRaw);
+  const storedDailyLogs = parseStoredJson(snapshot?.dailyLogsRaw);
+
+  if (Array.isArray(storedFoods) && storedFoods.length > 0) return true;
+  if (storedDiary && typeof storedDiary === "object" && Object.keys(storedDiary).length > 0) return true;
+  if (Array.isArray(storedDailyLogs) && storedDailyLogs.length > 0) return true;
+
+  return false;
+}
 
 function getSavedEntriesForDate(diary, date) {
   return (diary[date]?.entries || []).map((entry) => ({ ...entry, locked: true }));
@@ -142,11 +163,20 @@ function removeDailyLog(dailyLogs, date) {
 
 export default function App() {
   const todayKey = toDateKey();
+  const initialStorageSnapshotRef = useRef(null);
   const [activeView, setActiveView] = useState("today");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [foodSearch, setFoodSearch] = useState("");
 
-  const [foods, setFoods] = useLocalStorage(FOODS_KEY, FOODS);
+  if (initialStorageSnapshotRef.current === null && typeof window !== "undefined") {
+    initialStorageSnapshotRef.current = {
+      foodsRaw: localStorage.getItem(FOODS_KEY),
+      diaryRaw: localStorage.getItem(DIARY_KEY),
+      dailyLogsRaw: localStorage.getItem(DAILY_LOGS_KEY)
+    };
+  }
+
+  const [foods, setFoods] = useLocalStorage(FOODS_KEY, []);
   const [diary, setDiary] = useLocalStorage(DIARY_KEY, {});
   const [dailyLogs, setDailyLogs] = useLocalStorage(DAILY_LOGS_KEY, []);
   const [targets, setTargets] = useLocalStorage(TARGETS_KEY, DEFAULT_TARGETS);
@@ -156,6 +186,45 @@ export default function App() {
   useEffect(() => {
     const currentDiary = diary || {};
     setWorkspace(getWorkspaceForDate(currentDiary, dailyLogs, todayKey));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function initializeDefaultData() {
+      if (hasMeaningfulStoredData(initialStorageSnapshotRef.current)) return;
+
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL}default-data/makro-app-full-import-merged.json`);
+        if (!response.ok) throw new Error(`default data fetch failed: ${response.status}`);
+
+        const parsed = await response.json();
+        const nextFoods = Array.isArray(parsed?.foods) ? parsed.foods : null;
+        const nextTargets = parsed?.targets && typeof parsed.targets === "object" ? parsed.targets : null;
+        const nextDiary = parsed?.diary && typeof parsed.diary === "object" ? parsed.diary : null;
+        const nextDailyLogs = Array.isArray(parsed?.dailyLogs) ? parsed.dailyLogs : null;
+
+        if (!nextFoods || !nextTargets || !nextDiary || !nextDailyLogs) {
+          throw new Error("default data is missing required sections");
+        }
+
+        if (cancelled) return;
+
+        setFoods(nextFoods);
+        setTargets(nextTargets);
+        setDiary(nextDiary);
+        setDailyLogs(nextDailyLogs);
+        setWorkspace(getWorkspaceForDate(nextDiary, nextDailyLogs, todayKey));
+      } catch (error) {
+        console.warn("Default app data could not be loaded.", error);
+      }
+    }
+
+    initializeDefaultData();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -383,6 +452,10 @@ export default function App() {
     setWorkspace(getWorkspaceForDate(diary, dailyLogs, todayKey));
   }
 
+  function syncWorkspaceFromData(nextDiary, nextDailyLogs, nextDate = workDate || todayKey) {
+    setWorkspace(getWorkspaceForDate(nextDiary || {}, nextDailyLogs || [], nextDate || todayKey));
+  }
+
 
   function handleConfirmDailyLog() {
     persistEntriesForDate(workDate, todayEntries);
@@ -464,6 +537,7 @@ export default function App() {
           setDiary={setDiary}
           dailyLogs={dailyLogs}
           setDailyLogs={setDailyLogs}
+          onSyncWorkspaceFromData={syncWorkspaceFromData}
         />
       )}
 

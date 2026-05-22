@@ -1,5 +1,3 @@
-import { BASE_FOODS } from "./baseFoods";
-
 export const FOOD_CATEGORIES = [
   "Alapanyag",
   "Főtt ételek",
@@ -11,4 +9,6 @@ export const FOOD_CATEGORIES = [
   "Zöldség"
 ];
 
-export const FOODS = BASE_FOODS;
+export const FALLBACK_FOODS = [];
+
+export const FOODS = FALLBACK_FOODS;

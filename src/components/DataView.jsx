@@ -2,6 +2,7 @@ import { Download, Search, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FOOD_CATEGORIES } from "../data/foods";
 import { calculateEntry } from "../lib/calculations";
+import { toDateKey } from "../lib/dates";
 import {
   AppButton,
   AppCard,
@@ -21,6 +22,12 @@ import {
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp", "%"];
 const RECIPE_CATEGORY = "Főtt ételek";
 const CATEGORY_LABELS = ["Fehérje", "Tejtermék", "Hús", "Tojás", "Gyümölcs", "Magvak", "Gabona", "Zöldség", "Egyéb", "Receptek"];
+const DEFAULT_RESET_TARGETS = {
+  kcal: 2000,
+  protein: 150,
+  fat: 66.7,
+  carbs: 200
+};
 const macroFieldConfig = [
   { key: "kcal", label: "Kcal" },
   { key: "protein", label: "Fehérje" },
@@ -170,6 +177,21 @@ function isRecipeFood(food) {
   return Boolean(food?.isRecipe) || normalizeFoodCategory(food?.category, { isRecipe: food?.isRecipe }) === RECIPE_CATEGORY;
 }
 
+function recipeContainsRecipe(foodId, targetRecipeId, foods, visited = new Set()) {
+  if (!foodId || !targetRecipeId) return false;
+  if (foodId === targetRecipeId) return true;
+  if (visited.has(foodId)) return false;
+
+  visited.add(foodId);
+
+  const food = foods.find((item) => item.id === foodId);
+  if (!food?.isRecipe || !Array.isArray(food.recipe?.ingredients)) {
+    return false;
+  }
+
+  return food.recipe.ingredients.some((ingredient) => recipeContainsRecipe(ingredient.foodId, targetRecipeId, foods, new Set(visited)));
+}
+
 function getFoodDraftFieldValue(key, value) {
   if (!["kcal", "protein", "fat", "carbs"].includes(key)) return value;
   return value === 0 || value === "0" || value === "" || value === null || value === undefined ? "" : value;
@@ -203,6 +225,43 @@ function mergeDailyLogs(currentLogs, importedLogs) {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
+function mergeDiary(currentDiary = {}, importedDiary = {}) {
+  if (!importedDiary || typeof importedDiary !== "object" || Array.isArray(importedDiary)) {
+    return currentDiary || {};
+  }
+
+  const normalizedImportedDiary = Object.entries(importedDiary).reduce((acc, [dateKey, day]) => {
+    const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate)) return acc;
+
+    acc[safeDate] = {
+      date: safeDate,
+      entries: Array.isArray(day?.entries) ? day.entries : []
+    };
+
+    return acc;
+  }, {});
+
+  return {
+    ...(currentDiary || {}),
+    ...normalizedImportedDiary
+  };
+}
+
+function mergeFoodsForFullImport(importedFoods = [], currentFoods = []) {
+  const merged = [];
+  const seenIds = new Set();
+
+  [...importedFoods, ...currentFoods].forEach((food) => {
+    const foodId = typeof food?.id === "string" ? food.id.trim() : "";
+    if (!foodId || seenIds.has(foodId)) return;
+    merged.push(food);
+    seenIds.add(foodId);
+  });
+
+  return merged;
+}
+
 function extractDailyLogs(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.dailyLogs)) return data.dailyLogs;
@@ -224,11 +283,40 @@ function createBlankFood() {
 }
 
 function createBlankRecipe() {
-  return { name: "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: [] };
+  return { name: "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: [], recipeMode: "percent", netWeight: "" };
 }
 
 function normalizeIngredientDrafts(ingredients) {
   return (ingredients || []).map((ingredient) => ({ foodId: ingredient.foodId, amount: ingredient.amount === 0 || ingredient.amount === "0" ? "" : String(ingredient.amount ?? "") }));
+}
+
+function normalizeRecipeNameForCompare(value) {
+  return String(value || "").trim().toLocaleLowerCase("hu-HU");
+}
+
+function normalizeRecipeIngredientsForCompare(ingredients = []) {
+  return (Array.isArray(ingredients) ? ingredients : [])
+    .map((ingredient) => ({
+      foodId: String(ingredient?.foodId || ""),
+      amount: Number(ingredient?.amount) || 0
+    }))
+    .filter((ingredient) => ingredient.foodId && ingredient.amount > 0)
+    .sort((a, b) => a.foodId.localeCompare(b.foodId, "hu", { sensitivity: "base" }) || a.amount - b.amount);
+}
+
+function areRecipeIngredientsEqual(a = [], b = []) {
+  const normalizedA = normalizeRecipeIngredientsForCompare(a);
+  const normalizedB = normalizeRecipeIngredientsForCompare(b);
+
+  if (normalizedA.length !== normalizedB.length) return false;
+
+  return normalizedA.every((item, index) => item.foodId === normalizedB[index].foodId && Math.abs(item.amount - normalizedB[index].amount) < 0.0001);
+}
+
+function getRecipeModeFromFood(food) {
+  if (food?.recipe?.mode === "weight") return "weight";
+  if (food?.unit === "g" && Number(food?.recipe?.netWeight) > 0) return "weight";
+  return "percent";
 }
 
 function downloadJson(filename, payload) {
@@ -251,7 +339,8 @@ export function DataView({
   diary,
   setDiary,
   dailyLogs,
-  setDailyLogs
+  setDailyLogs,
+  onSyncWorkspaceFromData
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
@@ -262,6 +351,7 @@ export function DataView({
   const [isMacroTargetsOpen, setIsMacroTargetsOpen] = useState(false);
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
+  const [isRecipeBrowserOpen, setIsRecipeBrowserOpen] = useState(false);
   const [isFoodEditSearchOpen, setIsFoodEditSearchOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
@@ -271,6 +361,7 @@ export function DataView({
   const [activeTargetField, setActiveTargetField] = useState(null);
   const [transferMessage, setTransferMessage] = useState(null);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
+  const [recipeBrowserSearch, setRecipeBrowserSearch] = useState("");
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -285,8 +376,10 @@ export function DataView({
     if (!isFoodDatabaseOpen) {
       setFoodSearch("");
       setFoodBrowserSearch("");
+      setRecipeBrowserSearch("");
       setFoodDraft(createBlankFood());
       setIsFoodBrowserOpen(false);
+      setIsRecipeBrowserOpen(false);
       setIsFoodEditSearchOpen(false);
       setIsFoodEditorOpen(false);
     }
@@ -307,6 +400,7 @@ export function DataView({
   const sortedFoods = useMemo(() => sortFoodsByName(foods || []), [foods]);
   const normalizedFoodSearch = normalizeSearch(foodSearch);
   const normalizedFoodBrowserSearch = normalizeSearch(foodBrowserSearch);
+  const normalizedRecipeBrowserSearch = normalizeSearch(recipeBrowserSearch);
   const filteredFoods = useMemo(() => {
     if (!normalizedFoodSearch) return [];
     return sortedFoods
@@ -335,12 +429,34 @@ export function DataView({
       .slice(0, 50)
       .map(({ food }) => food);
   }, [normalizedFoodBrowserSearch, sortedFoods]);
+  const browserRecipes = useMemo(() => {
+    const recipes = sortFoodsByName((foods || []).filter((food) => food?.isRecipe === true));
+
+    if (!normalizedRecipeBrowserSearch) return recipes.slice(0, 50);
+
+    return recipes
+      .map((food) => {
+        const normalizedName = normalizeSearch(normalizeFoodName(food.name));
+        const starts = normalizedName.startsWith(normalizedRecipeBrowserSearch) ? 0 : 1;
+        const index = normalizedName.indexOf(normalizedRecipeBrowserSearch);
+        return { food, starts, index };
+      })
+      .filter(({ index }) => index >= 0)
+      .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
+      .slice(0, 50)
+      .map(({ food }) => food);
+  }, [foods, normalizedRecipeBrowserSearch]);
 
   const foodEditorTitle = foodDraft?.id ? `Szerkesztés: ${normalizeFoodName(foodDraft.name)}` : "Élelmiszer hozzáadása";
   const macroTargetSummary = `Makró célok – ${roundTargetNumber(targets?.kcal)} kcal · P ${roundTargetNumber(targets?.protein)} · Zs ${roundTargetNumber(targets?.fat)} · CH ${roundTargetNumber(targets?.carbs)}`;
   const normalizedRecipeSearch = normalizeSearch(recipeDraft.ingredientSearch);
   const recipeIngredientMatches = useMemo(() => {
-    const candidates = sortFoodsByName((foods || []).filter((food) => !food.isRecipe));
+    const candidates = sortFoodsByName((foods || []).filter((food) => {
+      if (!editingRecipeId) return true;
+      if (food?.id === editingRecipeId) return false;
+      if (!food?.isRecipe) return true;
+      return !recipeContainsRecipe(food.id, editingRecipeId, foods || []);
+    }));
     if (!normalizedRecipeSearch) return [];
     return candidates
       .map((food) => {
@@ -353,14 +469,14 @@ export function DataView({
       .sort((a, b) => a.starts - b.starts || a.index - b.index || normalizeFoodName(a.food.name).localeCompare(normalizeFoodName(b.food.name), "hu", { sensitivity: "base" }))
       .slice(0, 10)
       .map(({ food }) => food);
-  }, [foods, normalizedRecipeSearch]);
+  }, [editingRecipeId, foods, normalizedRecipeSearch]);
 
   const recipeTotals = useMemo(() => {
     return recipeDraft.ingredients.reduce(
       (totals, ingredient) => {
         const food = foods.find((item) => item.id === ingredient.foodId);
         if (!food) return totals;
-        const entry = calculateEntry(food, numberValue(ingredient.amount));
+        const entry = calculateEntry(food, numberValue(ingredient.amount), { foods });
         return {
           kcal: totals.kcal + entry.kcal,
           protein: totals.protein + entry.protein,
@@ -371,6 +487,17 @@ export function DataView({
       { kcal: 0, protein: 0, fat: 0, carbs: 0 }
     );
   }, [foods, recipeDraft.ingredients]);
+  const recipeNetWeightValue = numberValue(recipeDraft.netWeight);
+  const recipePer100Totals = useMemo(() => {
+    if (recipeDraft.recipeMode !== "weight" || recipeNetWeightValue <= 0) return null;
+    const factor = 100 / recipeNetWeightValue;
+    return {
+      kcal: recipeTotals.kcal * factor,
+      protein: recipeTotals.protein * factor,
+      fat: recipeTotals.fat * factor,
+      carbs: recipeTotals.carbs * factor
+    };
+  }, [recipeDraft.recipeMode, recipeNetWeightValue, recipeTotals]);
 
   function syncTargetDrafts(nextTargets) {
     setTargetDrafts({ kcal: String(roundTargetNumber(nextTargets.kcal)), protein: String(roundTargetNumber(nextTargets.protein)), fat: String(roundTargetNumber(nextTargets.fat)), carbs: String(roundTargetNumber(nextTargets.carbs)) });
@@ -409,28 +536,41 @@ export function DataView({
       const raw = await file.text();
       const parsed = JSON.parse(raw);
       const importedParts = [];
+      let nextDiary = diary;
+      let nextDailyLogs = dailyLogs;
+      let shouldSyncWorkspace = false;
 
       if (Array.isArray(parsed.foods)) {
-        const previousFoodCount = Array.isArray(foods) ? foods.length : 0;
-        setFoods(parsed.foods);
-        importedParts.push(`${parsed.foods.length} élelmiszer felülírva (korábban: ${previousFoodCount})`);
+        const importedFoods = parsed.foods.filter((food) => typeof food?.id === "string" && food.id.trim());
+        const mergedFoods = mergeFoodsForFullImport(importedFoods, Array.isArray(foods) ? foods : []);
+        const preservedCurrentCount = Math.max(0, mergedFoods.length - importedFoods.length);
+        setFoods(mergedFoods);
+        importedParts.push(`${importedFoods.length} importált élelmiszer betöltve, ${preservedCurrentCount} jelenlegi egyedi tétel megtartva. Összesen: ${mergedFoods.length}.`);
       }
       if (parsed.targets && typeof parsed.targets === "object") {
         setTargets((currentTargets) => normalizeImportedTargets(parsed.targets, currentTargets));
         importedParts.push("makró célok frissítve");
       }
       if (parsed.diary && typeof parsed.diary === "object") {
-        setDiary(parsed.diary);
+        nextDiary = parsed.diary;
+        setDiary(nextDiary);
+        shouldSyncWorkspace = true;
         importedParts.push("napi tételek visszaállítva");
       }
       if (Array.isArray(parsed.dailyLogs)) {
-        setDailyLogs(parsed.dailyLogs);
-        importedParts.push(`${parsed.dailyLogs.length} napi napló bejegyzés visszaállítva`);
+        nextDailyLogs = parsed.dailyLogs.map(normalizeDailyLog).filter(Boolean);
+        setDailyLogs(nextDailyLogs);
+        shouldSyncWorkspace = true;
+        importedParts.push(`${nextDailyLogs.length} napi napló bejegyzés visszaállítva`);
       }
 
       if (!importedParts.length) {
         setTransferMessage({ type: "error", text: "Import sikertelen: a fájl nem tartalmaz importálható adatot." });
         return;
+      }
+
+      if (shouldSyncWorkspace) {
+        onSyncWorkspaceFromData?.(nextDiary || {}, nextDailyLogs || [], undefined);
       }
 
       setTransferMessage({ type: "success", text: `Sikeres import: ${importedParts.join(", ")}.` });
@@ -443,8 +583,12 @@ export function DataView({
   }
 
   function exportDailyLogs() {
-    downloadJson("makro-app-daily-logs.json", dailyLogs);
-    setTransferMessage({ type: "success", text: "Sikeres export: napi napló letöltve." });
+    downloadJson("makro-app-daily-logs.json", {
+      dailyLogs,
+      diary,
+      exportedAt: new Date().toISOString()
+    });
+    setTransferMessage({ type: "success", text: "Sikeres export: napi napló letöltve tételes bontással." });
   }
 
   async function importDailyLogs(file) {
@@ -453,24 +597,39 @@ export function DataView({
       const raw = await file.text();
       const parsed = JSON.parse(raw);
       const imported = extractDailyLogs(parsed).map(normalizeDailyLog).filter(Boolean);
+      const importedDiary = parsed?.diary && typeof parsed.diary === "object" && !Array.isArray(parsed.diary) ? parsed.diary : null;
 
-      if (!imported.length) {
+      if (!imported.length && !importedDiary) {
         setTransferMessage({ type: "error", text: "Napi napló import: nem találtam érvényes naplóbejegyzést." });
         return;
       }
 
-      const currentNormalized = (dailyLogs || []).map(normalizeDailyLog).filter(Boolean);
-      const currentDates = new Set(currentNormalized.map((log) => log.date));
-      const importedDates = new Set(imported.map((log) => log.date));
-      const overwrittenCount = Array.from(importedDates).filter((date) => currentDates.has(date)).length;
-      const importedNewCount = Array.from(importedDates).filter((date) => !currentDates.has(date)).length;
-      const keptCount = currentNormalized.filter((log) => !importedDates.has(log.date)).length;
-      const merged = mergeDailyLogs(currentNormalized, imported);
+      let nextDailyLogs = dailyLogs || [];
+      let nextDiary = diary || {};
 
-      setDailyLogs(merged);
+      if (imported.length) {
+        const currentNormalized = (dailyLogs || []).map(normalizeDailyLog).filter(Boolean);
+        nextDailyLogs = mergeDailyLogs(currentNormalized, imported);
+        setDailyLogs(nextDailyLogs);
+      }
+
+      let importedDiaryCount = 0;
+      if (importedDiary) {
+        importedDiaryCount = Object.entries(importedDiary).reduce((count, [dateKey, day]) => {
+          const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
+          return /^\d{4}-\d{2}-\d{2}$/.test(safeDate) ? count + 1 : count;
+        }, 0);
+        nextDiary = mergeDiary(diary, importedDiary);
+        setDiary(nextDiary);
+      }
+
+      onSyncWorkspaceFromData?.(nextDiary || {}, nextDailyLogs || [], undefined);
+
       setTransferMessage({
         type: "success",
-        text: `Sikeres napi napló import: ${importedNewCount} új nap, ${overwrittenCount} nap felülírva, ${keptCount} meglévő nap megtartva. Összesen: ${merged.length} nap.`
+        text: importedDiary
+          ? `Sikeres napi napló import: ${imported.length} nap összesítő és ${importedDiaryCount} tételes nap importálva.`
+          : `Sikeres napi napló import: ${imported.length} nap összesítő importálva.`
       });
     } catch {
       setTransferMessage({ type: "error", text: "Napi napló import sikertelen: ellenőrizd a JSON fájlt." });
@@ -479,9 +638,63 @@ export function DataView({
       if (dailyLogInputRef.current) dailyLogInputRef.current.value = "";
     }
   }
+
+  function wipeDailyLog() {
+    const confirmed = window.confirm(
+      "Biztosan törlöd a teljes napi naplót? Az ételek és receptek megmaradnak, de minden naplózott nap törlődik, a makró célok pedig visszaállnak 2000 kcal, 30% / 30% / 40% alapértékre."
+    );
+
+    if (!confirmed) return;
+
+    setDiary({});
+    setDailyLogs([]);
+    setTargets(DEFAULT_RESET_TARGETS);
+    onSyncWorkspaceFromData?.({}, [], toDateKey());
+    setTransferMessage({ type: "success", text: "Napi napló törölve, makró célok alapértékre állítva." });
+  }
+
   function startNewFood() {
     setFoodDraft(createBlankFood());
     setIsFoodEditorOpen(true);
+  }
+
+  function closeFoodDatabaseSubsections() {
+    setIsFoodBrowserOpen(false);
+    setIsRecipeBrowserOpen(false);
+    setIsFoodEditSearchOpen(false);
+    setIsFoodEditorOpen(false);
+  }
+
+  function toggleFoodBrowser() {
+    const next = !isFoodBrowserOpen;
+    closeFoodDatabaseSubsections();
+    setIsFoodBrowserOpen(next);
+    if (!next) setFoodBrowserSearch("");
+  }
+
+  function toggleRecipeBrowser() {
+    const next = !isRecipeBrowserOpen;
+    closeFoodDatabaseSubsections();
+    setIsRecipeBrowserOpen(next);
+    if (!next) setRecipeBrowserSearch("");
+  }
+
+  function toggleFoodAdd() {
+    const isAddingNewFood = isFoodEditorOpen && !foodDraft?.id;
+    closeFoodDatabaseSubsections();
+    if (isAddingNewFood) {
+      setFoodDraft(createBlankFood());
+      return;
+    }
+    setFoodDraft(createBlankFood());
+    setIsFoodEditorOpen(true);
+  }
+
+  function toggleFoodEditSearch() {
+    const next = !isFoodEditSearchOpen;
+    closeFoodDatabaseSubsections();
+    setIsFoodEditSearchOpen(next);
+    if (!next) setFoodSearch("");
   }
 
   function saveFood() {
@@ -532,6 +745,8 @@ export function DataView({
       const nextFood = { ...nextFoodBase, id: `${slugify(name)}-${Date.now()}` };
       return [...current, nextFood];
     });
+    setFoodDraft(createBlankFood());
+    setIsFoodEditorOpen(false);
   }
 
   function deleteFood() {
@@ -546,6 +761,11 @@ export function DataView({
     const amount = numberValue(recipeDraft.ingredientAmount);
     if (!recipeDraft.ingredientFoodId || amount <= 0) {
       window.alert("Válassz alapanyagot és adj meg pozitív mennyiséget.");
+      return;
+    }
+    const ingredientFood = foods.find((food) => food.id === recipeDraft.ingredientFoodId);
+    if (editingRecipeId && ingredientFood?.isRecipe && recipeContainsRecipe(ingredientFood.id, editingRecipeId, foods)) {
+      window.alert("Ez a recept nem adható hozzá, mert körkörös recept-hivatkozást okozna.");
       return;
     }
     setRecipeDraft((current) => ({ ...current, ingredients: [...current.ingredients, { foodId: current.ingredientFoodId, amount: String(amount) }], ingredientAmount: "", ingredientFoodId: "", ingredientSearch: "" }));
@@ -569,14 +789,63 @@ export function DataView({
       window.alert("Adj hozzá legalább egy alapanyagot a recepthez.");
       return;
     }
+    if (recipeDraft.recipeMode === "weight" && recipeNetWeightValue <= 0) {
+      window.alert("Súly alapú receptnél add meg a teljes nettó receptsúlyt.");
+      return;
+    }
     const normalizedName = normalizeEntityName(name);
-    const existingRecipeByName = foods.find((food) => isRecipeFood(food) && normalizeEntityName(food.name) === normalizedName);
-    const targetRecipeId = existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
-    const nextRecipe = { id: targetRecipeId, name, category: RECIPE_CATEGORY, unit: "%", baseAmount: 100, defaultAmount: 100, step: 5, kcal: Math.round(recipeTotals.kcal), protein: Math.round(recipeTotals.protein * 10) / 10, fat: Math.round(recipeTotals.fat * 10) / 10, carbs: Math.round(recipeTotals.carbs * 10) / 10, isRecipe: true, recipe: { ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) })) } };
-    setFoods((current) => [...current.filter((food) => !(isRecipeFood(food) && (food.id === editingRecipeId || food.id === existingRecipeByName?.id))), nextRecipe]);
+    const existingRecipe = editingRecipeId ? foods.find((food) => food.id === editingRecipeId) : null;
+    const isEditingExistingRecipe = Boolean(existingRecipe);
+    const nameChanged = isEditingExistingRecipe && normalizeRecipeNameForCompare(existingRecipe?.name) !== normalizeRecipeNameForCompare(name);
+    const ingredientsChanged = isEditingExistingRecipe && !areRecipeIngredientsEqual(existingRecipe?.recipe?.ingredients, recipeDraft.ingredients);
+    const shouldCreateRecipeCopy = isEditingExistingRecipe && nameChanged && ingredientsChanged;
+    const existingRecipeByName = foods.find((food) => isRecipeFood(food) && food.id !== editingRecipeId && normalizeEntityName(food.name) === normalizedName);
+    const targetRecipeId = shouldCreateRecipeCopy
+      ? `recipe-${slugify(name)}-${Date.now()}`
+      : existingRecipeByName?.id || editingRecipeId || `recipe-${slugify(name)}-${Date.now()}`;
+    const hasCircularReference = recipeDraft.ingredients.some((ingredient) => {
+      if (ingredient.foodId === targetRecipeId) return true;
+      const ingredientFood = foods.find((food) => food.id === ingredient.foodId);
+      return ingredientFood?.isRecipe ? recipeContainsRecipe(ingredientFood.id, targetRecipeId, foods) : false;
+    });
+    if (hasCircularReference) {
+      window.alert("Ez a recept nem adható hozzá, mert körkörös recept-hivatkozást okozna.");
+      return;
+    }
+    const isWeightMode = recipeDraft.recipeMode === "weight";
+    const nextRecipe = {
+      id: targetRecipeId,
+      name,
+      category: RECIPE_CATEGORY,
+      unit: isWeightMode ? "g" : "%",
+      baseAmount: 100,
+      defaultAmount: 100,
+      step: isWeightMode ? 50 : 5,
+      kcal: isWeightMode ? Math.round((recipeTotals.kcal / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.kcal),
+      protein: isWeightMode ? Math.round((recipeTotals.protein / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.protein * 10) / 10,
+      fat: isWeightMode ? Math.round((recipeTotals.fat / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.fat * 10) / 10,
+      carbs: isWeightMode ? Math.round((recipeTotals.carbs / recipeNetWeightValue) * 1000) / 10 : Math.round(recipeTotals.carbs * 10) / 10,
+      isRecipe: true,
+      recipe: {
+        mode: isWeightMode ? "weight" : "percent",
+        ...(isWeightMode ? { netWeight: recipeNetWeightValue } : {}),
+        ingredients: recipeDraft.ingredients.map((ingredient) => ({ foodId: ingredient.foodId, amount: numberValue(ingredient.amount) }))
+      }
+    };
+    setFoods((current) => [
+      ...current.filter((food) => {
+        if (!isRecipeFood(food)) return true;
+        if (shouldCreateRecipeCopy) return true;
+        return !(food.id === editingRecipeId || food.id === existingRecipeByName?.id);
+      }),
+      nextRecipe
+    ]);
     setEditingRecipeId("");
     setRecipeDraft(createBlankRecipe());
     setIsRecipeEditorOpen(false);
+    if (shouldCreateRecipeCopy) {
+      setTransferMessage({ type: "success", text: "Új recept létrehozva az eredeti megtartásával." });
+    }
   }
 
   function deleteRecipe() {
@@ -593,7 +862,16 @@ export function DataView({
     setIsRecipeEditorOpen(true);
     setIsFoodEditorOpen(false);
     setIsFoodDatabaseOpen(false);
-    setRecipeDraft({ name: normalizeFoodName(food?.name) || "", category: RECIPE_CATEGORY, ingredientSearch: "", ingredientFoodId: "", ingredientAmount: "", ingredients: normalizeIngredientDrafts(food?.recipe?.ingredients || []) });
+    setRecipeDraft({
+      name: normalizeFoodName(food?.name) || "",
+      category: RECIPE_CATEGORY,
+      ingredientSearch: "",
+      ingredientFoodId: "",
+      ingredientAmount: "",
+      ingredients: normalizeIngredientDrafts(food?.recipe?.ingredients || []),
+      recipeMode: getRecipeModeFromFood(food),
+      netWeight: getRecipeModeFromFood(food) === "weight" ? String(numberValue(food?.recipe?.netWeight, "")) : ""
+    });
     requestAnimationFrame(() => {
       recipeCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -619,7 +897,7 @@ export function DataView({
                   {recipeIngredientMatches.map((food) => (
                     <AppRecipeOption key={food.id} active={recipeDraft.ingredientFoodId === food.id} onClick={() => setRecipeDraft((current) => ({ ...current, ingredientFoodId: food.id, ingredientSearch: normalizeFoodName(food.name) }))}>
                       <strong className="text-sm font-semibold text-slate-100">{normalizeFoodName(food.name)}</strong>
-                      <AppMetaText>{Math.round(food.kcal)} kcal · {normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })}</AppMetaText>
+                      <AppMetaText>{`${Math.round(food.kcal)} kcal · P ${formatFoodMacro(food.protein)} g · Zs ${formatFoodMacro(food.fat)} g · Ch ${formatFoodMacro(food.carbs)} g`}</AppMetaText>
                     </AppRecipeOption>
                   ))}
                 </div>
@@ -653,8 +931,30 @@ export function DataView({
                 <strong className="text-sm font-semibold text-slate-100">{"Teljes recept összesítés"}</strong>
                 <span>{Math.round(recipeTotals.kcal)} kcal</span>
                 <span>P {Math.round(recipeTotals.protein * 10) / 10} g · F {Math.round(recipeTotals.fat * 10) / 10} g · Ch {Math.round(recipeTotals.carbs * 10) / 10} g</span>
-                <small className="text-xs leading-5 text-slate-500">{"100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg."}</small>
+                {recipeDraft.recipeMode === "weight" && recipePer100Totals ? (
+                  <>
+                    <span className="pt-1 text-slate-200">{`Teljes nettó súly: ${recipeNetWeightValue} g`}</span>
+                    <strong className="pt-1 text-sm font-semibold text-slate-100">{"100 g-ra számolva"}</strong>
+                    <span>{Math.round(recipePer100Totals.kcal * 10) / 10} kcal</span>
+                    <span>P {Math.round(recipePer100Totals.protein * 10) / 10} g · F {Math.round(recipePer100Totals.fat * 10) / 10} g · Ch {Math.round(recipePer100Totals.carbs * 10) / 10} g</span>
+                  </>
+                ) : (
+                  <small className="text-xs leading-5 text-slate-500">{"100% = a teljes recept, napi fogyasztáskor százalékot adhatsz meg."}</small>
+                )}
               </AppNestedCard>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <AppField label={"Adagolási mód"}>
+                  <AppInput as="select" value={recipeDraft.recipeMode} onChange={(event) => setRecipeDraft((current) => ({ ...current, recipeMode: event.target.value, netWeight: event.target.value === "weight" ? current.netWeight : "" }))}>
+                    <option value="percent">{"Százalék alapú, 100%"}</option>
+                    <option value="weight">{"Súly alapú, 100 g"}</option>
+                  </AppInput>
+                </AppField>
+                {recipeDraft.recipeMode === "weight" ? (
+                  <AppField label={"Teljes nettó receptsúly"}>
+                    <AppInput inputMode="decimal" type="number" min="0" placeholder="pl. 850" value={recipeDraft.netWeight} onChange={(event) => setRecipeDraft((current) => ({ ...current, netWeight: event.target.value }))} />
+                  </AppField>
+                ) : null}
+              </div>
               <AppField className="mt-4" label={"Recept neve"}>
                 <AppInput value={recipeDraft.name} onChange={(event) => setRecipeDraft((current) => ({ ...current, name: event.target.value }))} />
               </AppField>
@@ -670,19 +970,16 @@ export function DataView({
         {isFoodDatabaseOpen ? (
           <>
             <div className="mt-3 flex flex-wrap gap-2.5">
-              <AppButton type="button" onClick={() => setIsFoodBrowserOpen((current) => !current)}>
+              <AppButton type="button" onClick={toggleFoodBrowser}>
                 {isFoodBrowserOpen ? "Adatbázis böngészése bezárása" : "Adatbázis böngészése"}
               </AppButton>
-              <AppButton
-                type="button"
-                onClick={() => {
-                  setFoodDraft(createBlankFood());
-                  setIsFoodEditorOpen(true);
-                }}
-              >
+              <AppButton type="button" onClick={toggleRecipeBrowser}>
+                {isRecipeBrowserOpen ? "Receptek böngészése bezárása" : "Receptek böngészése"}
+              </AppButton>
+              <AppButton type="button" onClick={toggleFoodAdd}>
                 {"Élelmiszer hozzáadása"}
               </AppButton>
-              <AppButton type="button" onClick={() => setIsFoodEditSearchOpen((current) => !current)}>
+              <AppButton type="button" onClick={toggleFoodEditSearch}>
                 {"Élelmiszer szerkesztése"}
               </AppButton>
             </div>
@@ -716,6 +1013,37 @@ export function DataView({
                 )}
               </AppNestedCard>
             ) : null}
+            {isRecipeBrowserOpen ? (
+              <AppNestedCard className="mt-3" variant="surface">
+                <AppField label={"Keresés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keresés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
+                </AppField>
+                <AppMetaText className="mt-3">{`${browserRecipes.length} / ${sortedFoods.filter((food) => food?.isRecipe === true).length} recept`}</AppMetaText>
+                {browserRecipes.length ? (
+                  <div className="mt-3 grid gap-2.5" aria-label={"Recept böngésző találatok"}>
+                    {browserRecipes.map((food) => (
+                      <AppNestedCard className="grid gap-2" key={`recipe-browser-${food.id}`} variant="compact">
+                        <div className="grid gap-1.5">
+                          <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
+                          <AppMetaText>{normalizeFoodCategory(food.category, { isRecipe: food.isRecipe })}</AppMetaText>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-300">
+                            <span>{`${Math.round(numberValue(food.kcal))} kcal`}</span>
+                            <span>{`P ${formatFoodMacro(food.protein)} g`}</span>
+                            <span>{`F ${formatFoodMacro(food.fat)} g`}</span>
+                            <span>{`Ch ${formatFoodMacro(food.carbs)} g`}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-start">
+                          <AppButton type="button" onClick={() => loadRecipeForEditing(food)}>{"Szerkesztés"}</AppButton>
+                        </div>
+                      </AppNestedCard>
+                    ))}
+                  </div>
+                ) : (
+                  <AppNestedCard className="mt-3" variant="empty">{normalizedRecipeBrowserSearch ? "Nincs recept találat." : "Nincs mentett recept."}</AppNestedCard>
+                )}
+              </AppNestedCard>
+            ) : null}
             {isFoodEditSearchOpen ? (
               <>
                 <AppField className="mt-3" label={"Élelmiszer keresése"}>
@@ -725,7 +1053,7 @@ export function DataView({
                   <AppNestedCard className="mt-3" variant="flush">
                     <div className="divide-y divide-slate-700/35">
                       {filteredFoods.map((food) => (
-                        <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
+                        <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setIsFoodBrowserOpen(false); setIsRecipeBrowserOpen(false); setIsFoodEditSearchOpen(false); setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
                           <div className="min-w-0 flex-1">
                             <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
@@ -815,6 +1143,12 @@ export function DataView({
                 <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
               </div>
               <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
+              <AppSectionTitle>{"Napi napló törlése"}</AppSectionTitle>
+              <div className="mt-4">
+                <AppDangerButton className="w-full" type="button" onClick={wipeDailyLog}>{"Napi napló törlése"}</AppDangerButton>
+              </div>
             </AppNestedCard>
           </div>
           </>
