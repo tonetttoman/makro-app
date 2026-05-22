@@ -591,6 +591,45 @@ export function DataView({
     setIsFoodEditorOpen(true);
   }
 
+  function closeFoodDatabaseSubsections() {
+    setIsFoodBrowserOpen(false);
+    setIsRecipeBrowserOpen(false);
+    setIsFoodEditSearchOpen(false);
+    setIsFoodEditorOpen(false);
+  }
+
+  function toggleFoodBrowser() {
+    const next = !isFoodBrowserOpen;
+    closeFoodDatabaseSubsections();
+    setIsFoodBrowserOpen(next);
+    if (!next) setFoodBrowserSearch("");
+  }
+
+  function toggleRecipeBrowser() {
+    const next = !isRecipeBrowserOpen;
+    closeFoodDatabaseSubsections();
+    setIsRecipeBrowserOpen(next);
+    if (!next) setRecipeBrowserSearch("");
+  }
+
+  function toggleFoodAdd() {
+    const isAddingNewFood = isFoodEditorOpen && !foodDraft?.id;
+    closeFoodDatabaseSubsections();
+    if (isAddingNewFood) {
+      setFoodDraft(createBlankFood());
+      return;
+    }
+    setFoodDraft(createBlankFood());
+    setIsFoodEditorOpen(true);
+  }
+
+  function toggleFoodEditSearch() {
+    const next = !isFoodEditSearchOpen;
+    closeFoodDatabaseSubsections();
+    setIsFoodEditSearchOpen(next);
+    if (!next) setFoodSearch("");
+  }
+
   function saveFood() {
     const name = normalizeFoodName(foodDraft.name);
     if (!name) {
@@ -779,22 +818,16 @@ export function DataView({
         {isFoodDatabaseOpen ? (
           <>
             <div className="mt-3 flex flex-wrap gap-2.5">
-              <AppButton type="button" onClick={() => setIsFoodBrowserOpen((current) => !current)}>
+              <AppButton type="button" onClick={toggleFoodBrowser}>
                 {isFoodBrowserOpen ? "Adatbázis böngészése bezárása" : "Adatbázis böngészése"}
               </AppButton>
-              <AppButton type="button" onClick={() => setIsRecipeBrowserOpen((current) => !current)}>
+              <AppButton type="button" onClick={toggleRecipeBrowser}>
                 {isRecipeBrowserOpen ? "Receptek böngészése bezárása" : "Receptek böngészése"}
               </AppButton>
-              <AppButton
-                type="button"
-                onClick={() => {
-                  setFoodDraft(createBlankFood());
-                  setIsFoodEditorOpen(true);
-                }}
-              >
+              <AppButton type="button" onClick={toggleFoodAdd}>
                 {"Élelmiszer hozzáadása"}
               </AppButton>
-              <AppButton type="button" onClick={() => setIsFoodEditSearchOpen((current) => !current)}>
+              <AppButton type="button" onClick={toggleFoodEditSearch}>
                 {"Élelmiszer szerkesztése"}
               </AppButton>
             </div>
@@ -868,7 +901,7 @@ export function DataView({
                   <AppNestedCard className="mt-3" variant="flush">
                     <div className="divide-y divide-slate-700/35">
                       {filteredFoods.map((food) => (
-                        <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
+                        <AppListRow active={foodDraft.id === food.id} key={food.id} onClick={() => { setFoodSearch(""); if (isRecipeFood(food)) { loadRecipeForEditing(food); return; } setIsFoodBrowserOpen(false); setIsRecipeBrowserOpen(false); setIsFoodEditSearchOpen(false); setFoodDraft({ ...food, name: normalizeFoodName(food.name), category: normalizeFoodCategory(food.category, { isRecipe: food.isRecipe }) }); setIsFoodEditorOpen(true); }}>
                           <div className="min-w-0 flex-1">
                             <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{normalizeFoodName(food.name)}</strong>
                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs leading-5 text-slate-400">
