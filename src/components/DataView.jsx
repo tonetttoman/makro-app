@@ -22,6 +22,12 @@ import {
 const UNITS = ["g", "ml", "db", "adag", "kapszula", "tabletta", "csepp", "%"];
 const RECIPE_CATEGORY = "Főtt ételek";
 const CATEGORY_LABELS = ["Fehérje", "Tejtermék", "Hús", "Tojás", "Gyümölcs", "Magvak", "Gabona", "Zöldség", "Egyéb", "Receptek"];
+const DEFAULT_RESET_TARGETS = {
+  kcal: 2000,
+  protein: 150,
+  fat: 66.7,
+  carbs: 200
+};
 const macroFieldConfig = [
   { key: "kcal", label: "Kcal" },
   { key: "protein", label: "Fehérje" },
@@ -635,15 +641,16 @@ export function DataView({
 
   function wipeDailyLog() {
     const confirmed = window.confirm(
-      "Biztosan törlöd a teljes napi naplót? Az ételek, receptek és makró célok megmaradnak, de minden naplózott nap törlődik."
+      "Biztosan törlöd a teljes napi naplót? Az ételek és receptek megmaradnak, de minden naplózott nap törlődik, a makró célok pedig visszaállnak 2000 kcal, 30% / 30% / 40% alapértékre."
     );
 
     if (!confirmed) return;
 
     setDiary({});
     setDailyLogs([]);
+    setTargets(DEFAULT_RESET_TARGETS);
     onSyncWorkspaceFromData?.({}, [], toDateKey());
-    setTransferMessage({ type: "success", text: "Napi napló törölve." });
+    setTransferMessage({ type: "success", text: "Napi napló törölve, makró célok alapértékre állítva." });
   }
 
   function startNewFood() {
