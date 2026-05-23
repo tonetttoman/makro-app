@@ -5,6 +5,20 @@ import { calculateEntry } from "../lib/calculations";
 import { toDateKey } from "../lib/dates";
 import { normalizeSearch } from "../lib/foodSearch";
 import {
+  downloadJson,
+  extractDailyLogs,
+  mergeDailyLogs,
+  mergeDiary,
+  mergeFoodsForFullImport,
+  normalizeDailyLog
+} from "../lib/importExportUtils";
+import {
+  calculateKcalFromMacros,
+  normalizeImportedTargets,
+  roundTargetNumber,
+  scaleMacrosToCalories
+} from "../lib/targetUtils";
+import {
   AppButton,
   AppCard,
   AppDangerButton,
@@ -66,59 +80,6 @@ function numberValue(value, fallback = 0) {
   if (value === "") return fallback;
   const parsed = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function normalizeImportedTargets(importedTargets, currentTargets) {
-  if (!importedTargets || typeof importedTargets !== "object") return currentTargets;
-
-  const nextTargets = { ...currentTargets };
-
-  ["kcal", "protein", "fat", "carbs"].forEach((key) => {
-    const rawValue = importedTargets[key];
-    if (rawValue === null || rawValue === undefined || rawValue === "") return;
-    const value = Number(String(rawValue).replace(",", "."));
-    if (Number.isFinite(value) && value >= 0) {
-      nextTargets[key] = value;
-    }
-  });
-
-  return nextTargets;
-}
-
-function roundTargetNumber(value) {
-  return Math.max(0, Math.round(Number(value) || 0));
-}
-
-function calculateKcalFromMacros(protein, fat, carbs) {
-  return roundTargetNumber(protein * 4 + fat * 9 + carbs * 4);
-}
-
-function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCarbs, fallbackTargets) {
-  const protein = Math.max(0, Number(currentProtein) || 0);
-  const fat = Math.max(0, Number(currentFat) || 0);
-  const carbs = Math.max(0, Number(currentCarbs) || 0);
-  const safeTargetKcal = roundTargetNumber(targetKcal);
-  const currentMacroKcal = calculateKcalFromMacros(protein, fat, carbs);
-  const fallbackProtein = Math.max(0, Number(fallbackTargets?.protein) || 0);
-  const fallbackFat = Math.max(0, Number(fallbackTargets?.fat) || 0);
-  const fallbackCarbs = Math.max(0, Number(fallbackTargets?.carbs) || 0);
-  const fallbackMacroKcal = calculateKcalFromMacros(fallbackProtein, fallbackFat, fallbackCarbs);
-  const baseProtein = currentMacroKcal > 0 ? protein : fallbackProtein;
-  const baseFat = currentMacroKcal > 0 ? fat : fallbackFat;
-  const baseCarbs = currentMacroKcal > 0 ? carbs : fallbackCarbs;
-  const baseKcal = currentMacroKcal > 0 ? currentMacroKcal : fallbackMacroKcal || 1;
-  const proteinRatio = (baseProtein * 4) / baseKcal;
-  const fatRatio = (baseFat * 9) / baseKcal;
-  const carbsRatio = (baseCarbs * 4) / baseKcal;
-  const nextProtein = roundTargetNumber((safeTargetKcal * proteinRatio) / 4);
-  const nextFat = roundTargetNumber((safeTargetKcal * fatRatio) / 9);
-  const nextCarbs = roundTargetNumber((safeTargetKcal * carbsRatio) / 4);
-  return {
-    protein: nextProtein,
-    fat: nextFat,
-    carbs: nextCarbs,
-    kcal: calculateKcalFromMacros(nextProtein, nextFat, nextCarbs)
-  };
 }
 
 function repairHungarianMojibake(value) {
@@ -199,73 +160,6 @@ function parseFoodDraftFieldValue(key, value) {
   return value === "" ? "" : numberValue(value);
 }
 
-function normalizeDailyLog(log) {
-  if (!log?.date) return null;
-  const date = String(log.date).trim().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  return {
-    date,
-    kcal: numberValue(log.kcal),
-    protein: numberValue(log.protein),
-    fat: numberValue(log.fat),
-    carbs: numberValue(log.carbs),
-    ...(log.alcoholKcal !== undefined ? { alcoholKcal: numberValue(log.alcoholKcal) } : {}),
-    ...(log.note ? { note: String(log.note) } : {}),
-    ...(log.source ? { source: String(log.source) } : { source: "manual_summary_import" })
-  };
-}
-
-function mergeDailyLogs(currentLogs, importedLogs) {
-  const byDate = new Map();
-  currentLogs.map(normalizeDailyLog).filter(Boolean).forEach((log) => byDate.set(log.date, log));
-  importedLogs.map(normalizeDailyLog).filter(Boolean).forEach((log) => byDate.set(log.date, log));
-  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function mergeDiary(currentDiary = {}, importedDiary = {}) {
-  if (!importedDiary || typeof importedDiary !== "object" || Array.isArray(importedDiary)) {
-    return currentDiary || {};
-  }
-
-  const normalizedImportedDiary = Object.entries(importedDiary).reduce((acc, [dateKey, day]) => {
-    const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate)) return acc;
-
-    acc[safeDate] = {
-      date: safeDate,
-      entries: Array.isArray(day?.entries) ? day.entries : []
-    };
-
-    return acc;
-  }, {});
-
-  return {
-    ...(currentDiary || {}),
-    ...normalizedImportedDiary
-  };
-}
-
-function mergeFoodsForFullImport(importedFoods = [], currentFoods = []) {
-  const merged = [];
-  const seenIds = new Set();
-
-  [...importedFoods, ...currentFoods].forEach((food) => {
-    const foodId = typeof food?.id === "string" ? food.id.trim() : "";
-    if (!foodId || seenIds.has(foodId)) return;
-    merged.push(food);
-    seenIds.add(foodId);
-  });
-
-  return merged;
-}
-
-function extractDailyLogs(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.dailyLogs)) return data.dailyLogs;
-  if (data?.date) return [data];
-  return [];
-}
-
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => normalizeFoodName(a.name).localeCompare(normalizeFoodName(b.name), "hu", { sensitivity: "base" }));
 }
@@ -314,16 +208,6 @@ function getRecipeModeFromFood(food) {
   if (food?.recipe?.mode === "weight") return "weight";
   if (food?.unit === "g" && Number(food?.recipe?.netWeight) > 0) return "weight";
   return "percent";
-}
-
-function downloadJson(filename, payload) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 export function DataView({
