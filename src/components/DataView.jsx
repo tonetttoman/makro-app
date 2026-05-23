@@ -210,6 +210,13 @@ function getRecipeModeFromFood(food) {
   return "percent";
 }
 
+function formatFoodDbExportDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function DataView({
   foods,
   setFoods,
@@ -225,6 +232,7 @@ export function DataView({
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
+  const foodDatabaseInputRef = useRef(null);
   const recipeCardRef = useRef(null);
   const [foodSearch, setFoodSearch] = useState("");
   const [foodBrowserSearch, setFoodBrowserSearch] = useState("");
@@ -411,6 +419,15 @@ export function DataView({
     setTransferMessage({ type: "success", text: "Sikeres export: teljes adatmentés letöltve." });
   }
 
+  function exportFoodDatabase() {
+    downloadJson(`elelmiszer_db_${formatFoodDbExportDate()}.json`, {
+      type: "makro-app-food-database",
+      foods,
+      exportedAt: new Date().toISOString()
+    });
+    setTransferMessage({ type: "success", text: "Sikeres export: élelmiszer-adatbázis letöltve." });
+  }
+
   async function importJson(file) {
     if (!file) return;
     try {
@@ -460,6 +477,34 @@ export function DataView({
       window.alert("A JSON import nem sikerült. Ellenőrizd a fájlt.");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function importFoodDatabase(file) {
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw);
+      const importedFoods = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.foods) ? parsed.foods : [];
+      const validFoods = importedFoods.filter((food) => typeof food?.id === "string" && food.id.trim());
+
+      if (!validFoods.length) {
+        setTransferMessage({ type: "error", text: "Élelmiszer DB import sikertelen: nincs importálható élelmiszer vagy recept." });
+        return;
+      }
+
+      const mergedFoods = mergeFoodsForFullImport(validFoods, Array.isArray(foods) ? foods : []);
+      setFoods(mergedFoods);
+      setTransferMessage({
+        type: "success",
+        text: `Sikeres élelmiszer DB import: ${validFoods.length} tétel feldolgozva.`
+      });
+    } catch {
+      setTransferMessage({ type: "error", text: "Élelmiszer DB import sikertelen: a JSON fájl nem olvasható vagy nem támogatott formátumú." });
+      window.alert("Az élelmiszer-adatbázis import nem sikerült. Ellenőrizd a fájlt.");
+    } finally {
+      if (foodDatabaseInputRef.current) foodDatabaseInputRef.current.value = "";
     }
   }
 
@@ -1010,18 +1055,26 @@ export function DataView({
           ) : null}
           <div className="mt-3 grid gap-3">
             <AppNestedCard>
+              <AppSectionTitle>{"Élelmiszer-adatbázis mentés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportFoodDatabase}><Upload size={18} className="mr-2" /> {"Élelmiszer DB export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => foodDatabaseInputRef.current?.click()}><Download size={18} className="mr-2" /> {"Élelmiszer DB import"}</AppButton>
+              </div>
+              <input ref={foodDatabaseInputRef} hidden accept="application/json" type="file" onChange={(event) => importFoodDatabase(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
               <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
-                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
+                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Upload size={18} className="mr-2" /> {"JSON export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Download size={18} className="mr-2" /> {"JSON import"}</AppButton>
               </div>
               <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
             </AppNestedCard>
             <AppNestedCard>
               <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
-                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
+                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Upload size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Download size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
               </div>
               <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
             </AppNestedCard>
