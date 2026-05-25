@@ -3,6 +3,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FOOD_CATEGORIES } from "../data/foods";
 import { calculateEntry } from "../lib/calculations";
 import { toDateKey } from "../lib/dates";
+import { normalizeSearch } from "../lib/foodSearch";
+import {
+  downloadJson,
+  extractDailyLogs,
+  mergeDailyLogs,
+  mergeDiary,
+  mergeFoodsForFullImport,
+  normalizeDailyLog
+} from "../lib/importExportUtils";
+import {
+  calculateKcalFromMacros,
+  normalizeImportedTargets,
+  roundTargetNumber,
+  scaleMacrosToCalories
+} from "../lib/targetUtils";
+import {
+  createFoodFromOnlineResult,
+  searchOpenFoodFacts
+} from "../lib/onlineFoodLookup";
 import {
   AppButton,
   AppCard,
@@ -65,63 +84,6 @@ function numberValue(value, fallback = 0) {
   if (value === "") return fallback;
   const parsed = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function normalizeImportedTargets(importedTargets, currentTargets) {
-  if (!importedTargets || typeof importedTargets !== "object") return currentTargets;
-
-  const nextTargets = { ...currentTargets };
-
-  ["kcal", "protein", "fat", "carbs"].forEach((key) => {
-    const rawValue = importedTargets[key];
-    if (rawValue === null || rawValue === undefined || rawValue === "") return;
-    const value = Number(String(rawValue).replace(",", "."));
-    if (Number.isFinite(value) && value >= 0) {
-      nextTargets[key] = value;
-    }
-  });
-
-  return nextTargets;
-}
-
-function roundTargetNumber(value) {
-  return Math.max(0, Math.round(Number(value) || 0));
-}
-
-function calculateKcalFromMacros(protein, fat, carbs) {
-  return roundTargetNumber(protein * 4 + fat * 9 + carbs * 4);
-}
-
-function scaleMacrosToCalories(targetKcal, currentProtein, currentFat, currentCarbs, fallbackTargets) {
-  const protein = Math.max(0, Number(currentProtein) || 0);
-  const fat = Math.max(0, Number(currentFat) || 0);
-  const carbs = Math.max(0, Number(currentCarbs) || 0);
-  const safeTargetKcal = roundTargetNumber(targetKcal);
-  const currentMacroKcal = calculateKcalFromMacros(protein, fat, carbs);
-  const fallbackProtein = Math.max(0, Number(fallbackTargets?.protein) || 0);
-  const fallbackFat = Math.max(0, Number(fallbackTargets?.fat) || 0);
-  const fallbackCarbs = Math.max(0, Number(fallbackTargets?.carbs) || 0);
-  const fallbackMacroKcal = calculateKcalFromMacros(fallbackProtein, fallbackFat, fallbackCarbs);
-  const baseProtein = currentMacroKcal > 0 ? protein : fallbackProtein;
-  const baseFat = currentMacroKcal > 0 ? fat : fallbackFat;
-  const baseCarbs = currentMacroKcal > 0 ? carbs : fallbackCarbs;
-  const baseKcal = currentMacroKcal > 0 ? currentMacroKcal : fallbackMacroKcal || 1;
-  const proteinRatio = (baseProtein * 4) / baseKcal;
-  const fatRatio = (baseFat * 9) / baseKcal;
-  const carbsRatio = (baseCarbs * 4) / baseKcal;
-  const nextProtein = roundTargetNumber((safeTargetKcal * proteinRatio) / 4);
-  const nextFat = roundTargetNumber((safeTargetKcal * fatRatio) / 9);
-  const nextCarbs = roundTargetNumber((safeTargetKcal * carbsRatio) / 4);
-  return {
-    protein: nextProtein,
-    fat: nextFat,
-    carbs: nextCarbs,
-    kcal: calculateKcalFromMacros(nextProtein, nextFat, nextCarbs)
-  };
-}
-
-function normalizeSearch(value) {
-  return String(value || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
 function repairHungarianMojibake(value) {
@@ -202,73 +164,6 @@ function parseFoodDraftFieldValue(key, value) {
   return value === "" ? "" : numberValue(value);
 }
 
-function normalizeDailyLog(log) {
-  if (!log?.date) return null;
-  const date = String(log.date).trim().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  return {
-    date,
-    kcal: numberValue(log.kcal),
-    protein: numberValue(log.protein),
-    fat: numberValue(log.fat),
-    carbs: numberValue(log.carbs),
-    ...(log.alcoholKcal !== undefined ? { alcoholKcal: numberValue(log.alcoholKcal) } : {}),
-    ...(log.note ? { note: String(log.note) } : {}),
-    ...(log.source ? { source: String(log.source) } : { source: "manual_summary_import" })
-  };
-}
-
-function mergeDailyLogs(currentLogs, importedLogs) {
-  const byDate = new Map();
-  currentLogs.map(normalizeDailyLog).filter(Boolean).forEach((log) => byDate.set(log.date, log));
-  importedLogs.map(normalizeDailyLog).filter(Boolean).forEach((log) => byDate.set(log.date, log));
-  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function mergeDiary(currentDiary = {}, importedDiary = {}) {
-  if (!importedDiary || typeof importedDiary !== "object" || Array.isArray(importedDiary)) {
-    return currentDiary || {};
-  }
-
-  const normalizedImportedDiary = Object.entries(importedDiary).reduce((acc, [dateKey, day]) => {
-    const safeDate = String(day?.date || dateKey).trim().slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(safeDate)) return acc;
-
-    acc[safeDate] = {
-      date: safeDate,
-      entries: Array.isArray(day?.entries) ? day.entries : []
-    };
-
-    return acc;
-  }, {});
-
-  return {
-    ...(currentDiary || {}),
-    ...normalizedImportedDiary
-  };
-}
-
-function mergeFoodsForFullImport(importedFoods = [], currentFoods = []) {
-  const merged = [];
-  const seenIds = new Set();
-
-  [...importedFoods, ...currentFoods].forEach((food) => {
-    const foodId = typeof food?.id === "string" ? food.id.trim() : "";
-    if (!foodId || seenIds.has(foodId)) return;
-    merged.push(food);
-    seenIds.add(foodId);
-  });
-
-  return merged;
-}
-
-function extractDailyLogs(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.dailyLogs)) return data.dailyLogs;
-  if (data?.date) return [data];
-  return [];
-}
-
 function sortFoodsByName(items) {
   return [...items].sort((a, b) => normalizeFoodName(a.name).localeCompare(normalizeFoodName(b.name), "hu", { sensitivity: "base" }));
 }
@@ -319,14 +214,11 @@ function getRecipeModeFromFood(food) {
   return "percent";
 }
 
-function downloadJson(filename, payload) {
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+function formatFoodDbExportDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function DataView({
@@ -344,6 +236,7 @@ export function DataView({
 }) {
   const fileInputRef = useRef(null);
   const dailyLogInputRef = useRef(null);
+  const foodDatabaseInputRef = useRef(null);
   const recipeCardRef = useRef(null);
   const [foodSearch, setFoodSearch] = useState("");
   const [foodBrowserSearch, setFoodBrowserSearch] = useState("");
@@ -352,6 +245,7 @@ export function DataView({
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
   const [isRecipeBrowserOpen, setIsRecipeBrowserOpen] = useState(false);
+  const [isOnlineFoodSearchOpen, setIsOnlineFoodSearchOpen] = useState(false);
   const [isFoodEditSearchOpen, setIsFoodEditSearchOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
@@ -362,6 +256,10 @@ export function DataView({
   const [transferMessage, setTransferMessage] = useState(null);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [recipeBrowserSearch, setRecipeBrowserSearch] = useState("");
+  const [onlineFoodQuery, setOnlineFoodQuery] = useState("");
+  const [onlineFoodResults, setOnlineFoodResults] = useState([]);
+  const [onlineFoodLoading, setOnlineFoodLoading] = useState(false);
+  const [onlineFoodError, setOnlineFoodError] = useState("");
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -377,9 +275,14 @@ export function DataView({
       setFoodSearch("");
       setFoodBrowserSearch("");
       setRecipeBrowserSearch("");
+      setOnlineFoodQuery("");
+      setOnlineFoodResults([]);
+      setOnlineFoodLoading(false);
+      setOnlineFoodError("");
       setFoodDraft(createBlankFood());
       setIsFoodBrowserOpen(false);
       setIsRecipeBrowserOpen(false);
+      setIsOnlineFoodSearchOpen(false);
       setIsFoodEditSearchOpen(false);
       setIsFoodEditorOpen(false);
     }
@@ -530,6 +433,71 @@ export function DataView({
     setTransferMessage({ type: "success", text: "Sikeres export: teljes adatmentés letöltve." });
   }
 
+  function exportFoodDatabase() {
+    downloadJson(`elelmiszer_db_${formatFoodDbExportDate()}.json`, {
+      type: "makro-app-food-database",
+      foods,
+      exportedAt: new Date().toISOString()
+    });
+    setTransferMessage({ type: "success", text: "Sikeres export: élelmiszer-adatbázis letöltve." });
+  }
+
+  async function handleOnlineFoodSearch() {
+    const trimmedQuery = onlineFoodQuery.trim();
+    if (!trimmedQuery) {
+      setOnlineFoodResults([]);
+      setOnlineFoodError("Adj meg egy keresőkifejezést az online élelmiszer kereséshez.");
+      return;
+    }
+
+    setOnlineFoodLoading(true);
+    setOnlineFoodError("");
+    setOnlineFoodResults([]);
+
+    try {
+      const results = await searchOpenFoodFacts(trimmedQuery);
+      if (!results.length) {
+        setOnlineFoodError("Nincs használható találat ehhez a kereséshez.");
+        return;
+      }
+
+      setOnlineFoodResults(results);
+    } catch (error) {
+      console.warn("Online élelmiszer keresés sikertelen.", error);
+      if (error?.code === "BARCODE_INVALID_LENGTH") {
+        setOnlineFoodError("Ez nem tűnik érvényes vonalkódnak. Ellenőrizd a számjegyeket.");
+      } else if (error?.code === "BARCODE_INVALID_CHECKSUM") {
+        setOnlineFoodError("A vonalkód számjegyei nem stimmelnek. Ellenőrizd, nem maradt-e ki vagy nem lett-e félreolvasva egy szám.");
+      } else if (error?.code === "BARCODE_NOT_FOUND") {
+        setOnlineFoodError("Nem található termék ezzel a vonalkóddal.");
+      } else if (error?.code === "BARCODE_NO_MACROS") {
+        setOnlineFoodError("A termék megtalálható, de nincs benne használható 100 g-os tápértékadat.");
+      } else if (error?.code === "BARCODE_LOOKUP_FAILED") {
+        setOnlineFoodError("Nem sikerült a vonalkódos keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj később újra.");
+      } else {
+        setOnlineFoodError("Nem sikerült az online keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj később újra.");
+      }
+    } finally {
+      setOnlineFoodLoading(false);
+    }
+  }
+
+  function addOnlineFoodToDatabase(result) {
+    const currentFoods = Array.isArray(foods) ? foods : [];
+    const { food, wasUpdate } = createFoodFromOnlineResult(result, currentFoods);
+    const nextFoods = wasUpdate
+      ? currentFoods.map((item) => (item.id === food.id ? food : item))
+      : [...currentFoods, food];
+
+    setFoods(nextFoods);
+    setTransferMessage({
+      type: "success",
+      text: wasUpdate
+        ? `${normalizeFoodName(food.name)} frissítve az élelmiszer-adatbázisban.`
+        : `${normalizeFoodName(food.name)} bekerült az élelmiszer-adatbázisba.`
+    });
+  }
+
   async function importJson(file) {
     if (!file) return;
     try {
@@ -579,6 +547,34 @@ export function DataView({
       window.alert("A JSON import nem sikerült. Ellenőrizd a fájlt.");
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function importFoodDatabase(file) {
+    if (!file) return;
+
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw);
+      const importedFoods = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.foods) ? parsed.foods : [];
+      const validFoods = importedFoods.filter((food) => typeof food?.id === "string" && food.id.trim());
+
+      if (!validFoods.length) {
+        setTransferMessage({ type: "error", text: "Élelmiszer DB import sikertelen: nincs importálható élelmiszer vagy recept." });
+        return;
+      }
+
+      const mergedFoods = mergeFoodsForFullImport(validFoods, Array.isArray(foods) ? foods : []);
+      setFoods(mergedFoods);
+      setTransferMessage({
+        type: "success",
+        text: `Sikeres élelmiszer DB import: ${validFoods.length} tétel feldolgozva.`
+      });
+    } catch {
+      setTransferMessage({ type: "error", text: "Élelmiszer DB import sikertelen: a JSON fájl nem olvasható vagy nem támogatott formátumú." });
+      window.alert("Az élelmiszer-adatbázis import nem sikerült. Ellenőrizd a fájlt.");
+    } finally {
+      if (foodDatabaseInputRef.current) foodDatabaseInputRef.current.value = "";
     }
   }
 
@@ -661,6 +657,7 @@ export function DataView({
   function closeFoodDatabaseSubsections() {
     setIsFoodBrowserOpen(false);
     setIsRecipeBrowserOpen(false);
+    setIsOnlineFoodSearchOpen(false);
     setIsFoodEditSearchOpen(false);
     setIsFoodEditorOpen(false);
   }
@@ -688,6 +685,18 @@ export function DataView({
     }
     setFoodDraft(createBlankFood());
     setIsFoodEditorOpen(true);
+  }
+
+  function toggleOnlineFoodSearch() {
+    const next = !isOnlineFoodSearchOpen;
+    closeFoodDatabaseSubsections();
+    setIsOnlineFoodSearchOpen(next);
+    if (!next) {
+      setOnlineFoodQuery("");
+      setOnlineFoodResults([]);
+      setOnlineFoodLoading(false);
+      setOnlineFoodError("");
+    }
   }
 
   function toggleFoodEditSearch() {
@@ -886,7 +895,7 @@ export function DataView({
             <AppNestedCard className="mt-3" variant="surface">
               <div className="grid gap-3 sm:grid-cols-2">
                 <AppField label={"Alapanyag keresése"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeDraft.ingredientSearch} placeholder={"Keresés alapanyag névre..."} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))} />
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeDraft.ingredientSearch} placeholder={"Keres?sés alapanyag névre..."} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))} />
                 </AppField>
                 <AppField label={"Mennyiség"}>
                   <AppInput inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
@@ -966,7 +975,7 @@ export function DataView({
       </div>
 
       <AppCard>
-        <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
+        <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Keres?séssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
         {isFoodDatabaseOpen ? (
           <>
             <div className="mt-3 flex flex-wrap gap-2.5">
@@ -979,14 +988,64 @@ export function DataView({
               <AppButton type="button" onClick={toggleFoodAdd}>
                 {"Élelmiszer hozzáadása"}
               </AppButton>
+              <AppButton type="button" onClick={toggleOnlineFoodSearch}>
+                {isOnlineFoodSearchOpen ? "Online keresés bezárása" : "Online keresés"}
+              </AppButton>
               <AppButton type="button" onClick={toggleFoodEditSearch}>
                 {"Élelmiszer szerkesztése"}
               </AppButton>
             </div>
+            {isOnlineFoodSearchOpen ? (
+            <AppNestedCard className="mt-3" variant="surface">
+              <AppSectionTitle>{"Online élelmiszer keresés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <AppField label={"Keresés"}>
+                  <AppSearchInput
+                    icon={<Search size={16} aria-hidden="true" />}
+                    value={onlineFoodQuery}
+                    placeholder={"Például: rizspufi"}
+                    onChange={(event) => setOnlineFoodQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleOnlineFoodSearch();
+                      }
+                    }}
+                  />
+                </AppField>
+                <div className="sm:self-end">
+                  <AppButton type="button" onClick={handleOnlineFoodSearch} disabled={onlineFoodLoading}>
+                    {onlineFoodLoading ? "Keresés..." : "Keresés"}
+                  </AppButton>
+                </div>
+              </div>
+              {onlineFoodError ? (
+                <AppNestedCard className="mt-3" variant="empty">
+                  {onlineFoodError}
+                </AppNestedCard>
+              ) : null}
+              {onlineFoodResults.length ? (
+                <div className="mt-3 grid gap-2.5" aria-label={"Online élelmiszer keresési találatok"}>
+                  {onlineFoodResults.map((result, index) => (
+                    <AppNestedCard className="grid gap-2" key={`${result.code || normalizeSearch(result.name)}-${index}`} variant="compact">
+                      <div className="grid gap-1">
+                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{result.name}</strong>
+                        {result.brand ? <AppMetaText>{`Márka: ${result.brand}`}</AppMetaText> : null}
+                        <AppMetaText>{`${Math.round(result.kcal)} kcal / 100 g · P ${formatFoodMacro(result.protein)} g · Zs ${formatFoodMacro(result.fat)} g · Ch ${formatFoodMacro(result.carbs)} g`}</AppMetaText>
+                      </div>
+                      <div className="flex justify-start">
+                        <AppButton type="button" onClick={() => addOnlineFoodToDatabase(result)}>{"Hozzáadás"}</AppButton>
+                      </div>
+                    </AppNestedCard>
+                  ))}
+                </div>
+              ) : null}
+            </AppNestedCard>
+            ) : null}
             {isFoodBrowserOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
-                <AppField label={"Keresés"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodBrowserSearch} placeholder={"Keresés az adatbázisban..."} onChange={(event) => setFoodBrowserSearch(event.target.value)} />
+                <AppField label={"Keres?sés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodBrowserSearch} placeholder={"Keres?sés az adatbázisban..."} onChange={(event) => setFoodBrowserSearch(event.target.value)} />
                 </AppField>
                 <AppMetaText className="mt-3">{`${browserFoods.length} / ${sortedFoods.length} tétel`}</AppMetaText>
                 {browserFoods.length ? (
@@ -1015,8 +1074,8 @@ export function DataView({
             ) : null}
             {isRecipeBrowserOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
-                <AppField label={"Keresés"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keresés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
+                <AppField label={"Keres?sés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keres?sés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
                 </AppField>
                 <AppMetaText className="mt-3">{`${browserRecipes.length} / ${sortedFoods.filter((food) => food?.isRecipe === true).length} recept`}</AppMetaText>
                 {browserRecipes.length ? (
@@ -1047,7 +1106,7 @@ export function DataView({
             {isFoodEditSearchOpen ? (
               <>
                 <AppField className="mt-3" label={"Élelmiszer keresése"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keres?sés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
                 </AppField>
                 {normalizedFoodSearch ? (
                   <AppNestedCard className="mt-3" variant="flush">
@@ -1129,18 +1188,26 @@ export function DataView({
           ) : null}
           <div className="mt-3 grid gap-3">
             <AppNestedCard>
+              <AppSectionTitle>{"Élelmiszer-adatbázis mentés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                <AppButton className="w-full" variant="action" type="button" onClick={exportFoodDatabase}><Upload size={18} className="mr-2" /> {"Élelmiszer DB export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => foodDatabaseInputRef.current?.click()}><Download size={18} className="mr-2" /> {"Élelmiszer DB import"}</AppButton>
+              </div>
+              <input ref={foodDatabaseInputRef} hidden accept="application/json" type="file" onChange={(event) => importFoodDatabase(event.target.files?.[0])} />
+            </AppNestedCard>
+            <AppNestedCard>
               <AppSectionTitle>{"Teljes adatmentés"}</AppSectionTitle>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Download size={18} className="mr-2" /> {"JSON export"}</AppButton>
-                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"JSON import"}</AppButton>
+                <AppButton className="w-full" variant="action" type="button" onClick={exportJson}><Upload size={18} className="mr-2" /> {"JSON export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => fileInputRef.current?.click()}><Download size={18} className="mr-2" /> {"JSON import"}</AppButton>
               </div>
               <input ref={fileInputRef} hidden accept="application/json" type="file" onChange={(event) => importJson(event.target.files?.[0])} />
             </AppNestedCard>
             <AppNestedCard>
               <AppSectionTitle>{"Napi napló"}</AppSectionTitle>
               <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Download size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
-                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Upload size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
+                <AppButton className="w-full" variant="action" type="button" onClick={exportDailyLogs}><Upload size={18} className="mr-2" /> {"Napi napló export"}</AppButton>
+                <AppButton className="w-full" type="button" onClick={() => dailyLogInputRef.current?.click()}><Download size={18} className="mr-2" /> {"Napi napló import"}</AppButton>
               </div>
               <input ref={dailyLogInputRef} hidden accept="application/json" type="file" onChange={(event) => importDailyLogs(event.target.files?.[0])} />
             </AppNestedCard>

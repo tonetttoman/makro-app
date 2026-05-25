@@ -6,6 +6,7 @@ import { TodayView } from "./components/TodayView";
 import { FOOD_CATEGORIES } from "./data/foods";
 import { DEFAULT_TARGETS, calculateTotals } from "./lib/calculations";
 import { toDateKey } from "./lib/dates";
+import { getFoodSearchRank, isRenderableFood, normalizeSearch } from "./lib/foodSearch";
 import {
   DIARY_KEY,
   DAILY_LOGS_KEY,
@@ -14,6 +15,10 @@ import {
   WORKSPACE_KEY
 } from "./lib/storage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
+
+const VIEW_ORDER = ["today", "monthly", "data"];
+const SWIPE_MIN_DISTANCE = 80;
+const SWIPE_DIRECTION_RATIO = 1.5;
 
 function parseStoredJson(rawValue) {
   if (!rawValue) return null;
@@ -65,44 +70,6 @@ function getWorkspaceForDate(diary, dailyLogs, date) {
     entries,
     importedTotals: entries.length ? null : getImportedTotalsForDate(dailyLogs, date)
   };
-}
-
-function sortFoodsByName(items) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name, "hu", { sensitivity: "base" }));
-}
-
-function normalizeSearch(value) {
-  return String(value || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function getFoodSearchRank(foodName, query) {
-  const normalizedName = normalizeSearch(foodName);
-  if (!query || !normalizedName) return Number.POSITIVE_INFINITY;
-  if (normalizedName === query) return 0;
-  if (normalizedName.startsWith(query)) return 1;
-
-  const words = normalizedName.split(/[\s\-_/(),.]+/).filter(Boolean);
-  if (words.some((word) => word.startsWith(query))) return 2;
-  if (normalizedName.includes(query)) return 3;
-
-  return Number.POSITIVE_INFINITY;
-}
-
-function isRenderableFood(food) {
-  return Boolean(
-    food &&
-      typeof food.id === "string" &&
-      food.id.trim() &&
-      typeof food.name === "string" &&
-      food.name.trim() &&
-      typeof food.category === "string" &&
-      food.category.trim() &&
-      Number(food.step) > 0
-  );
 }
 
 function createUniqueId(prefix) {
@@ -161,9 +128,26 @@ function removeDailyLog(dailyLogs, date) {
   return dailyLogs.filter((log) => log.date !== date);
 }
 
+function getNextView(currentView, direction) {
+  const currentIndex = VIEW_ORDER.indexOf(currentView);
+  if (currentIndex < 0) return currentView;
+
+  const nextIndex =
+    direction === "next"
+      ? Math.min(VIEW_ORDER.length - 1, currentIndex + 1)
+      : Math.max(0, currentIndex - 1);
+
+  return VIEW_ORDER[nextIndex];
+}
+
+function isInteractiveElement(target) {
+  return Boolean(target?.closest?.("input, textarea, select, button, a"));
+}
+
 export default function App() {
   const todayKey = toDateKey();
   const initialStorageSnapshotRef = useRef(null);
+  const touchStartRef = useRef(null);
   const [activeView, setActiveView] = useState("today");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [foodSearch, setFoodSearch] = useState("");
@@ -483,8 +467,44 @@ export default function App() {
     setActiveView("today");
   }
 
+  function handleTouchStart(event) {
+    const touch = event.touches?.[0];
+    if (!touch || isInteractiveElement(event.target)) {
+      touchStartRef.current = null;
+      return;
+    }
+
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY
+    };
+  }
+
+  function handleTouchEnd(event) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+
+    const touch = event.changedTouches?.[0];
+    if (!start || !touch) return;
+    if (isInteractiveElement(event.target)) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (absDeltaX < SWIPE_MIN_DISTANCE) return;
+    if (absDeltaX <= absDeltaY * SWIPE_DIRECTION_RATIO) return;
+
+    const direction = deltaX < 0 ? "next" : "previous";
+    const nextView = getNextView(activeView, direction);
+    if (nextView !== activeView) {
+      handleViewChange(nextView);
+    }
+  }
+
   return (
-    <div className="app">
+    <div className="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {activeView === "today" && (
         <TodayView
           totals={totals}

@@ -1,5 +1,3 @@
-import { FOODS } from "../data/foods";
-
 export const DEFAULT_TARGETS = {
   kcal: 2200,
   protein: 160,
@@ -7,12 +5,7 @@ export const DEFAULT_TARGETS = {
   carbs: 220
 };
 
-export function getFoodById(foodId) {
-  return FOODS.find((food) => food.id === foodId);
-}
-
-
-export function findFoodById(foodId, foods = FOODS) {
+export function findFoodById(foodId, foods = []) {
   return foods.find((food) => food.id === foodId);
 }
 
@@ -180,7 +173,7 @@ function calculateRecipeOverrideEntry(food, amount, entry, foods, visited) {
 
 export function calculateEntry(food, amount, options = {}) {
   const entry = options.entry;
-  const foods = options.foods || FOODS;
+  const foods = Array.isArray(options.foods) ? options.foods : [];
   const visited = options.visited || new Set();
   const hasRecipeOverrides = Array.isArray(entry?.recipeOverrides) && entry.recipeOverrides.length > 0;
 
@@ -195,7 +188,7 @@ export function calculateEntry(food, amount, options = {}) {
   return calculatePlainEntry(food, amount);
 }
 
-export function calculateDiaryEntry(entry, foods = FOODS) {
+export function calculateDiaryEntry(entry, foods = []) {
   const food = findFoodById(entry?.foodId, foods);
   if (!food) return null;
 
@@ -205,7 +198,7 @@ export function calculateDiaryEntry(entry, foods = FOODS) {
   };
 }
 
-export function calculateTotals(entries, foods = FOODS) {
+export function calculateTotals(entries, foods = []) {
   return entries.reduce(
     (totals, entry) => {
       const calculated = calculateDiaryEntry(entry, foods);
