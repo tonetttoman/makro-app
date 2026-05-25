@@ -2,6 +2,7 @@ import { FOOD_CATEGORIES } from "../data/foods";
 
 const SEARCH_ENDPOINT = "https://world.openfoodfacts.org/cgi/search.pl";
 const DEFAULT_PAGE_SIZE = 20;
+const FETCH_RETRY_COUNT = 1;
 
 function toFiniteNumber(value) {
   const parsed = Number(String(value ?? "").replace(",", "."));
@@ -15,66 +16,6 @@ function slugify(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-}
-
-function buildSearchStrategies(query) {
-  const aliases = getOnlineSearchAliases(query);
-  const strategies = [];
-  const seen = new Set();
-
-  const pushStrategy = (searchQuery, options = {}) => {
-    const trimmedQuery = String(searchQuery || "").trim();
-    if (!trimmedQuery) return;
-
-    const key = `${options.country || "all"}:${options.language || "all"}:${normalizeOnlineFoodSearchText(trimmedQuery)}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-    strategies.push({
-      query: trimmedQuery,
-      country: options.country,
-      language: options.language,
-      aliases
-    });
-  };
-
-  pushStrategy(query, { country: "hu", language: "hu" });
-
-  const compactAlias = aliases.find((alias) => {
-    const normalizedAlias = normalizeOnlineFoodSearchText(alias);
-    return normalizedAlias && !normalizedAlias.includes(" ");
-  });
-  if (compactAlias) {
-    pushStrategy(compactAlias, { country: "hu", language: "hu" });
-  }
-
-  const tokenAlias = aliases.find((alias) => {
-    const normalizedAlias = normalizeOnlineFoodSearchText(alias);
-    return normalizedAlias && normalizedAlias.split(/\s+/).length === 1 && normalizedAlias !== normalizeOnlineFoodSearchText(query).replace(/\s+/g, "");
-  });
-  if (tokenAlias) {
-    pushStrategy(tokenAlias, { country: "hu", language: "hu" });
-  }
-
-  const phraseAlias = aliases.find((alias) => normalizeOnlineFoodSearchText(alias) === "puffasztott rizs");
-  if (phraseAlias) {
-    pushStrategy(phraseAlias, { country: "hu", language: "hu" });
-  }
-
-  pushStrategy(query, {});
-
-  return strategies.slice(0, 4);
-}
-
-function dedupeOnlineResults(results) {
-  return Array.from(
-    (results || []).reduce((map, result) => {
-      const key =
-        result.code ||
-        `${normalizeOnlineFoodSearchText(result.name)}|${normalizeOnlineFoodSearchText(result.brand)}`;
-      if (!map.has(key)) map.set(key, result);
-      return map;
-    }, new Map()).values()
-  );
 }
 
 function getGuessedCategory(name) {
@@ -102,6 +43,61 @@ function getGuessedCategory(name) {
   return FOOD_CATEGORIES[0] || "Alapanyag";
 }
 
+function dedupeSearchStrategies(strategies) {
+  const seen = new Set();
+
+  return strategies.filter((strategy) => {
+    const normalizedQuery = normalizeOnlineFoodSearchText(strategy?.query);
+    if (!normalizedQuery) return false;
+
+    const key = `${strategy.country || "all"}:${strategy.language || "all"}:${normalizedQuery}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function dedupeOnlineResults(results) {
+  const map = new Map();
+
+  (results || []).forEach((result) => {
+    const key =
+      result.code ||
+      `${normalizeOnlineFoodSearchText(result.name)}|${normalizeOnlineFoodSearchText(result.brand)}`;
+
+    if (!map.has(key)) {
+      map.set(key, result);
+      return;
+    }
+
+    const existing = map.get(key);
+    if ((result.aliasPriority ?? Number.POSITIVE_INFINITY) < (existing.aliasPriority ?? Number.POSITIVE_INFINITY)) {
+      map.set(key, result);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+async function fetchWithRetry(url, retries = FETCH_RETRY_COUNT) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`OpenFoodFacts search failed: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      lastError = error;
+      if (attempt >= retries) break;
+    }
+  }
+
+  throw lastError;
+}
+
 export function normalizeOnlineFoodSearchText(value) {
   return String(value || "")
     .toLowerCase()
@@ -123,9 +119,9 @@ export function generateAccentSearchText(value) {
     kenyer: "kenyér",
     tejfol: "tejföl",
     joghurt: "joghurt",
-    rizspufi: "rizspufi",
-    rizs: "rizs",
-    pufi: "pufi"
+    labszar: "lábszár",
+    marhalabszar: "marha lábszár",
+    marhacomb: "marha comb"
   };
 
   return String(value || "")
@@ -142,25 +138,52 @@ export function getOnlineSearchAliases(query) {
   const accented = generateAccentSearchText(original);
   const compact = normalized.replace(/\s+/g, "");
   const words = normalized.split(/\s+/).filter(Boolean);
-  const aliases = new Set();
+  const aliases = [];
+  const seen = new Set();
 
-  if (original) aliases.add(original);
-  if (normalized) aliases.add(normalized);
-  if (accented) aliases.add(accented);
-  if (compact && compact !== normalized) aliases.add(compact);
-  if (words.length > 1) {
-    aliases.add(words[words.length - 1]);
-  }
+  const pushAlias = (value) => {
+    const trimmed = String(value || "").trim();
+    const key = normalizeOnlineFoodSearchText(trimmed);
+    if (!trimmed || !key || seen.has(key)) return;
+    seen.add(key);
+    aliases.push(trimmed);
+  };
+
+  pushAlias(original);
+  pushAlias(accented);
+  if (compact && compact !== normalized) pushAlias(compact);
 
   if (normalized === "rizs pufi" || normalized === "rizspufi") {
-    aliases.add("pufi");
-    aliases.add("puffasztott rizs");
-    aliases.add("rizspufi");
+    pushAlias("rizspufi");
+    pushAlias("pufi");
+    pushAlias("puffasztott rizs");
   }
 
-  return [...aliases]
-    .map((alias) => String(alias || "").trim())
-    .filter(Boolean);
+  if (normalized === "marha labszar" || normalized === "marha lábszár" || normalized === "marhalabszar" || normalized === "marhalábszár") {
+    pushAlias("marha lábszár");
+    pushAlias("marha labszar");
+    pushAlias("marhalábszár");
+    pushAlias("marhalabszar");
+    pushAlias("lábszár");
+    pushAlias("labszar");
+    pushAlias("marha");
+  }
+
+  if (normalized === "marha comb" || normalized === "marhacomb") {
+    pushAlias("marha comb");
+    pushAlias("marhacomb");
+    pushAlias("comb");
+  }
+
+  if (words.length > 1) {
+    pushAlias(words[words.length - 1]);
+  }
+
+  if (words.length > 1) {
+    pushAlias(words[0]);
+  }
+
+  return aliases.slice(0, 7);
 }
 
 export async function fetchOpenFoodFactsSearch(query, options = {}) {
@@ -169,21 +192,15 @@ export async function fetchOpenFoodFactsSearch(query, options = {}) {
     search_simple: "1",
     action: "process",
     json: "1",
-    page_size: String(options.pageSize || DEFAULT_PAGE_SIZE)
+    page_size: String(options.pageSize || DEFAULT_PAGE_SIZE),
+    cc: options.country || "hu",
+    lc: options.language || "hu"
   });
 
-  if (options.country) params.set("cc", options.country);
-  if (options.language) params.set("lc", options.language);
-
-  const response = await fetch(`${SEARCH_ENDPOINT}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(`OpenFoodFacts search failed: ${response.status}`);
-  }
-
-  return response.json();
+  return fetchWithRetry(`${SEARCH_ENDPOINT}?${params.toString()}`);
 }
 
-export function normalizeOpenFoodFactsProduct(product) {
+export function normalizeOpenFoodFactsProduct(product, options = {}) {
   const nutriments = product?.nutriments || {};
   const name = String(
     product?.product_name_hu ||
@@ -217,7 +234,9 @@ export function normalizeOpenFoodFactsProduct(product) {
     kcal,
     protein,
     fat,
-    carbs
+    carbs,
+    matchedAlias: options.matchedAlias || "",
+    aliasPriority: Number.isFinite(options.aliasPriority) ? options.aliasPriority : Number.POSITIVE_INFINITY
   };
 }
 
@@ -229,25 +248,33 @@ export function rankOnlineFoodResult(result, normalizedQuery, aliases = []) {
     .map((alias) => normalizeOnlineFoodSearchText(alias))
     .filter(Boolean);
 
-  if (normalizedName === normalizedQuery) return 0;
-  if (normalizedAliases.some((alias) => normalizedName === alias)) return 1;
-  if (normalizedName.startsWith(normalizedQuery)) return 2;
-  if (normalizedAliases.some((alias) => normalizedName.startsWith(alias))) return 3;
+  let score = 7;
 
-  const words = normalizedName.split(/[\s\-_/(),.]+/).filter(Boolean);
-  if (
-    words.some(
-      (word) =>
-        word.startsWith(normalizedQuery) ||
-        normalizedAliases.some((alias) => word.startsWith(alias))
-    )
-  ) {
-    return 4;
+  if (normalizedName === normalizedQuery) score = 0;
+  else if (normalizedAliases.some((alias) => normalizedName === alias)) score = 1;
+  else if (normalizedName.startsWith(normalizedQuery)) score = 2;
+  else if (normalizedAliases.some((alias) => normalizedName.startsWith(alias))) score = 3;
+  else {
+    const words = normalizedName.split(/[\s\-_/(),.]+/).filter(Boolean);
+    if (
+      words.some(
+        (word) =>
+          word.startsWith(normalizedQuery) ||
+          normalizedAliases.some((alias) => word.startsWith(alias))
+      )
+    ) {
+      score = 4;
+    } else if (normalizedName.includes(normalizedQuery)) {
+      score = 5;
+    } else if (normalizedAliases.some((alias) => normalizedName.includes(alias))) {
+      score = 6;
+    }
   }
-  if (normalizedName.includes(normalizedQuery)) return 5;
-  if (normalizedAliases.some((alias) => normalizedName.includes(alias))) return 6;
 
-  return 7;
+  return {
+    score,
+    aliasPriority: Number.isFinite(result?.aliasPriority) ? result.aliasPriority : Number.POSITIVE_INFINITY
+  };
 }
 
 export async function searchOpenFoodFacts(query) {
@@ -255,37 +282,61 @@ export async function searchOpenFoodFacts(query) {
   if (!trimmedQuery) return [];
 
   const normalizedQuery = normalizeOnlineFoodSearchText(trimmedQuery);
-  const strategies = buildSearchStrategies(trimmedQuery);
-  const collectedResults = [];
+  const aliases = getOnlineSearchAliases(trimmedQuery);
+  const strategies = dedupeSearchStrategies(
+    aliases.map((alias, index) => ({
+      query: alias,
+      country: "hu",
+      language: "hu",
+      aliasPriority: index
+    }))
+  );
+
+  const allResults = [];
+  const errors = [];
+  let hadSuccessfulResponse = false;
 
   for (const strategy of strategies) {
-    const data = await fetchOpenFoodFactsSearch(strategy.query, {
-      country: strategy.country,
-      language: strategy.language
-    });
+    try {
+      const json = await fetchOpenFoodFactsSearch(strategy.query, {
+        country: strategy.country,
+        language: strategy.language
+      });
+      hadSuccessfulResponse = true;
 
-    const normalizedResults = (Array.isArray(data?.products) ? data.products : [])
-      .map(normalizeOpenFoodFactsProduct)
-      .filter(Boolean);
+      const products = Array.isArray(json?.products) ? json.products : [];
+      const normalizedResults = products
+        .map((product) =>
+          normalizeOpenFoodFactsProduct(product, {
+            matchedAlias: strategy.query,
+            aliasPriority: strategy.aliasPriority
+          })
+        )
+        .filter(Boolean);
 
-    if (normalizedResults.length) {
-      collectedResults.push(...normalizedResults);
-      break;
+      allResults.push(...normalizedResults);
+    } catch (error) {
+      errors.push({ alias: strategy.query, error });
+      console.warn(`OpenFoodFacts keresés sikertelen erre az aliasra: ${strategy.query}`, error);
     }
   }
 
-  const dedupedResults = dedupeOnlineResults(collectedResults);
-  if (!dedupedResults.length) return [];
+  const dedupedResults = dedupeOnlineResults(allResults);
+  if (dedupedResults.length) {
+    return dedupedResults.sort((a, b) => {
+      const aRank = rankOnlineFoodResult(a, normalizedQuery, aliases);
+      const bRank = rankOnlineFoodResult(b, normalizedQuery, aliases);
+      if (aRank.score !== bRank.score) return aRank.score - bRank.score;
+      if (aRank.aliasPriority !== bRank.aliasPriority) return aRank.aliasPriority - bRank.aliasPriority;
+      return a.name.localeCompare(b.name, "hu", { sensitivity: "base" });
+    });
+  }
 
-  const aliases = getOnlineSearchAliases(trimmedQuery);
-  return dedupedResults.sort((a, b) => {
-    const rankDiff =
-      rankOnlineFoodResult(a, normalizedQuery, aliases) -
-      rankOnlineFoodResult(b, normalizedQuery, aliases);
-    if (rankDiff !== 0) return rankDiff;
+  if (!hadSuccessfulResponse && errors.length) {
+    throw errors[0].error;
+  }
 
-    return a.name.localeCompare(b.name, "hu", { sensitivity: "base" });
-  });
+  return [];
 }
 
 export function createFoodFromOnlineResult(result, existingFoods = []) {
