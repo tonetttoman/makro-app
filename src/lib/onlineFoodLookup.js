@@ -1,6 +1,7 @@
 import { FOOD_CATEGORIES } from "../data/foods";
 
 const OPEN_FOOD_FACTS_ENDPOINT = "https://world.openfoodfacts.org/cgi/search.pl";
+const OPEN_FOOD_FACTS_BARCODE_ENDPOINT = "https://world.openfoodfacts.org/api/v2/product";
 const USDA_ENDPOINT = "https://api.nal.usda.gov/fdc/v1/foods/search";
 const USDA_API_KEY = "DEMO_KEY";
 const DEFAULT_PAGE_SIZE = 20;
@@ -189,6 +190,12 @@ function slugify(value) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function createLookupError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
 }
 
 async function fetchJsonWithRetry(url, retries = FETCH_RETRY_COUNT, errorLabel = "Request failed") {
@@ -417,6 +424,49 @@ export function generateAccentSearchText(value) {
     .trim();
 }
 
+export function normalizeBarcodeCandidate(query) {
+  const compact = String(query || "")
+    .trim()
+    .replace(/[\s-]/g, "");
+  if (!/^\d+$/.test(compact)) return null;
+
+  if (![8, 12, 13, 14].includes(compact.length)) {
+    return {
+      kind: "invalid-length",
+      barcode: compact
+    };
+  }
+
+  if (!isValidGtinCheckDigit(compact)) {
+    return {
+      kind: "invalid-checksum",
+      barcode: compact
+    };
+  }
+
+  return {
+    kind: "valid",
+    barcode: compact
+  };
+}
+
+export function isValidGtinCheckDigit(code) {
+  if (!/^\d+$/.test(code)) return false;
+  if (![8, 12, 13, 14].includes(code.length)) return false;
+
+  const digits = code.split("").map(Number);
+  const checkDigit = digits.pop();
+  const reversed = digits.slice().reverse();
+
+  let sum = 0;
+  for (let index = 0; index < reversed.length; index += 1) {
+    sum += reversed[index] * (index % 2 === 0 ? 3 : 1);
+  }
+
+  const calculated = (10 - (sum % 10)) % 10;
+  return calculated === checkDigit;
+}
+
 export function getOnlineSearchAliases(query) {
   const original = String(query || "").trim();
   const normalized = normalizeOnlineFoodSearchText(original);
@@ -520,6 +570,19 @@ export async function fetchOpenFoodFactsSearch(query, options = {}) {
   );
 }
 
+export async function fetchOpenFoodFactsByBarcode(barcode) {
+  const params = new URLSearchParams({
+    fields:
+      "code,product_name,product_name_hu,generic_name,generic_name_hu,brands,nutriments,categories_tags"
+  });
+
+  return fetchJsonWithRetry(
+    `${OPEN_FOOD_FACTS_BARCODE_ENDPOINT}/${encodeURIComponent(barcode)}.json?${params.toString()}`,
+    FETCH_RETRY_COUNT,
+    "OpenFoodFacts barcode lookup failed"
+  );
+}
+
 export async function fetchUsdaSearch(query, options = {}) {
   const params = new URLSearchParams({
     api_key: USDA_API_KEY,
@@ -576,6 +639,7 @@ export function normalizeOpenFoodFactsProduct(product, options = {}) {
     protein,
     fat,
     carbs,
+    barcode: String(product?.code || "").trim(),
     matchedAlias: options.matchedAlias || "",
     aliasPriority: Number.isFinite(options.aliasPriority)
       ? options.aliasPriority
@@ -741,6 +805,41 @@ async function searchOpenFoodFactsSource(query) {
   return { aliases, results: allResults, hadSuccessfulResponse, errors };
 }
 
+async function searchOpenFoodFactsBarcodeSource(barcode) {
+  try {
+    const json = await fetchOpenFoodFactsByBarcode(barcode);
+    if (Number(json?.status) !== 1 || !json?.product) {
+      throw createLookupError(
+        "BARCODE_NOT_FOUND",
+        "Nem található termék ezzel a vonalkóddal."
+      );
+    }
+
+    const normalizedProduct = normalizeOpenFoodFactsProduct(json.product, {
+      matchedAlias: barcode,
+      aliasPriority: 0
+    });
+
+    if (!normalizedProduct) {
+      throw createLookupError(
+        "BARCODE_NO_MACROS",
+        "A termék megtalálható, de nincs benne használható 100 g-os tápértékadat."
+      );
+    }
+
+    return [normalizedProduct];
+  } catch (error) {
+    if (error?.code === "BARCODE_NOT_FOUND" || error?.code === "BARCODE_NO_MACROS") {
+      throw error;
+    }
+
+    throw createLookupError(
+      "BARCODE_LOOKUP_FAILED",
+      "Nem sikerült a vonalkódos keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj később újra."
+    );
+  }
+}
+
 async function searchUsdaSource(query) {
   const aliases = getUsdaSearchQueries(query);
   const allResults = [];
@@ -776,6 +875,23 @@ async function searchUsdaSource(query) {
 export async function searchOpenFoodFacts(query) {
   const trimmedQuery = String(query || "").trim();
   if (!trimmedQuery) return [];
+
+  const barcodeCandidate = normalizeBarcodeCandidate(trimmedQuery);
+  if (barcodeCandidate?.kind === "invalid-length") {
+    throw createLookupError(
+      "BARCODE_INVALID_LENGTH",
+      "Ez nem tűnik érvényes vonalkódnak. Ellenőrizd a számjegyeket."
+    );
+  }
+  if (barcodeCandidate?.kind === "invalid-checksum") {
+    throw createLookupError(
+      "BARCODE_INVALID_CHECKSUM",
+      "A vonalkód számjegyei nem stimmelnek. Ellenőrizd, nem maradt-e ki vagy nem lett-e félreolvasva egy szám."
+    );
+  }
+  if (barcodeCandidate?.kind === "valid") {
+    return searchOpenFoodFactsBarcodeSource(barcodeCandidate.barcode);
+  }
 
   const normalizedQuery = normalizeOnlineFoodSearchText(trimmedQuery);
 

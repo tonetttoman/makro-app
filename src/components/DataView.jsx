@@ -463,8 +463,20 @@ export function DataView({
 
       setOnlineFoodResults(results);
     } catch (error) {
-      console.warn("OpenFoodFacts keresés sikertelen.", error);
-      setOnlineFoodError("Nem sikerült az online keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj másik keresőkifejezést.");
+      console.warn("Online élelmiszer keresés sikertelen.", error);
+      if (error?.code === "BARCODE_INVALID_LENGTH") {
+        setOnlineFoodError("Ez nem tűnik érvényes vonalkódnak. Ellenőrizd a számjegyeket.");
+      } else if (error?.code === "BARCODE_INVALID_CHECKSUM") {
+        setOnlineFoodError("A vonalkód számjegyei nem stimmelnek. Ellenőrizd, nem maradt-e ki vagy nem lett-e félreolvasva egy szám.");
+      } else if (error?.code === "BARCODE_NOT_FOUND") {
+        setOnlineFoodError("Nem található termék ezzel a vonalkóddal.");
+      } else if (error?.code === "BARCODE_NO_MACROS") {
+        setOnlineFoodError("A termék megtalálható, de nincs benne használható 100 g-os tápértékadat.");
+      } else if (error?.code === "BARCODE_LOOKUP_FAILED") {
+        setOnlineFoodError("Nem sikerült a vonalkódos keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj később újra.");
+      } else {
+        setOnlineFoodError("Nem sikerült az online keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj később újra.");
+      }
     } finally {
       setOnlineFoodLoading(false);
     }
