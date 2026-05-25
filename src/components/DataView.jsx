@@ -19,6 +19,10 @@ import {
   scaleMacrosToCalories
 } from "../lib/targetUtils";
 import {
+  createFoodFromOnlineResult,
+  searchOpenFoodFacts
+} from "../lib/onlineFoodLookup";
+import {
   AppButton,
   AppCard,
   AppDangerButton,
@@ -241,6 +245,7 @@ export function DataView({
   const [isFoodDatabaseOpen, setIsFoodDatabaseOpen] = useState(false);
   const [isFoodBrowserOpen, setIsFoodBrowserOpen] = useState(false);
   const [isRecipeBrowserOpen, setIsRecipeBrowserOpen] = useState(false);
+  const [isOnlineFoodSearchOpen, setIsOnlineFoodSearchOpen] = useState(false);
   const [isFoodEditSearchOpen, setIsFoodEditSearchOpen] = useState(false);
   const [isFoodEditorOpen, setIsFoodEditorOpen] = useState(false);
   const [isRecipeEditorOpen, setIsRecipeEditorOpen] = useState(false);
@@ -251,6 +256,10 @@ export function DataView({
   const [transferMessage, setTransferMessage] = useState(null);
   const [isBackupOpen, setIsBackupOpen] = useState(false);
   const [recipeBrowserSearch, setRecipeBrowserSearch] = useState("");
+  const [onlineFoodQuery, setOnlineFoodQuery] = useState("");
+  const [onlineFoodResults, setOnlineFoodResults] = useState([]);
+  const [onlineFoodLoading, setOnlineFoodLoading] = useState(false);
+  const [onlineFoodError, setOnlineFoodError] = useState("");
 
   useEffect(() => {
     setTargetDrafts((current) => ({
@@ -266,9 +275,14 @@ export function DataView({
       setFoodSearch("");
       setFoodBrowserSearch("");
       setRecipeBrowserSearch("");
+      setOnlineFoodQuery("");
+      setOnlineFoodResults([]);
+      setOnlineFoodLoading(false);
+      setOnlineFoodError("");
       setFoodDraft(createBlankFood());
       setIsFoodBrowserOpen(false);
       setIsRecipeBrowserOpen(false);
+      setIsOnlineFoodSearchOpen(false);
       setIsFoodEditSearchOpen(false);
       setIsFoodEditorOpen(false);
     }
@@ -426,6 +440,50 @@ export function DataView({
       exportedAt: new Date().toISOString()
     });
     setTransferMessage({ type: "success", text: "Sikeres export: élelmiszer-adatbázis letöltve." });
+  }
+
+  async function handleOnlineFoodSearch() {
+    const trimmedQuery = onlineFoodQuery.trim();
+    if (!trimmedQuery) {
+      setOnlineFoodResults([]);
+      setOnlineFoodError("Adj meg egy keresőkifejezést az online élelmiszer kereséshez.");
+      return;
+    }
+
+    setOnlineFoodLoading(true);
+    setOnlineFoodError("");
+    setOnlineFoodResults([]);
+
+    try {
+      const results = await searchOpenFoodFacts(trimmedQuery);
+      if (!results.length) {
+        setOnlineFoodError("Nincs használható találat ehhez a kereséshez.");
+        return;
+      }
+
+      setOnlineFoodResults(results);
+    } catch (error) {
+      console.warn("OpenFoodFacts keresés sikertelen.", error);
+      setOnlineFoodError("Nem sikerült az online keresés. Ellenőrizd az internetkapcsolatot, vagy próbálj másik keresőkifejezést.");
+    } finally {
+      setOnlineFoodLoading(false);
+    }
+  }
+
+  function addOnlineFoodToDatabase(result) {
+    const currentFoods = Array.isArray(foods) ? foods : [];
+    const { food, wasUpdate } = createFoodFromOnlineResult(result, currentFoods);
+    const nextFoods = wasUpdate
+      ? currentFoods.map((item) => (item.id === food.id ? food : item))
+      : [...currentFoods, food];
+
+    setFoods(nextFoods);
+    setTransferMessage({
+      type: "success",
+      text: wasUpdate
+        ? `${normalizeFoodName(food.name)} frissítve az élelmiszer-adatbázisban.`
+        : `${normalizeFoodName(food.name)} bekerült az élelmiszer-adatbázisba.`
+    });
   }
 
   async function importJson(file) {
@@ -587,6 +645,7 @@ export function DataView({
   function closeFoodDatabaseSubsections() {
     setIsFoodBrowserOpen(false);
     setIsRecipeBrowserOpen(false);
+    setIsOnlineFoodSearchOpen(false);
     setIsFoodEditSearchOpen(false);
     setIsFoodEditorOpen(false);
   }
@@ -614,6 +673,18 @@ export function DataView({
     }
     setFoodDraft(createBlankFood());
     setIsFoodEditorOpen(true);
+  }
+
+  function toggleOnlineFoodSearch() {
+    const next = !isOnlineFoodSearchOpen;
+    closeFoodDatabaseSubsections();
+    setIsOnlineFoodSearchOpen(next);
+    if (!next) {
+      setOnlineFoodQuery("");
+      setOnlineFoodResults([]);
+      setOnlineFoodLoading(false);
+      setOnlineFoodError("");
+    }
   }
 
   function toggleFoodEditSearch() {
@@ -812,7 +883,7 @@ export function DataView({
             <AppNestedCard className="mt-3" variant="surface">
               <div className="grid gap-3 sm:grid-cols-2">
                 <AppField label={"Alapanyag keresése"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeDraft.ingredientSearch} placeholder={"Keresés alapanyag névre..."} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))} />
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeDraft.ingredientSearch} placeholder={"Keres?sés alapanyag névre..."} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientSearch: event.target.value, ingredientFoodId: "" }))} />
                 </AppField>
                 <AppField label={"Mennyiség"}>
                   <AppInput inputMode="decimal" type="number" min="0" value={recipeDraft.ingredientAmount} onChange={(event) => setRecipeDraft((current) => ({ ...current, ingredientAmount: event.target.value }))} />
@@ -892,7 +963,7 @@ export function DataView({
       </div>
 
       <AppCard>
-        <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Kereséssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
+        <AppToggleHeader title={"Élelmiszer-adatbázis"} summary={normalizedFoodSearch ? `${filteredFoods.length} találat` : "Keres?séssel válassz ételt szerkesztéshez"} isOpen={isFoodDatabaseOpen} onToggle={() => setIsFoodDatabaseOpen((current) => !current)} />
         {isFoodDatabaseOpen ? (
           <>
             <div className="mt-3 flex flex-wrap gap-2.5">
@@ -905,14 +976,64 @@ export function DataView({
               <AppButton type="button" onClick={toggleFoodAdd}>
                 {"Élelmiszer hozzáadása"}
               </AppButton>
+              <AppButton type="button" onClick={toggleOnlineFoodSearch}>
+                {isOnlineFoodSearchOpen ? "Online keresés bezárása" : "Online keresés"}
+              </AppButton>
               <AppButton type="button" onClick={toggleFoodEditSearch}>
                 {"Élelmiszer szerkesztése"}
               </AppButton>
             </div>
+            {isOnlineFoodSearchOpen ? (
+            <AppNestedCard className="mt-3" variant="surface">
+              <AppSectionTitle>{"Online élelmiszer keresés"}</AppSectionTitle>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <AppField label={"Keresés"}>
+                  <AppSearchInput
+                    icon={<Search size={16} aria-hidden="true" />}
+                    value={onlineFoodQuery}
+                    placeholder={"Például: rizspufi"}
+                    onChange={(event) => setOnlineFoodQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleOnlineFoodSearch();
+                      }
+                    }}
+                  />
+                </AppField>
+                <div className="sm:self-end">
+                  <AppButton type="button" onClick={handleOnlineFoodSearch} disabled={onlineFoodLoading}>
+                    {onlineFoodLoading ? "Keresés..." : "Keresés"}
+                  </AppButton>
+                </div>
+              </div>
+              {onlineFoodError ? (
+                <AppNestedCard className="mt-3" variant="empty">
+                  {onlineFoodError}
+                </AppNestedCard>
+              ) : null}
+              {onlineFoodResults.length ? (
+                <div className="mt-3 grid gap-2.5" aria-label={"Online élelmiszer keresési találatok"}>
+                  {onlineFoodResults.map((result, index) => (
+                    <AppNestedCard className="grid gap-2" key={`${result.code || normalizeSearch(result.name)}-${index}`} variant="compact">
+                      <div className="grid gap-1">
+                        <strong className="block line-clamp-2 text-[0.96rem] font-semibold leading-6 text-slate-50">{result.name}</strong>
+                        {result.brand ? <AppMetaText>{`Márka: ${result.brand}`}</AppMetaText> : null}
+                        <AppMetaText>{`${Math.round(result.kcal)} kcal / 100 g · P ${formatFoodMacro(result.protein)} g · Zs ${formatFoodMacro(result.fat)} g · Ch ${formatFoodMacro(result.carbs)} g`}</AppMetaText>
+                      </div>
+                      <div className="flex justify-start">
+                        <AppButton type="button" onClick={() => addOnlineFoodToDatabase(result)}>{"Hozzáadás"}</AppButton>
+                      </div>
+                    </AppNestedCard>
+                  ))}
+                </div>
+              ) : null}
+            </AppNestedCard>
+            ) : null}
             {isFoodBrowserOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
-                <AppField label={"Keresés"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodBrowserSearch} placeholder={"Keresés az adatbázisban..."} onChange={(event) => setFoodBrowserSearch(event.target.value)} />
+                <AppField label={"Keres?sés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodBrowserSearch} placeholder={"Keres?sés az adatbázisban..."} onChange={(event) => setFoodBrowserSearch(event.target.value)} />
                 </AppField>
                 <AppMetaText className="mt-3">{`${browserFoods.length} / ${sortedFoods.length} tétel`}</AppMetaText>
                 {browserFoods.length ? (
@@ -941,8 +1062,8 @@ export function DataView({
             ) : null}
             {isRecipeBrowserOpen ? (
               <AppNestedCard className="mt-3" variant="surface">
-                <AppField label={"Keresés"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keresés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
+                <AppField label={"Keres?sés"}>
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={recipeBrowserSearch} placeholder={"Keres?sés receptek között..."} onChange={(event) => setRecipeBrowserSearch(event.target.value)} />
                 </AppField>
                 <AppMetaText className="mt-3">{`${browserRecipes.length} / ${sortedFoods.filter((food) => food?.isRecipe === true).length} recept`}</AppMetaText>
                 {browserRecipes.length ? (
@@ -973,7 +1094,7 @@ export function DataView({
             {isFoodEditSearchOpen ? (
               <>
                 <AppField className="mt-3" label={"Élelmiszer keresése"}>
-                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keresés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
+                  <AppSearchInput icon={<Search size={16} aria-hidden="true" />} value={foodSearch} placeholder={"Keres?sés élelmiszer névre..."} onChange={(event) => setFoodSearch(event.target.value)} />
                 </AppField>
                 {normalizedFoodSearch ? (
                   <AppNestedCard className="mt-3" variant="flush">
