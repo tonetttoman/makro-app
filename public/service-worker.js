@@ -1,5 +1,5 @@
 const BASE_PATH = "/makro-app/";
-const CACHE_NAME = "etrend-pwa-v1.2.6";
+const CACHE_NAME = "etrend-pwa-v1.2.7";
 const STATIC_ASSETS = [
   BASE_PATH,
   BASE_PATH + "index.html",
