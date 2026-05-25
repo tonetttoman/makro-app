@@ -16,6 +16,10 @@ import {
 } from "./lib/storage";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
+const VIEW_ORDER = ["today", "monthly", "data"];
+const SWIPE_MIN_DISTANCE = 80;
+const SWIPE_DIRECTION_RATIO = 1.5;
+
 function parseStoredJson(rawValue) {
   if (!rawValue) return null;
   try {
@@ -124,9 +128,26 @@ function removeDailyLog(dailyLogs, date) {
   return dailyLogs.filter((log) => log.date !== date);
 }
 
+function getNextView(currentView, direction) {
+  const currentIndex = VIEW_ORDER.indexOf(currentView);
+  if (currentIndex < 0) return currentView;
+
+  const nextIndex =
+    direction === "next"
+      ? Math.min(VIEW_ORDER.length - 1, currentIndex + 1)
+      : Math.max(0, currentIndex - 1);
+
+  return VIEW_ORDER[nextIndex];
+}
+
+function isInteractiveElement(target) {
+  return Boolean(target?.closest?.("input, textarea, select, button, a"));
+}
+
 export default function App() {
   const todayKey = toDateKey();
   const initialStorageSnapshotRef = useRef(null);
+  const touchStartRef = useRef(null);
   const [activeView, setActiveView] = useState("today");
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [foodSearch, setFoodSearch] = useState("");
@@ -446,8 +467,44 @@ export default function App() {
     setActiveView("today");
   }
 
+  function handleTouchStart(event) {
+    const touch = event.touches?.[0];
+    if (!touch || isInteractiveElement(event.target)) {
+      touchStartRef.current = null;
+      return;
+    }
+
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY
+    };
+  }
+
+  function handleTouchEnd(event) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+
+    const touch = event.changedTouches?.[0];
+    if (!start || !touch) return;
+    if (isInteractiveElement(event.target)) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    if (absDeltaX < SWIPE_MIN_DISTANCE) return;
+    if (absDeltaX <= absDeltaY * SWIPE_DIRECTION_RATIO) return;
+
+    const direction = deltaX < 0 ? "next" : "previous";
+    const nextView = getNextView(activeView, direction);
+    if (nextView !== activeView) {
+      handleViewChange(nextView);
+    }
+  }
+
   return (
-    <div className="app">
+    <div className="app" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {activeView === "today" && (
         <TodayView
           totals={totals}
